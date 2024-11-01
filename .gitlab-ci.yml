@@ -24,8 +24,8 @@ docker-build:
     - echo "CI_REGISTRY_IMAGE= $CI_REGISTRY_IMAGE"
     - echo "CI_REGISTRY=  $CI_REGISTRY"
     - |
-      docker build --pull -f dockerfile -t "$CI_REGISTRY/rdapp-reports$tag" .
-    - docker push "$CI_REGISTRY/rdapp-reports$tag"
+      docker build --pull -f dockerfile -t "$CI_REGISTRY/gpu_reports$tag" .
+    - docker push "$CI_REGISTRY/gpu_reports$tag"
   # Run this job in the development branch  (must have a dockerfile there)
   only:
     refs:
@@ -62,7 +62,7 @@ deploy_app:
         cat $ENV_FILE_PROD > .env
         sed -i "s/IMAGE_VERSION=0*/IMAGE_VERSION=\"$tag\"/" .env
         cat $credentials_yml >> ./.ansible/cred.yml
-        folder_name="rdapp_reports"
+        folder_name="gpu_reports"
       else
         echo "<<<< DEVELOPMENT DEPLOY >>>>"
         target_server="dev"
@@ -70,7 +70,7 @@ deploy_app:
         cat $ENV_FILE_DEV > .env
         sed -i "s/IMAGE_VERSION=0*/IMAGE_VERSION=\"$tag\"/" .env
         cat $credentials_yml_testing >> ./.ansible/cred.yml
-        folder_name="rdapp_reports_dev"
+        folder_name="gpu_reports_dev"
       fi
     - cat $target_hosts > ./.ansible/hosts
     - export  ANSIBLE_CONFIG=$(pwd)/.ansible/ansible.cfg

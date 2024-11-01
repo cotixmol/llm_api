@@ -1,7 +1,7 @@
 version: "3.8"
 services:
-  rdapp-reports:
-    image: registry.reputacion.digital/rdapp-reports:${IMAGE_VERSION}
+  gpu_reports:
+    image: registry.reputacion.digital/gpu_reports:${IMAGE_VERSION}
     deploy:
       mode: replicated
       replicas: ${REPLICAS:-2}
@@ -18,10 +18,10 @@ services:
       # Enable Traefik for reports service
       - traefik.enable=true
       # Tell traefic wich port is the container using
-      - traefik.http.services.reports.loadbalancer.server.port=8000
+      - traefik.http.services.gpureports.loadbalancer.server.port=8000
       # http for this container
-      - traefik.http.routers.reports-http.entrypoints=http
-      - traefik.http.routers.reports-http.rule=Host(`${SERVER_PREFIX:-}reports.reputacion.digital`)
+      - traefik.http.routers.gpureports-http.entrypoints=http
+      - traefik.http.routers.gpureports-http.rule=Host(`${SERVER_PREFIX:-}gpureports.reputacion.digital`)
       # Connect to network (must be already created whith: docker)
       - traefik.docker.network=traefik-public
       # no https in LAN
