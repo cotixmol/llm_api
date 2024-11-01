@@ -1,0 +1,8 @@
+.gitignore
+.gitlab-ci.yml
+Makefile
+requirements
+docker-compose.yml
+dockerfile
+.venv
+__pycache__

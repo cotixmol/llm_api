@@ -1,0 +1,35 @@
+version: "3.8"
+services:
+  rdapp-reports:
+    image: registry.reputacion.digital/rdapp-reports:${IMAGE_VERSION}
+    deploy:
+      mode: replicated
+      replicas: ${REPLICAS:-2}
+    environment:
+      LAN_IP: ${LAN_IP:-127.0.0.1}
+    restart: always
+    volumes:
+      - ./.env:/.env
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+    labels:
+      # Enable Traefik for reports service
+      - traefik.enable=true
+      # Tell traefic wich port is the container using
+      - traefik.http.services.reports.loadbalancer.server.port=8000
+      # http for this container
+      - traefik.http.routers.reports-http.entrypoints=http
+      - traefik.http.routers.reports-http.rule=Host(`${SERVER_PREFIX:-}reports.reputacion.digital`)
+      # Connect to network (must be already created whith: docker)
+      - traefik.docker.network=traefik-public
+      # no https in LAN
+      # make it avaliable for lan only (not working)
+      #- traefik.http.middlewares.reports-ipwhitelist.ipWhiteList.sourceRange=["192.168.40.0/24"]
+    networks:
+      - traefik-public
+
+networks:
+  traefik-public:
+    external: true
