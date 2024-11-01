@@ -2,34 +2,36 @@ version: "3.8"
 services:
   gpu_reports:
     image: registry.reputacion.digital/gpu_reports:${IMAGE_VERSION}
-    deploy:
-      mode: replicated
-      replicas: ${REPLICAS:-2}
+    # deploy:
+    #   mode: replicated
+    #   replicas: ${REPLICAS:-2}
     environment:
       LAN_IP: ${LAN_IP:-127.0.0.1}
     restart: always
     volumes:
       - ./.env:/.env
+    ports:
+      - 8002:8002
     logging:
       driver: "json-file"
       options:
         max-size: "10m"
-    labels:
-      # Enable Traefik for reports service
-      - traefik.enable=true
-      # Tell traefic wich port is the container using
-      - traefik.http.services.gpureports.loadbalancer.server.port=8000
-      # http for this container
-      - traefik.http.routers.gpureports-http.entrypoints=http
-      - traefik.http.routers.gpureports-http.rule=Host(`${SERVER_PREFIX:-}gpureports.reputacion.digital`)
-      # Connect to network (must be already created whith: docker)
-      - traefik.docker.network=traefik-public
-      # no https in LAN
-      # make it avaliable for lan only (not working)
-      #- traefik.http.middlewares.reports-ipwhitelist.ipWhiteList.sourceRange=["192.168.40.0/24"]
-    networks:
-      - traefik-public
+#     labels:
+#       # Enable Traefik for reports service
+#       - traefik.enable=true
+#       # Tell traefic wich port is the container using
+#       - traefik.http.services.gpureports.loadbalancer.server.port=8000
+#       # http for this container
+#       - traefik.http.routers.gpureports-http.entrypoints=http
+#       - traefik.http.routers.gpureports-http.rule=Host(`${SERVER_PREFIX:-}gpureports.reputacion.digital`)
+#       # Connect to network (must be already created whith: docker)
+#       - traefik.docker.network=traefik-public
+#       # no https in LAN
+#       # make it avaliable for lan only (not working)
+#       #- traefik.http.middlewares.reports-ipwhitelist.ipWhiteList.sourceRange=["192.168.40.0/24"]
+#     networks:
+#       - traefik-public
 
-networks:
-  traefik-public:
-    external: true
+# networks:
+#   traefik-public:
+#     external: true
