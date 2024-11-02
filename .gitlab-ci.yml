@@ -32,13 +32,13 @@ docker-build:
       - dev
       - main
       - devops
-    # changes:
-    #   - VERSION
-    #   - api/*
-    #   - core/*
-    #   - services/*
-    #   - factories/*
-    #   - dockerfile
+    changes:
+      - VERSION
+      - api/*
+      - core/*
+      - services/*
+      - factories/*
+      - dockerfile
 
 deploy_app:
   stage: deploy
@@ -72,9 +72,14 @@ deploy_app:
         export folder_name="gpu_reports_dev"
       fi
     - export  ANSIBLE_CONFIG=$(pwd)/.ansible/ansible.cfg
-    - |
-      chmod +x .ansible/deploy.sh
-      .ansible/deploy.sh
+    - echo "------ Ansible deploy -------"
+    - echo "project \:\ "$folder_name
+    - echo "target server\:\ "$target_server
+    - sed -i s/target_server/$target_server/g ./.ansible/hosts
+    - sed -i s/target_server/$target_server/g ./.ansible/docker_remote_launch.yml
+    - sed -i s/my_service/$folder_name/g ./.ansible/docker_remote_launch.yml
+    - ansible-playbook -i .ansible/hosts .ansible/docker_remote_launch.yml
+
   # Run this job in the dev branch
   only:
     refs:
