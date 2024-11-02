@@ -1,0 +1,2 @@
+[server]
+"{{ target_server.ip }}" ansible_connection=ssh ansible_ssh_user="{{ target_server.user }}" ansible_ssh_pass="{{ target_server.pswd }}"

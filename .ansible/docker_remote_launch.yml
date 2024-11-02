@@ -1,0 +1,61 @@
+---
+- hosts: server
+  vars_files:
+    - cred.yml
+
+  tasks:
+    - name: log into docker hub registry
+      docker_login:
+        username: "{{ docker_user }}"
+        password: "{{ docker_pswd }}"
+        registry_url: "{{ docker_registry }}"
+
+    # # ###############################################################
+    # # my_service
+
+    - name: Creates my_service directory
+      file:
+        path: /home/operador/my_service
+        state: directory
+
+    - name: copy_file_docker-compose
+      ansible.builtin.copy:
+        src: ../docker-compose.yml
+        dest: /home/operador/my_service/docker-compose.yml
+        owner: operador
+        group: operador
+        mode: "0644"
+
+    - name: copy_file_env
+      ansible.builtin.copy:
+        src: ../.env
+        dest: /home/operador/my_service/.env
+        owner: operador
+        group: operador
+        mode: "0644"
+
+    - name: Tear down existing services
+      community.docker.docker_compose:
+        project_src: /home/operador/my_service/
+        state: absent
+
+    - name: Create and start services
+      community.docker.docker_compose:
+        project_src: /home/operador/my_service/
+        pull: true
+      register: output
+
+    - ansible.builtin.debug:
+        var: output
+
+    - name: Run `docker-compose up` again
+      community.docker.docker_compose:
+        project_src: /home/operador/my_service/
+        build: no
+      register: output
+
+    - ansible.builtin.debug:
+        var: output
+# # to call this playbook from the root of the repository:
+# # echo $ANSIBLE_VAULT_PASSWORD >  password.txt
+# # ansible-playbook -i .ansible/hosts --vault-password-file=password.txt .ansible/docker_remote_launch.yml --extra-vars "server_name=spiderman"
