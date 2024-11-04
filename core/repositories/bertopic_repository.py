@@ -4,11 +4,11 @@ from bertopic import BERTopic
 from sklearn.feature_extraction.text import CountVectorizer
 from bertopic.representation import MaximalMarginalRelevance
 import numpy as np
-from umap import UMAP
-from hdbscan import HDBSCAN
+from cuml.manifold import UMAP
+from cuml.cluster import HDBSCAN
 from sklearn.feature_extraction.text import CountVectorizer
-from bertopic.representation import MaximalMarginalRelevance
 from bertopic.vectorizers import ClassTfidfTransformer
+from bertopic.dimensionality import BaseDimensionalityReduction
 
 from core.objects.barplot import Barplot, BarPlotUnit
 from core.objects.wordcloud import Word, Wordcloud
@@ -38,7 +38,7 @@ class BertopicRepository:
     ) -> None:
         try:
             self.model = BERTopic(
-                    umap_model=None,
+                    umap_model=BaseDimensionalityReduction(),
                     hdbscan_model=hdbscan_model,
                     vectorizer_model=vectorizer_model,
                     representation_model=representation_model,
