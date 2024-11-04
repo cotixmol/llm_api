@@ -16,6 +16,15 @@ services:
       driver: "json-file"
       options:
         max-size: "10m"
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+
+
 #     labels:
 #       # Enable Traefik for reports service
 #       - traefik.enable=true
