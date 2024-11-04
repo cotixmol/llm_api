@@ -79,7 +79,7 @@ class GetTopicChartsCase:
             return {"topics": {}}
 
         bertopic_repository = BertopicRepository(
-            umap_model=self.__get_umap_model(embeddings=embedding_list),
+            umap_model=self.__get_umap_model(),
             hdbscan_model=self.__get_hdbscan_model(len(content_list)),
             vectorizer_model=self.__get_vectorizer_model(),
             representation_model=self.__get_representation_model(),
@@ -117,29 +117,16 @@ class GetTopicChartsCase:
         return created_at, content, embeddings
     
 
-    def __get_umap_model(self, embeddings):
-        pca_embeddings = self.__rescale(PCA(n_components=2).fit_transform(embeddings))
-    
+    def __get_umap_model(self):    
         umap_model = UMAP(
             n_neighbors=15,
             n_components=2,
             min_dist=0.0,
-            metric="cosine",
-            init=pca_embeddings,
+            metric="cosine"
         )
-
         return umap_model
 
-    def __rescale(self, x, inplace=False):
-        """ Rescale an embedding so optimization will not have convergence issues.
-        """
-        if not inplace:
-            x = np.array(x, copy=True)
-
-        x /= np.std(x[:, 0]) * 10000
-
-        return x
-    
+        
     def __get_hdbscan_model(self, n_docs: int):
 
         if n_docs < 2000:
