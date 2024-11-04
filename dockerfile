@@ -1,4 +1,4 @@
-FROM nvcr.io/nvidia/rapidsai/base:24.10-cuda12.5-py3.11
+FROM nvcr.io/nvidia/rapidsai/base:24.10-cuda12.0-py3.11
 ENV PYTHONUNBUFFERED=1
 WORKDIR /app
 RUN python -m pip install --upgrade pip
