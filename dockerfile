@@ -7,6 +7,7 @@ RUN pip install --no-deps bertopic==0.16.2
 COPY ./requirements.txt ./requirements.txt
 RUN pip install -r requirements.txt
 RUN rm requirements.txt
+RUN python -m nltk.downloader stopwords
 COPY ./ .
 ENTRYPOINT ["python", "app.py"]
 
