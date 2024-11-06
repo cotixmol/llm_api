@@ -13,8 +13,6 @@ from sklearn.decomposition import PCA
 # from hdbscan import HDBSCAN
 from cuml.cluster import HDBSCAN
 from cuml.manifold import UMAP
-import nltk
-from nltk.corpus import stopwords as sp
 import numpy as np
 
 CUSTOM_STOPWORDS = ["eh", "etc", "decis", 'http', "link", "bio", 'https', 'amp', "va", 'com', "si", "mas", "anos", "ano", "vos", "RT", "usted", "ustedes", "tenes", "tambien", "tan", "sos", "solo"]
