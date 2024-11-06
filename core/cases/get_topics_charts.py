@@ -146,8 +146,6 @@ class GetTopicChartsCase:
         return hdbscan_model
     
     def __get_vectorizer_model(self):
-        #nltk.download('stopwords')
-        #stopwords = list(sp.words('spanish')) + CUSTOM_STOPWORDS
         stopwords = NLTK_SPANISH_STOPWORDS + CUSTOM_STOPWORDS
         return CountVectorizer(ngram_range=(1, 2), stop_words=stopwords, min_df=0.01) 
     
