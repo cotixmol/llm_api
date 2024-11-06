@@ -17,6 +17,7 @@ from core.objects.stackedline import StackedLine, StackedSerie
 # from core.objects.timeline import Timeline
 from core.objects.document import ContentText, DocumentGroup
 from core.objects.pie import PieChart, PieSlice
+from core.objects.topic_info import TopicInfo
 
 class BertopicRepositoryException(Exception):
     pass
@@ -154,6 +155,12 @@ class BertopicRepository:
             #     y=[row["Frequency"] for _, row in df_filtered.iterrows()]
             # )
 
+            topic_info = TopicInfo(
+                topic=f"topic_{topic}",
+                title=name,
+                summary=description
+            )
+
             serie_data = [0 for _ in range(len(time_serie_data))]
             for _, row in df_filtered.iterrows():
                 time_index = time_serie_data.index(row["Timestamp"].strftime("%d %b %H:%M"))
@@ -168,6 +175,7 @@ class BertopicRepository:
             topic_plots.append(topic_barplot)
             topic_plots.append(topic_wordcloud)
             topic_plots.append(topic_represetation)
+            topic_plots.append(topic_info)
 
         topic_stackline = StackedLine(
             title="topics",
