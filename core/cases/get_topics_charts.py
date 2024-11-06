@@ -2,6 +2,7 @@ import logging
 from typing import List, Tuple, Dict
 from core.repositories.elasticsearch_repository import ElasticsearchRepository
 from core.repositories.query_repository import Query
+from core.repositories.llm_repository import LLMRepository
 import iso8601
 from core.repositories.bertopic_repository import BertopicRepository
 from core.objects.document import Document
@@ -25,6 +26,7 @@ class GetTopicChartsCase:
             self,
             es_repository: ElasticsearchRepository,
             query_repository: Query,
+            llm_repository: LLMRepository,
             index_pattern: str,
             since_date: str,
             to_date: str,
@@ -34,6 +36,7 @@ class GetTopicChartsCase:
         to_iso_time = iso8601.parse_date(to_date).isoformat()
         self.query_repository = query_repository      
         self.es_repository = es_repository
+        self.llm_repository = llm_repository
         self.index_pattern = index_pattern
         self.since_iso_time = since_iso_time
         self.to_iso_time = to_iso_time
@@ -87,7 +90,8 @@ class GetTopicChartsCase:
             n_gram_range=(1,3),
             nr_topics="auto",
             language="Spanish",
-            calculate_probabilities=False
+            calculate_probabilities=False,
+            llm_repository=self.llm_repository
         )
 
         

@@ -35,7 +35,7 @@ class BertopicRepository:
             nr_topics: str,
             language: str,
             calculate_probabilities: bool,
-            model_path: str
+            llm_repository: LLMRepository,
 
     ) -> None:
         try:
@@ -52,7 +52,7 @@ class BertopicRepository:
                     calculate_probabilities=calculate_probabilities,
                     verbose=True
             )
-            self.llm = LLMRepository(model_path)
+            self.llm_repository = llm_repository
             self.umap_model = umap_model
         except Exception as error:
             raise BertopicRepositoryException(error)
@@ -110,7 +110,7 @@ class BertopicRepository:
             
             topic_docs = doc_info[doc_info['Topic'] == topic].sort_values('Probability', ascending=False)
 
-            name, description = LLMRepository.create_topic_name_and_summary(num_topics= 8, 
+            name, description = self.llm_repository.create_topic_name_and_summary(num_topics= 8, 
                                                                             num_docs= 8, 
                                                                             keywords = valid_words, 
                                                                             docs_list= topic_docs["Document"].tolist())

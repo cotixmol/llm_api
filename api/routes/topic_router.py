@@ -5,8 +5,10 @@ from api.dtos.requests_dtos import TopicPreviewPayload
 from api.dtos.responses_dtos import BaseResponse
 from core.repositories.elasticsearch_repository import ElasticsearchRepository
 from core.repositories.query_repository import Query
+from core.repositories.llm_repository import LLMRepository
 from factories.repositories.elasticsearch_repository_factory import get_elasticsearch_repository
 from factories.repositories.query_repository_factory import get_query_repository
+from factories.repositories.lllm_repository_factory import get_llm_repository
 
 from core.cases.get_topics_charts import GetTopicChartsCase
 from services.elasticsearch_service import ElasticsearchException
@@ -27,12 +29,16 @@ async def get_topic_report(
         get_elasticsearch_repository),
     query_repository: Query = Depends(
         get_query_repository
+    ),
+    llm_repository: LLMRepository = Depends(
+        get_llm_repository
     )
 ) -> BaseResponse:
     try:
         case = GetTopicChartsCase(
             es_repository=es_repository,
             query_repository=query_repository,
+            llm_repository=llm_repository,
             index_pattern=parameters.index_pattern,
             since_date=parameters.since_date,
             to_date=parameters.to_date,
