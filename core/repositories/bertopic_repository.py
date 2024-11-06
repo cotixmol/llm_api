@@ -9,6 +9,7 @@ from cuml.cluster import HDBSCAN
 from sklearn.feature_extraction.text import CountVectorizer
 from bertopic.vectorizers import ClassTfidfTransformer
 from bertopic.dimensionality import BaseDimensionalityReduction
+from core.repositories.llm_repository import LLMRepository
 
 from core.objects.barplot import Barplot, BarPlotUnit
 from core.objects.wordcloud import Word, Wordcloud
@@ -33,7 +34,8 @@ class BertopicRepository:
             n_gram_range: typing.Tuple,
             nr_topics: str,
             language: str,
-            calculate_probabilities: bool
+            calculate_probabilities: bool,
+            model_path: str
 
     ) -> None:
         try:
@@ -50,6 +52,7 @@ class BertopicRepository:
                     calculate_probabilities=calculate_probabilities,
                     verbose=True
             )
+            self.llm = LLMRepository(model_path)
             self.umap_model = umap_model
         except Exception as error:
             raise BertopicRepositoryException(error)
@@ -62,7 +65,7 @@ class BertopicRepository:
 
     def __calculate_topics(self, content_list: typing.List[str], created_at_list: typing.List[str]):
         return self.model.topics_over_time(docs=content_list, timestamps=created_at_list, nr_bins=20, datetime_format="%Y-%m-%dT%H:%M:%S")
-    
+
     def get_topics(self,
     created_at_list: typing.List[str],
     content_list: typing.List[str],
@@ -106,6 +109,12 @@ class BertopicRepository:
             df_filtered = topics_over_time.loc[(topics_over_time["Topic"] == topic)].sort_values('Timestamp', ascending=False)
             
             topic_docs = doc_info[doc_info['Topic'] == topic].sort_values('Probability', ascending=False)
+
+            name, description = LLMRepository.create_topic_name_and_summary(num_topics= 8, 
+                                                                            num_docs= 8, 
+                                                                            keywords = valid_words, 
+                                                                            docs_list= topic_docs["Document"].tolist())
+
             topic_represetation = DocumentGroup(
                 group=f"topic_{topic}",
                 documents=[
