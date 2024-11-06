@@ -31,6 +31,7 @@ class MinIOClient:
         try:
             model_file = self.get_file(bucket=bucket,
                                        file=f"{model_name}.pickle")
+            print("found nwe model", model_file)
             with open(model_path, 'wb') as f:
                 f.write(model_file.read())
             logging.info("Model updated")

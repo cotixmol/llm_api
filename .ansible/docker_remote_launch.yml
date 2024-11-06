@@ -1,5 +1,5 @@
 ---
-- hosts: server
+- hosts: "{{ server_name }}"
   vars_files:
     - cred.yml
 
@@ -13,15 +13,20 @@
     # # ###############################################################
     # # my_service
 
-    - name: Creates my_service directory
+    - name: Creates project directory
       file:
-        path: /home/operador/my_service
+        path: /home/operador/{{ folder_name }}
+        state: directory
+    
+    - name: Creates models directory
+      file:
+        path: /home/operador/{{ folder_name }}/models
         state: directory
 
     - name: copy_file_docker-compose
       ansible.builtin.copy:
         src: ../docker-compose.yml
-        dest: /home/operador/my_service/docker-compose.yml
+        dest: /home/operador/{{ folder_name }}/docker-compose.yml
         owner: operador
         group: operador
         mode: "0644"
@@ -29,19 +34,19 @@
     - name: copy_file_env
       ansible.builtin.copy:
         src: ../.env
-        dest: /home/operador/my_service/.env
+        dest: /home/operador/{{ folder_name }}/.env
         owner: operador
         group: operador
         mode: "0644"
 
     - name: Tear down existing services
       community.docker.docker_compose:
-        project_src: /home/operador/my_service/
+        project_src: /home/operador/{{ folder_name }}/
         state: absent
 
     - name: Create and start services
       community.docker.docker_compose:
-        project_src: /home/operador/my_service/
+        project_src: /home/operador/{{ folder_name }}/
         pull: true
       register: output
 
@@ -50,7 +55,7 @@
 
     - name: Run `docker-compose up` again
       community.docker.docker_compose:
-        project_src: /home/operador/my_service/
+        project_src: /home/operador/{{ folder_name }}/
         build: no
       register: output
 

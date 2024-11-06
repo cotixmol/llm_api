@@ -9,7 +9,7 @@ services:
       LAN_IP: ${LAN_IP:-127.0.0.1}
     restart: always
     volumes:
-      - ./.env:/.env
+      - ./.env:/app/.env
       - ./models:/app/models
     ports:
       - 8002:8002
