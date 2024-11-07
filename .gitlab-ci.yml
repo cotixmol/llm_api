@@ -72,7 +72,7 @@ deploy_app:
         folder_name="gpu_reports_dev"
       fi
     -  ANSIBLE_CONFIG=$(pwd)/.ansible/ansible.cfg
-    - cat $target_hosts > ./infra/.ansible/hosts
+    - cat $target_hosts > ./.ansible/hosts
     - echo "------ Ansible deploy -------"
     - echo "$folder_name on $target_server"
     - ansible-playbook -i .ansible/hosts .ansible/docker_remote_launch.yml --extra-vars "server_name=$target_server folder_name=$folder_name"
