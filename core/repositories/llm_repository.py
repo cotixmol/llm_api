@@ -13,7 +13,11 @@ class LLMRepository:
         self.model = model_data["model"]
         self.tokenizer = model_data["tokenizer"]
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-        self.pipeline = pipeline("text-generation", model=self.model, tokenizer=self.tokenizer, device=self.device)
+        self.pipeline = pipeline("text-generation", 
+                                 model=self.model, 
+                                 tokenizer=self.tokenizer, 
+                                 device=self.device,
+                                 torch_dtype=torch.bfloat16)
 
     def create_topic_name_and_summary(self,
                                       num_keywords: int, 
