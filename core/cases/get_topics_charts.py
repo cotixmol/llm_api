@@ -73,7 +73,7 @@ class GetTopicChartsCase:
             logging.info(f"Reading {len(documents)} documents from {page_number} pages")
             self.query_repository.set_search_after(search_after=last_sort_id)
         print(f"{len(documents)} documents founded")
-        logging.info(f"Found {len(documents_list)} in {page_number} pages")
+        print(f"Found {len(documents_list)} in {page_number} pages")
         created_at_list, content_list, embedding_list = self.__prepare_data(documents_list)
 
         if not all((content_list, embedding_list)):
