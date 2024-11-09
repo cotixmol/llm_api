@@ -11,12 +11,11 @@ class ElasticsearchException(Exception):
 class ElasticsearchService:
 
     def __init__(self, elasticsearch_ip: str, elasticsearch_prt: str,
-                 elasticsearch_usr: str, elasticsearch_psw: str, elasticsearch_timeout: int = 10) -> None:
+                 elasticsearch_usr: str, elasticsearch_psw: str) -> None:
         self.client = Elasticsearch(
             hosts=[f"https://{elasticsearch_ip}:{elasticsearch_prt}"],
             basic_auth=(elasticsearch_usr, elasticsearch_psw),
-            verify_certs=False,
-            timeout=elasticsearch_timeout)
+            verify_certs=False)
 
     async def get_indexes_information(
             self, index_patern: str) -> typing.List[IndexStatus]:
@@ -40,7 +39,7 @@ class ElasticsearchService:
         query: dict,
     ) -> SerchResponse:
         try:
-            search_results = self.client.search(index=index_pattern, body=query)
+            search_results = self.client.search(index=index_pattern, body=query, timeout="10")
         except NotFoundError as not_found:
             logging.error(f"ElasticService error: {not_found}")
             raise ElasticsearchException(f"ElasticService error: {not_found}")
