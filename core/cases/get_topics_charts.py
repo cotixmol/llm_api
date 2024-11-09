@@ -1,5 +1,5 @@
 from typing import List, Tuple, Dict
-from api.config.settings import logger
+from api.config.logger import logger
 from core.repositories.elasticsearch_repository import ElasticsearchRepository
 from core.repositories.query_repository import Query
 from core.repositories.llm_repository import LLMRepository

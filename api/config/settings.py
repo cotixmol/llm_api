@@ -1,4 +1,3 @@
-import os
 from dotenv import load_dotenv
 from services.minio_service import MinIOClient
 from api.config.secrets import (
