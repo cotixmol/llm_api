@@ -39,7 +39,7 @@ class ElasticsearchService:
         query: dict,
     ) -> SerchResponse:
         try:
-            search_results = self.client.search(index=index_pattern, body=query, timeout="10")
+            search_results = self.client.search(index=index_pattern, body=query, timeout="10s")
         except NotFoundError as not_found:
             logging.error(f"ElasticService error: {not_found}")
             raise ElasticsearchException(f"ElasticService error: {not_found}")
