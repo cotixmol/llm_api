@@ -1,8 +1,8 @@
-import logging
 import typing
 from fastapi import APIRouter, HTTPException, Depends
 from api.dtos.requests_dtos import TopicPreviewPayload
 from api.dtos.responses_dtos import BaseResponse
+from api.config.settings import logger
 from core.repositories.elasticsearch_repository import ElasticsearchRepository
 from core.repositories.query_repository import Query
 from core.repositories.llm_repository import LLMRepository
@@ -47,11 +47,11 @@ async def get_topic_report(
         topics, n_docs = await case()
         return BaseResponse(data=None, chart=topics, n_docs=n_docs)
     except ElasticsearchException as error:
-        logging.error(str(error))
+        logger.error(str(error))
         raise HTTPException(status_code=404, detail=f"{error}")
     except BertopicRepositoryException as error:
-        logging.error(str(error))
+        logger.error(str(error))
         raise HTTPException(status_code=400, detail=f"{error}")
     except Exception as error:
-        logging.error(f"{type(error)}: {error}")
+        logger.error(f"{type(error)}: {error}")
         raise HTTPException(status_code=500, detail="It seems that there is not enough data to build topics")
