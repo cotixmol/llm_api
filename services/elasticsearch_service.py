@@ -1,6 +1,6 @@
 # services/elasticsearch_service.py
 import typing
-from elasticsearch import Elasticsearch, NotFoundError, BadRequestError, ConflictError
+from elasticsearch import Elasticsearch, NotFoundError, BadRequestError
 from api.dtos.elasticsearch_dtos import IndexStatus, SerchResponse
 import logging
 
@@ -11,11 +11,12 @@ class ElasticsearchException(Exception):
 class ElasticsearchService:
 
     def __init__(self, elasticsearch_ip: str, elasticsearch_prt: str,
-                 elasticsearch_usr: str, elasticsearch_psw: str) -> None:
+                 elasticsearch_usr: str, elasticsearch_psw: str, elasticsearch_timeout: int = 10) -> None:
         self.client = Elasticsearch(
             hosts=[f"https://{elasticsearch_ip}:{elasticsearch_prt}"],
             basic_auth=(elasticsearch_usr, elasticsearch_psw),
-            verify_certs=False)
+            verify_certs=False,
+            timeout=elasticsearch_timeout)
 
     async def get_indexes_information(
             self, index_patern: str) -> typing.List[IndexStatus]:

@@ -10,6 +10,7 @@ ELASTIC_USR = os.environ.get("ELASTIC_USR")
 ELASTIC_PSW = os.environ.get("ELASTIC_PSW")
 ELASTIC_IP = os.environ.get("ELASTIC_IP")
 ELASTIC_PAGE_SIZE = os.environ.get("ELASTIC_PAGE_SIZE")
+ELASTIC_TIMEOUT = os.environ.get("ELASTIC_TIMEOUT")
 
 MINIO_URL=os.environ.get("MINIO_URL")
 MINIO_ACCESS_KEY=os.environ.get("MINIO_ACCESS_KEY")
