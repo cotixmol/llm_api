@@ -47,10 +47,10 @@ async def get_topic_report(
         topics, n_docs = await case()
         return BaseResponse(data=None, chart=topics, n_docs=n_docs)
     except ElasticsearchException as error:
-        logger.error(str(error))
+        logger.error(f"ElasticError: {error}")
         raise HTTPException(status_code=404, detail=f"{error}")
     except BertopicRepositoryException as error:
-        logger.error(str(error))
+        logger.error(f"BertError {error}")
         raise HTTPException(status_code=400, detail=f"{error}")
     except Exception as error:
         logger.error(f"{type(error)}: {error}")

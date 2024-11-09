@@ -25,7 +25,7 @@ class ElasticsearchRepository:
 
     def __init__(self, elasticsearch_service: ElasticsearchService, page_size: int = 1000):
         self.elasticsearch_service = elasticsearch_service
-        self.page_size = page_size
+        self.page_size = int(page_size)
 
     async def get_workspace_indexes(self,
                                     workspace: str) -> typing.List[Index]:

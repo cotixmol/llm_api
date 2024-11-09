@@ -61,7 +61,7 @@ class GetTopicChartsCase:
         documents_list = []
         page_number = 0
 
-        while package_size >= self.es_repository.page_size:
+        while package_size >= int(self.es_repository.page_size):
             page_number += 1
             documents, last_sort_id = await self.es_repository.get_index_data(
                 index_pattern=self.index_pattern,
