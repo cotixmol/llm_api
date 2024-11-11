@@ -1,9 +1,8 @@
 import typing
-import re
 import pickle
-
 import torch
 from transformers import pipeline
+import json
 
 class LLMRepository:
     def __init__(self, model_path: str):    
@@ -20,38 +19,52 @@ class LLMRepository:
                                  torch_dtype=torch.bfloat16)
 
     def create_topic_name_and_summary(self,
-                                      num_keywords: int, 
-                                      num_docs: int, 
-                                      keywords: typing.List[str], 
-                                      docs_list: typing.List[str]) -> typing.Tuple[str, str]:
+                                    num_keywords: int = 8, 
+                                    num_docs: int = 8, 
+                                    keywords: typing.List[str] = None, 
+                                    docs_list: typing.List[str] = None) -> typing.Tuple[str, str]:
+        if keywords is None or docs_list is None:
+            self.logger.error("Keywords y docs_list no pueden ser None")
+            return None, None
+
         docs_list = docs_list[:num_docs]
         keywords = keywords[:num_keywords]
 
         prompt = f"""
-        Hay un tópico que está compuesto a partir de las siguientes palabras claves: {keywords}
-        En este tópico, los siguientes documentos son un pequeño pero representativo subconjunto de todos los documentos del tópico:
+        Existe un tópico compuesto a partir de las siguientes palabras claves: {keywords}
+        Los siguientes documentos son un pequeño pero representativo subconjunto de todos los documentos pertenecientes al tópico:
         {docs_list}
 
-        Basado en la información anterior, por favor extrae un nombre corto o etiqueta para el tópico y devuelve una descripción breve (máximo 3 oraciones) del mismo en el siguiente formato:
-        Nombre del tópico: <nombre>
-        Descripción del tópico: <descripción>
+        Basado en la información anterior, extrae un nombre corto o etiqueta para el tópico y devuelve una descripción breve (máximo 3 oraciones) del mismo en el siguiente formato JSON:
+        {{
+            "topic_name": "<nombre>",
+            "topic_description": "<descripción>"
+        }}
         """
 
         messages = [
-            {"role": "user", "content": {prompt}},
+            {"role": "user", "content": prompt},
         ]
-        outputs = self.pipeline(
-            messages,
-            max_new_tokens=350,
-        )
-        response_text = (outputs[0]["generated_text"][-1]["content"])
 
-        topic_name_match = re.search(r'Nombre del tópico:\s*(.*)', response_text)
-        topic_name = topic_name_match.group(1).strip() if topic_name_match else None
+        MAX_ATTEMPTS = 3
+        for attempt in range(MAX_ATTEMPTS):
+            try:
+                outputs = self.pipeline(
+                    messages,
+                    max_new_tokens=350,
+                )
+                response_text = outputs[0]["generated_text"][-1]["content"]
 
-        topic_description_match = re.search(r'Descripción del tópico:\s*(.*)', response_text)
-        topic_description = topic_description_match.group(1).strip() if topic_description_match else None
+                try:
+                    response_data = json.loads(response_text)
+                    topic_name = response_data["topic_name"]
+                    topic_description = response_data["topic_description"]
+                    return topic_name, topic_description
+                except:
+                    self.logger.warning(f"Formato incorrecto en la respuesta del modelo, intento número {attempt + 1}")
+            
+            except:
+                self.logger.warning(f"Error en la generación de Nombre y Tópico, intento número {attempt + 1}")
 
-        return topic_name, topic_description
-
-
+        self.logger.error(f"No se pudo generar una respuesta válida después de {MAX_ATTEMPTS} intentos")
+        return None, None
