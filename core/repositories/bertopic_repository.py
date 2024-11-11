@@ -123,7 +123,7 @@ class BertopicRepository:
                                                                             docs_list= topic_docs["Document"].tolist())
             except:
                 name = self.model.get_topic_info(topic)["Name"].iloc[0] 
-                description = f"Documento Representativo: {topic_docs["Document"].tolist()[0]}"
+                description = f"Documento Representativo: {topic_docs['Document'].tolist()[0]}"
 
             topic_represetation = DocumentGroup(
                 group=f"topic_{topic}",
