@@ -116,14 +116,14 @@ class BertopicRepository:
             
             topic_docs = doc_info[doc_info['Topic'] == topic].sort_values('Probability', ascending=False)
 
-            # try:
-            name, description = self.llm_repository.create_topic_name_and_summary(num_keywords= 8, 
+            try:
+                name, description = self.llm_repository.create_topic_name_and_summary(num_keywords= 8, 
                                                                             num_docs= 8, 
                                                                             keywords = valid_words, 
                                                                             docs_list= topic_docs["Document"].tolist())
-            # except:
-            #     name = self.model.get_topic_info(topic)["Name"].iloc[0] 
-            #     description = f"Documento Representativo: {topic_docs['Document'].tolist()[0]}"
+            except:
+                name = self.model.get_topic_info(topic)["Name"].iloc[0] 
+                description = f"Documento Representativo: {topic_docs['Document'].tolist()[0]}"
 
             topic_represetation = DocumentGroup(
                 group=f"topic_{topic}",
