@@ -18,8 +18,6 @@ class MinIOClient:
                             secure=False)
 
     def get_file(self, bucket: str, file: str) -> any:
-        print("getting file", file)
-        print("from bucket", bucket)
         object = self.client.get_object(bucket_name=bucket, object_name=file)
         return object
 

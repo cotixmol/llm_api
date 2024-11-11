@@ -1,6 +1,6 @@
 # services/elasticsearch_service.py
 import typing
-from elasticsearch import Elasticsearch, NotFoundError, BadRequestError, ConflictError
+from elasticsearch import Elasticsearch, NotFoundError, BadRequestError
 from api.dtos.elasticsearch_dtos import IndexStatus, SerchResponse
 import logging
 
@@ -39,7 +39,7 @@ class ElasticsearchService:
         query: dict,
     ) -> SerchResponse:
         try:
-            search_results = self.client.search(index=index_pattern, body=query)
+            search_results = self.client.search(index=index_pattern, body=query, request_timeout=10)
         except NotFoundError as not_found:
             logging.error(f"ElasticService error: {not_found}")
             raise ElasticsearchException(f"ElasticService error: {not_found}")
