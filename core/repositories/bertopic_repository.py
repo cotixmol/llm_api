@@ -117,7 +117,7 @@ class BertopicRepository:
             topic_docs = doc_info[doc_info['Topic'] == topic].sort_values('Probability', ascending=False)
 
             # try:
-            name, description = self.llm_repository.create_topic_name_and_summary(num_topics= 8, 
+            name, description = self.llm_repository.create_topic_name_and_summary(num_keywords= 8, 
                                                                             num_docs= 8, 
                                                                             keywords = valid_words, 
                                                                             docs_list= topic_docs["Document"].tolist())
