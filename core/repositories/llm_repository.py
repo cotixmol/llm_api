@@ -62,7 +62,7 @@ class LLMRepository:
                     topic_description = response_data["topic_description"]
                     return topic_name, topic_description
                 except:
-                    logging.warning(f"Formato incorrecto en la respuesta del modelo, intento número {attempt + 1}")
+                    logging.warning(f"Formato incorrecto en la respuesta del modelo, intento número {attempt + 1}. Response: {response_text}")
             
             except:
                 logging.warning(f"Error en la generación de Nombre y Tópico, intento número {attempt + 1}")
