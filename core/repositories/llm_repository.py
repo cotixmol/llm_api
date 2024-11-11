@@ -36,7 +36,7 @@ class LLMRepository:
         Los siguientes documentos son un pequeño pero representativo subconjunto de todos los documentos pertenecientes al tópico:
         {docs_list}
 
-        Basado en la información anterior, extrae un nombre corto o etiqueta para el tópico y devuelve una descripción breve (máximo 3 oraciones) del mismo en el siguiente formato JSON:
+        Basado en la información anterior, genera un nombre corto o etiqueta para el tópico y una descripción breve (máximo 3 oraciones). Debes responder en formato JSON, según la siguiente estructura:
         {{
             "topic_name": "<nombre>",
             "topic_description": "<descripción>"
