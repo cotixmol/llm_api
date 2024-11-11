@@ -3,6 +3,7 @@ import pickle
 import torch
 from transformers import pipeline
 import json
+import logging
 
 class LLMRepository:
     def __init__(self, model_path: str):    
@@ -24,7 +25,7 @@ class LLMRepository:
                                     keywords: typing.List[str] = None, 
                                     docs_list: typing.List[str] = None) -> typing.Tuple[str, str]:
         if keywords is None or docs_list is None:
-            self.logger.error("Keywords y docs_list no pueden ser None")
+            logging.error("Keywords y docs_list no pueden ser None")
             return None, None
 
         docs_list = docs_list[:num_docs]
@@ -61,10 +62,10 @@ class LLMRepository:
                     topic_description = response_data["topic_description"]
                     return topic_name, topic_description
                 except:
-                    self.logger.warning(f"Formato incorrecto en la respuesta del modelo, intento número {attempt + 1}")
+                    logging.warning(f"Formato incorrecto en la respuesta del modelo, intento número {attempt + 1}")
             
             except:
-                self.logger.warning(f"Error en la generación de Nombre y Tópico, intento número {attempt + 1}")
+                logging.warning(f"Error en la generación de Nombre y Tópico, intento número {attempt + 1}")
 
-        self.logger.error(f"No se pudo generar una respuesta válida después de {MAX_ATTEMPTS} intentos")
+        logging.error(f"No se pudo generar una respuesta válida después de {MAX_ATTEMPTS} intentos")
         return None, None
