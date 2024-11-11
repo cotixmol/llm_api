@@ -1,4 +1,5 @@
 import typing
+import logging
 from collections import defaultdict
 from bertopic import BERTopic
 from sklearn.feature_extraction.text import CountVectorizer
@@ -57,11 +58,15 @@ class BertopicRepository:
             self.umap_model = umap_model
         except Exception as error:
             raise BertopicRepositoryException(error)
-
+ 
     def __fit_model(self, content_list: typing.List[str], embeddings_list: typing.List[typing.List[float]]):
         embeddings_np = np.array(embeddings_list)
         reduced_embeddings = self.umap_model.fit_transform(embeddings_np)
-        self.model.fit_transform(content_list, reduced_embeddings)
+        try:
+            self.model.fit_transform(content_list, reduced_embeddings)
+        except Exception as e:
+            logging.warning(f"An error occurred during topic calculation: {e}")
+            raise BertopicRepositoryException(e)
         return reduced_embeddings
 
     def __calculate_topics(self, content_list: typing.List[str], created_at_list: typing.List[str]):
@@ -111,10 +116,14 @@ class BertopicRepository:
             
             topic_docs = doc_info[doc_info['Topic'] == topic].sort_values('Probability', ascending=False)
 
-            name, description = self.llm_repository.create_topic_name_and_summary(num_topics= 8, 
+            try:
+                name, description = self.llm_repository.create_topic_name_and_summary(num_topics= 8, 
                                                                             num_docs= 8, 
                                                                             keywords = valid_words, 
                                                                             docs_list= topic_docs["Document"].tolist())
+            except:
+                name = self.model.get_topic_info(topic)["Name"].iloc[0] 
+                description = f"Documento Representativo: {topic_docs["Document"].tolist()[0]}"
 
             topic_represetation = DocumentGroup(
                 group=f"topic_{topic}",
