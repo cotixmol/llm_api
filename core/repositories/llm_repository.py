@@ -56,8 +56,12 @@ class LLMRepository:
                 )
                 response_text = outputs[0]["generated_text"][-1]["content"]
 
+                start_index = response_text.find('{')
+                end_index = response_text.rfind('}') + 1
+                json_text = response_text[start_index:end_index]
+
                 try:
-                    response_data = json.loads(response_text)
+                    response_data = json.loads(json_text)
                     topic_name = response_data["topic_name"]
                     topic_description = response_data["topic_description"]
                     return topic_name, topic_description
