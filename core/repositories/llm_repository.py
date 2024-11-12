@@ -32,16 +32,14 @@ class LLMRepository:
         MAX_ATTEMPTS = 6 
         index = 0
 
-
-
         for attempt in range(MAX_ATTEMPTS):
             if attempt < 3:
-                docs_to_use = docs_list[:num_docs]
-                keywords_to_use = keywords[:num_keywords]
+                docs_to_use = docs_list[:min(num_docs, len(docs_list))]
+                keywords_to_use = keywords[:min(num_keywords, len(keywords))]
             else:
-                index += 4
-                docs_to_use = docs_list[index:index+num_docs]  
-                keywords_to_use = keywords[index:index+num_keywords]
+                index += 3
+                docs_to_use = docs_list[index:min(index+num_docs, len(docs_list))]  
+                keywords_to_use = keywords[index:min(index+num_keywords, len(keywords))]
 
             prompt = f"""
             Existe un tópico compuesto a partir de las siguientes palabras claves: {keywords_to_use}
