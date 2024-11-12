@@ -16,7 +16,7 @@ class IndexStatus(BaseModel):
     dataset_size: Optional[str] = None
 
 
-class SerchResponse(BaseModel):
+class SearchResponse(BaseModel):
     hits: Optional[List] = []
     aggregations: Optional[Dict] = {}
     last_sort_id: Optional[List[int]] = None

@@ -61,17 +61,21 @@ class GetTopicChartsCase:
         package_size = self.es_repository.page_size
         documents_list = []
         page_number = 0
+        pit_id = await self.es_repository.open_pit(index_pattern=self.index_pattern, keep="5m")
+        self.query_repository.set_pit(id=pit_id)
 
         while package_size >= int(self.es_repository.page_size):
             page_number += 1
-            documents, last_sort_id = await self.es_repository.get_index_data(
-                index_pattern=self.index_pattern,
-                body=self.query_repository.body
+            documents, last_sort_id = await self.es_repository.get_index_data_pit(
+                query=self.query_repository.body
             )
             package_size = len(documents)
             documents_list.extend(documents)
             logger.info(f"Reading {len(documents)} documents from {page_number} pages")
             self.query_repository.set_search_after(search_after=last_sort_id)
+        if "search_after" in self.query_repository.body:
+            self.query_repository.clean_search_after()
+        await self.es_repository.close_pit(pit_id=pit_id)
         logger.info(f"Found {len(documents_list)} in {page_number} pages")
         created_at_list, content_list, embedding_list = self.__prepare_data(documents_list)
 
