@@ -32,9 +32,7 @@ class LLMRepository:
         MAX_ATTEMPTS = 6 
         index = 0
 
-        messages = [
-            {"role": "user", "content": prompt},
-        ]
+
 
         for attempt in range(MAX_ATTEMPTS):
             if attempt < 3:
@@ -56,6 +54,10 @@ class LLMRepository:
                 "topic_description": "<descripción>"
             }}
             """
+
+            messages = [
+            {"role": "user", "content": prompt},
+            ]
 
             try:
                 outputs = self.pipeline(
