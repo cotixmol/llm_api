@@ -28,27 +28,35 @@ class LLMRepository:
             logging.error("Keywords y docs_list no pueden ser None")
             return None, None
 
-        docs_list = docs_list[:num_docs]
-        keywords = keywords[:num_keywords]
 
-        prompt = f"""
-        Existe un tópico compuesto a partir de las siguientes palabras claves: {keywords}
-        Los siguientes documentos son un pequeño pero representativo subconjunto de todos los documentos pertenecientes al tópico:
-        {docs_list}
-
-        Basado en la información anterior, genera un nombre corto o etiqueta para el tópico y una descripción breve (máximo 3 oraciones). Debes responder en formato JSON, según la siguiente estructura:
-        {{
-            "topic_name": "<nombre>",
-            "topic_description": "<descripción>"
-        }}
-        """
+        MAX_ATTEMPTS = 6 
+        index = 0
 
         messages = [
             {"role": "user", "content": prompt},
         ]
 
-        MAX_ATTEMPTS = 3
         for attempt in range(MAX_ATTEMPTS):
+            if attempt < 3:
+                docs_to_use = docs_list[:num_docs]
+                keywords_to_use = keywords[:num_keywords]
+            else:
+                index += 4
+                docs_to_use = docs_list[index:index+num_docs]  
+                keywords_to_use = keywords[index:index+num_keywords]
+
+            prompt = f"""
+            Existe un tópico compuesto a partir de las siguientes palabras claves: {keywords_to_use}
+            Los siguientes documentos son un pequeño pero representativo subconjunto de todos los documentos pertenecientes al tópico:
+            {docs_to_use}
+
+            Basado en la información anterior, genera un nombre corto o etiqueta para el tópico y una descripción breve (máximo 3 oraciones). Debes responder en formato JSON, según la siguiente estructura:
+            {{
+                "topic_name": "<nombre>",
+                "topic_description": "<descripción>"
+            }}
+            """
+
             try:
                 outputs = self.pipeline(
                     messages,
@@ -72,4 +80,4 @@ class LLMRepository:
                 logging.warning(f"Error en la generación de Nombre y Tópico, intento número {attempt + 1}")
 
         logging.error(f"No se pudo generar una respuesta válida después de {MAX_ATTEMPTS} intentos")
-        return None, None
+        return None, None   
