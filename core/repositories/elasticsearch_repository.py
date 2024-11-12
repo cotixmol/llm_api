@@ -76,6 +76,24 @@ class ElasticsearchRepository:
                 )
             )
         return Histogram(points=histogram_points)
+    
+    async def open_pit(self, index_pattern: str, keep: str) -> str:
+        return await self.elasticsearch_service.open_pit(index_pattern=index_pattern, keep=keep)
+    
+    async def close_pit(self, pit_id: str) -> None:
+        return await self.elasticsearch_service.close_pit(pit_id=pit_id)
+    
+    async def get_index_data_pit(self, query: dict ) -> typing.Tuple[typing.List[Document], typing.List]:
+        search_results = await self.elasticsearch_service.run_pit_search_query(query=query)
+        if not search_results.hits:
+            return ([], [])
+        documents = [
+            Document(
+                **doc
+            )
+            for doc in search_results.hits
+        ]
+        return documents, search_results.last_sort_id
         
     async def get_index_data(self, index_pattern: str, body: dict ) -> typing.Tuple[typing.List[Document], typing.List]:
         search_results = await self.elasticsearch_service.run_search_query(

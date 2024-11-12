@@ -100,6 +100,22 @@ class Query:
         self.body.pop("search_after")
         return
     
+    def set_pit(self, id: str, keep_alive: str = "1m"):
+        """
+          Parameters:
+          - id: pit id from open_point_in_time function
+          - keep_alive: extends the time to live of the corresponding point in time.
+        """
+        self.body["pit"] = {
+            "id": id,
+            "keep_alive": keep_alive
+        }
+        return
+    
+    def clean_pit(self) -> None:
+        self.body.pop("pit")
+        return
+    
 
     # ---------------- Filters configuration ----------------
     def __get_content_words_query(self, words: typing.List[str]):
