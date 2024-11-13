@@ -4,7 +4,7 @@ from core.repositories.elasticsearch_repository import ElasticsearchRepository
 from core.repositories.query_repository import Query
 from core.repositories.llm_repository import LLMRepository
 import iso8601
-from core.repositories.bertopic_repository import BertopicRepository
+from core.repositories.bertopic_repository import BertopicRepository, BertopicRepositoryException
 from core.objects.document import Document
 from sklearn.feature_extraction.text import CountVectorizer
 from bertopic.representation import MaximalMarginalRelevance
@@ -80,8 +80,8 @@ class GetTopicChartsCase:
         created_at_list, content_list, embedding_list = self.__prepare_data(documents_list)
 
         if not all((content_list, embedding_list)):
-            logger.warning("There are no documents to calculate topics")
-            return {}, 0
+            #logger.error("There are no documents to calculate topics")
+            raise BertopicRepositoryException("There are no documents to calculate topics")
 
         bertopic_repository = BertopicRepository(
             umap_model=self.__get_umap_model(),
