@@ -1,6 +1,6 @@
 # services/elasticsearch_service.py
 import typing
-from elasticsearch import Elasticsearch, NotFoundError, BadRequestError
+from elasticsearch import Elasticsearch, NotFoundError, BadRequestError, ConnectionTimeout
 from api.dtos.elasticsearch_dtos import IndexStatus, SearchResponse
 import logging
 
@@ -53,11 +53,13 @@ class ElasticsearchService:
     async def run_pit_search_query(
         self,
         query: dict,
+        max_retries: int = 2
     ) -> SearchResponse:
         """Advance way to get documents and/or aggregation using elastic queries. Use PIT to avoid data inconsistency.
 
         Args:
             query (dict): body from Query repository, the Query must have a PIT object with the ID.
+            max_retries (int, optional): Number of retries. Defaults to 2.
 
         Raises:
             ElasticsearchException: generic exception with details
@@ -65,14 +67,23 @@ class ElasticsearchService:
         Returns:
             SearchResponse: object with hits and aggregations
         """
-        try:
-            search_results = self.client.search(body=query)
-        except NotFoundError as not_found:
-            logging.error(f"ElasticService error: {not_found}")
-            raise ElasticsearchException(f"ElasticService error: {not_found}")
-        except BadRequestError as request_error:
-            logging.error(f"ElasticSearch request error: {request_error}")
-            raise ElasticsearchException(f"ElasticSearch request error: {request_error}")
+        attempts = 0
+        while attempts <= max_retries:
+            try:
+                search_results = self.client.options(request_timeout=10).search(body=query)
+                break
+            except NotFoundError as not_found:
+                logging.error(f"ElasticService error: {not_found}")
+                raise ElasticsearchException(f"ElasticService error: {not_found}")
+            except BadRequestError as request_error:
+                logging.error(f"ElasticSearch request error: {request_error}")
+                raise ElasticsearchException(f"ElasticSearch request error: {request_error}")
+            except ConnectionTimeout as connection_timeout:
+                attempts += 1
+                if attempts > max_retries:
+                    print("Max retries reached. Request failed.")
+                    raise ElasticsearchException(f"ElasticSearch exceeded number of conections attemps: {connection_timeout}")
+                print(f"Attempt {attempts} failed due to timeout. Retrying...")
         
         client_errors = search_results['_shards'].get('failures')
         if client_errors:
@@ -90,7 +101,7 @@ class ElasticsearchService:
         query: dict,
     ) -> SearchResponse:
         try:
-            search_results = self.client.search(index=index_pattern, body=query, request_timeout=10)
+            search_results = self.client.options(request_timeout=10).search(index=index_pattern, body=query)
         except NotFoundError as not_found:
             logging.error(f"ElasticService error: {not_found}")
             raise ElasticsearchException(f"ElasticService error: {not_found}")
