@@ -81,9 +81,9 @@ class ElasticsearchService:
             except ConnectionTimeout as connection_timeout:
                 attempts += 1
                 if attempts > max_retries:
-                    print("Max retries reached. Request failed.")
+                    logging.error("Max retries reached. Request failed.")
                     raise ElasticsearchException(f"ElasticSearch exceeded number of conections attemps: {connection_timeout}")
-                print(f"Attempt {attempts} failed due to timeout. Retrying...")
+                logging.info(f"Attempt {attempts} failed due to timeout. Retrying...")
         
         client_errors = search_results['_shards'].get('failures')
         if client_errors:
