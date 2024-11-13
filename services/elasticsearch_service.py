@@ -45,7 +45,7 @@ class ElasticsearchService:
     async def close_pit(self, pit_id: str) -> None:
         try:
             self.client.close_point_in_time(id=pit_id)
-            logging.info(f"PIT closed for ID {pit_id}")
+            logging.info(f"PIT closed")
         except NotFoundError as not_found:
             logging.error(f"ElasticService error: {not_found}")
             raise ElasticsearchException(f"ElasticService error: {not_found}")

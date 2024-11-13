@@ -81,7 +81,7 @@ class GetTopicChartsCase:
 
         if not all((content_list, embedding_list)):
             logger.warning("There are no documents to calculate topics")
-            return {"topics": {}}
+            return {}, []
 
         bertopic_repository = BertopicRepository(
             umap_model=self.__get_umap_model(),
@@ -114,7 +114,7 @@ class GetTopicChartsCase:
             doc_embedding = doc.embedding
             doc_created_at = doc.created_at
             if not doc_content or not doc_embedding:
-                print(f"skiperd document", doc)
+                print(f"skiped document", doc_content)
                 continue
             content.append(doc_content)
             embeddings.append(doc_embedding)
