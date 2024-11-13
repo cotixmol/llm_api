@@ -81,7 +81,7 @@ class GetTopicChartsCase:
 
         if not all((content_list, embedding_list)):
             logger.warning("There are no documents to calculate topics")
-            return {}, []
+            return {}, 0
 
         bertopic_repository = BertopicRepository(
             umap_model=self.__get_umap_model(),
