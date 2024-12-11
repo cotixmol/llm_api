@@ -1,0 +1,12 @@
+.env
+.python-version
+__pycache__/
+*.pyc
+*.js
+*.json
+*.js
+
+.ansible/cred*
+.venv/*
+
+test.py
