@@ -48,8 +48,6 @@ deploy_app:
   variables:
     ANSIBLE_HOST_KEY_CHECKING: "false"
     ANSIBLE_FORCE_COLOR: "true"
-  before_script:
-    - apt install rsync -y
   script:
     - |
       source VERSION
@@ -70,7 +68,7 @@ deploy_app:
         cat $credentials_yml_testing >> ./.ansible/cred.yml
         folder_name="gpu_reports_dev"
       fi
-    -  ANSIBLE_CONFIG=$(pwd)/.ansible/ansible.cfg
+    - ANSIBLE_CONFIG=$(pwd)/.ansible/ansible.cfg
     - cat $target_hosts > ./.ansible/hosts
     - echo "------ Ansible deploy -------"
     - echo "$folder_name on $target_server"
