@@ -42,7 +42,7 @@ docker-build:
 deploy_app:
   stage: deploy
   image:
-    name: ieferrari/ansible:latest
+    name: ieferrari/ansible:11.0.0
   tags:
     - data_workers
   variables:
