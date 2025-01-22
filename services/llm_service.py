@@ -25,3 +25,5 @@ class LlmService:
         except Exception as error:
             logging.error(f"Error generating text: {error}")
             raise LlmException(f"Error generating text: {error}")
+        
+    
