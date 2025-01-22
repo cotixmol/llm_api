@@ -24,16 +24,38 @@ class MinIOClient:
     def update_model(self, model_name: str, bucket: str) -> bool:
         logging.info(f"Updating model {model_name}")
         model_path = os.path.join(f"{os.getcwd()}/models/",
-                                  f"{model_name}")
+                                  f"{model_name}.pickle")
         if os.path.isfile(model_path):
             logging.info("Model already exist")
             return True
         try:
             model_file = self.get_file(bucket=bucket,
-                                       file=f"{model_name}")
+                                       file=f"{model_name}.pickle")
             print("found new model", model_file)
             with open(model_path, 'wb') as f:
                 f.write(model_file.read())
+            logging.info("Model updated")
+            return True
+        except S3Error as error:
+            logging.error(f"{error}")
+            raise MinIOException(error)
+
+    def update_model_folder(self, bucket: str, model_name: str) -> None:
+        logging.info(f"Updating model {model_name}")
+        # folder that stores the models
+        models_path = os.path.join(f"{os.getcwd()}/models/")
+        # model folder path
+        folder_path = os.path.join(f"{models_path}/",
+                                  f"{model_name}")
+        if os.path.isdir(folder_path):
+            logging.info("Model already exist")
+            return True
+        try:
+            os.mkdir(folder_path)
+            for item in self.client.list_objects(bucket, prefix=model_name, recursive=True):
+                # file destination path in model folder
+                item_path = os.path.join(f"{models_path}/",f"{item.object_name}")
+                self.client.fget_object(bucket, item.object_name, item_path)
             logging.info("Model updated")
             return True
         except S3Error as error:
