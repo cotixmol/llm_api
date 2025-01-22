@@ -4,20 +4,12 @@ import torch
 from transformers import pipeline
 import json
 import logging
+from services.llm_service import LlmService
 
 class LLMRepository:
-    def __init__(self, model_path: str):    
-        with open(model_path, 'rb') as pickle_file:
-            model_data = pickle.load(pickle_file)
-
-        self.model = model_data["model"]
-        self.tokenizer = model_data["tokenizer"]
-        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-        self.pipeline = pipeline("text-generation", 
-                                 model=self.model, 
-                                 tokenizer=self.tokenizer, 
-                                 device=self.device,
-                                 torch_dtype=torch.bfloat16)
+    def __init__(self, llm_service: LlmService):
+        self.llm_service = llm_service
+    
 
     def create_topic_name_and_summary(self,
                                     num_keywords: int = 8, 
