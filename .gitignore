@@ -7,6 +7,8 @@ __pycache__/
 *.js
 
 .ansible/cred*
-.venv/*
 
+# venv and testing scripts
+venv/*
+venv
 test.py

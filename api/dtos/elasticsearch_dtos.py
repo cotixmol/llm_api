@@ -19,5 +19,4 @@ class IndexStatus(BaseModel):
 class SearchResponse(BaseModel):
     hits: Optional[List] = []
     aggregations: Optional[Dict] = {}
-    last_sort_id: Optional[List[int]] = None
     total_hits: Optional[int] = 0
