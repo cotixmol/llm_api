@@ -55,3 +55,30 @@ async def get_topic_report(
     except Exception as error:
         logger.error(f"{type(error)}: {error}")
         raise HTTPException(status_code=500, detail="It seems that there is not enough data to build topics")
+
+
+@topic_router.post(
+        '/llm',
+        #response_model=BaseResponse[None, typing.Dict],
+        #response_model_exclude_none=True
+    )
+async def get_classification_ipcva(
+    #parameters: TopicPreviewPayload,
+    es_repository: ElasticsearchRepository = Depends(
+        get_elasticsearch_repository),
+    query_repository: Query = Depends(
+        get_query_repository
+    ),
+    llm_repository: LLMRepository = Depends(
+        get_llm_repository
+    )
+) -> BaseResponse:
+    try:
+        response = llm_repository.get_classification_ipcva()
+        return response
+    except ElasticsearchException as error:
+        logger.error(f"ElasticError: {error}")
+        raise HTTPException(status_code=404, detail=f"{error}")
+    except Exception as error:
+        logger.error(f"{type(error)}: {error}")
+        raise HTTPException(status_code=500, detail="It seems that there is not enough data to build topics")
