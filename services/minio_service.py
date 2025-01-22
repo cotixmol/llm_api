@@ -24,14 +24,14 @@ class MinIOClient:
     def update_model(self, model_name: str, bucket: str) -> bool:
         logging.info(f"Updating model {model_name}")
         model_path = os.path.join(f"{os.getcwd()}/models/",
-                                  f"{model_name}.pickle")
+                                  f"{model_name}")
         if os.path.isfile(model_path):
             logging.info("Model already exist")
             return True
         try:
             model_file = self.get_file(bucket=bucket,
-                                       file=f"{model_name}.pickle")
-            print("found nwe model", model_file)
+                                       file=f"{model_name}")
+            print("found new model", model_file)
             with open(model_path, 'wb') as f:
                 f.write(model_file.read())
             logging.info("Model updated")

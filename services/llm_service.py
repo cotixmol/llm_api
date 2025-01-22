@@ -1,4 +1,4 @@
-import typing
+import torch
 from elasticsearch import Elasticsearch, NotFoundError, BadRequestError, ConnectionTimeout
 from api.dtos.elasticsearch_dtos import IndexStatus, SearchResponse
 from transformers import AutoModelForCausalLM, AutoTokenizer, pipeline
@@ -19,9 +19,9 @@ class LlmService:
                                  device=self.device,
                                  torch_dtype=torch.bfloat16)
     
-    def generate_text(self, prompt: str) -> str:
+    def generate_text(self, prompt: str, max_new_tokens: int) -> str:
         try:
-            return self.pipeline(prompt, max_length=50, do_sample=True, temperature=0.9)[0]["generated_text"]
+            return self.pipeline(prompt, max_new_tokens, do_sample=True, temperature=0.9)[0]["generated_text"]
         except Exception as error:
             logging.error(f"Error generating text: {error}")
             raise LlmException(f"Error generating text: {error}")

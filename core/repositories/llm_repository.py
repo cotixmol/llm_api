@@ -1,7 +1,4 @@
 import typing
-import pickle
-import torch
-from transformers import pipeline
 import json
 import logging
 from services.llm_service import LlmService
@@ -50,11 +47,9 @@ class LLMRepository:
             ]
 
             try:
-                outputs = self.pipeline(
-                    messages,
-                    max_new_tokens=350,
-                )
-                response_text = outputs[0]["generated_text"][-1]["content"]
+                outputs = self.llm_service.generate_text(messages, max_new_tokens=350)
+
+                response_text = outputs[-1]["content"]
 
                 start_index = response_text.find('{')
                 end_index = response_text.rfind('}') + 1
