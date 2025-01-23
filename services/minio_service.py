@@ -20,10 +20,10 @@ class MinIOClient:
     def update_model_folder(self, bucket: str, model_name: str) -> None:
         logging.info(f"Updating model {model_name}")
         # folder that stores the models
-        models_path = os.path.join(f"{os.getcwd()}/models/")
+        models_path = os.path.join(f"{os.getcwd()}/models")
         # model folder path
         folder_path = os.path.join(f"{models_path}/",
-                                  f"{model_name}")
+                                   f"{model_name}")
         if os.path.isdir(folder_path):
             logging.info("Model already exist")
             return True

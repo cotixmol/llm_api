@@ -51,3 +51,6 @@ class LLMPreviewPayload(BaseModel):
     update_field: str
     task_key: str
 
+class LLMPromptPreviewPayload(BaseModel):
+    prompt: str
+

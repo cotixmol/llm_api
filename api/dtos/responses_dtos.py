@@ -14,3 +14,6 @@ class LLMClassificationResponse(BaseModel, typing.Generic[Data, Chart]):
     total_docs: int
     updated_docs: int
     
+class LLMPromptResponse(BaseModel, typing.Generic[Data, Chart]):
+    response: str
+    
