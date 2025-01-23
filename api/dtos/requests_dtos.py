@@ -49,4 +49,5 @@ class LLMPreviewPayload(BaseModel):
     filters: typing.Optional[Filters] = None
     prompt: str
     update_field: str
+    task_key: str
 

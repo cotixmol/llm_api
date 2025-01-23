@@ -39,7 +39,10 @@ async def get_classification_ipcva(
             index_pattern=parameters.index_pattern,
             since_date=parameters.since_date,
             to_date=parameters.to_date,
-            extra_args=parameters.filters
+            extra_args=parameters.filters,
+            update_field= parameters.update_field,
+            task_key= parameters.task_key,
+            prompt=parameters.prompt
         )
         response = await llm_case()
         return response

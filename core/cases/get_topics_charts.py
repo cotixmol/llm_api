@@ -62,7 +62,7 @@ class GetTopicChartsCase:
 
         ### SEARCH DOCUMENTS ###
 
-        documents_list = self.es_repository.search_data(query = self.query_repository, index_pattern=self.index_pattern)
+        documents_list = self.es_repository.get_paginated_data(query = self.query_repository, index_pattern=self.index_pattern)
         
         ### GET TOPICS ###
         created_at_list, content_list, embedding_list = self.__prepare_data(documents_list)

@@ -22,6 +22,7 @@ import pandas as pd
 import numpy as np
 from itertools import permutations
 from collections import defaultdict
+from typing import List, Dict
 
 class ElasticsearchRepository:
 
@@ -91,3 +92,20 @@ class ElasticsearchRepository:
             for doc in total_hits
         ]
         return documents
+    
+    async def update_documents_bulk(
+        self,
+        es_index_list: List[str],
+        doc_id_list: List[str],
+        data_to_update: List[Dict],
+        bulk_method: int = 1,
+        bulk_size: int = 500):
+
+        self.elasticsearch_service.run_helpers_bulk(
+            es_index_list=es_index_list,
+            doc_id_list=doc_id_list,
+            data_to_update=data_to_update,
+            bulk_method=bulk_method,
+            bulk_size=bulk_size
+         )
+        #¿Debería retornar algo?

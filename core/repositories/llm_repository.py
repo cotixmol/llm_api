@@ -99,7 +99,7 @@ class LLMRepository:
                         predictions.append(label)
                         success = True
                     except Exception as parse_error:
-                        logging.warning(f"Formato incorrecto en la respuesta del modelo. Intento {attempts + 1}. Error: {parse_error}")
+                        logging.warning(f"Formato incorrecto en la respuesta del modelo. Intento {attempts + 1}. Error: {parse_error}") #Debería chequearse no sólo la key, sino también el value. Tiene que venir lista de values válidos desde worker
                 except Exception as error:
                     logging.error(f"Error generando texto en el intento {attempts + 1}: {error}")
 
@@ -125,77 +125,3 @@ class LLMRepository:
         logging.error("Fallo en todos los intentos para generar texto.")
         return None
 
-
-# Worker recibe tarea, manda prompt, filtros y reglas de ingesta (qué campo, etl) a endpoint, 
-# API transforma (agregar métodos según uso), ingesta a elastic y envía reporte a worker
-
-#  topic_categories = """                  
-  #                         1)Category: RECIPES
-                          
-  #                         Definition: Posts related to the direct preparation of food or beverages.
-                          
-  #                         Key indicators:
-                          
-  #                         Includes ingredients and preparation steps.
-                          
-  #                         May mention cooking times/temperatures.
-                          
-  #                         Common phrases: "mix", "add", "bake", "recipe".
-                          
-  #                         Example:
-                          
-  #                         "Cake recipe: mix flour, eggs, and bake for 30 minutes." → RECIPES
-                          
-  #                         2)Category: NUTRITIONAL INFORMATION
-                          
-  #                         Definition: Informative content related to health and nutrition concepts.
-                          
-  #                         Key indicators:
-                          
-  #                         Explains the nutritional properties of foods or healthy habits.
-                          
-  #                         Use of scientific data or explicit health benefits.
-                          
-  #                         Common phrases: "benefits", "properties", "nutrition".
-                          
-  #                         Example:
-                          
-  #                         "Quinoa is rich in protein and contains all essential amino acids." → NUTRITIONAL INFORMATION
-                          
-  #                         3)Category: RECOMMENDATIONS
-                          
-  #                         Definition: Posts offering practical or promotional recommendations related to food, brands, or healthy lifestyles.
-                          
-  #                         Key indicators:
-                          
-  #                         Absence of detailed procedures or specific ingredients.
-                          
-  #                         General tips, organizational advice, or commercial mentions.
-                          
-  #                         Common phrases: "buy", "organize", "promotion".
-                          
-  #                         Example:
-                          
-  #                         "Buy seasonal fruits to save money and get better nutrients." → RECOMMENDATIONS
-                          
-  #                         4)Category: OTHERS
-                          
-  #                         Definition: Content not directly related to food preparation, nutrition, or practical recommendations.
-                          
-  #                         Key indicators:
-                          
-  #                         Focus on personal topics, landscapes, general events, or reflections unrelated to food topics.
-                          
-  #                         Example:
-                          
-  #                         "How beautiful the city is at this time of year." → OTHERS
-  # """
- #  # prompt = {
- #  #     "system_1": f"""You are a text classifier analyzing social media posts. You must assign ONE category according to these definitions: {topic_categories}
- #  #                 Respond with one of the four categories (RECIPES, NUTRITIONAL INFORMATION, RECOMMENDATIONS, OTHERS) in JSON format: {{"type_of_posting": "CATEGORY"
- #  #                 Rules:
- #  #                 1. Only ONE category per post
- #  #                 2. If more than one category applies, prioritize: RECIPES > NUTRITIONAL INFORMATION > RECOMMENDATIONS > OTHERS
- #  #                 3. Respond in JSON format: {{"type_of_posting": "CATEGORY"}}""",
- #  #     "user_1": f"Classify this post: {doc}"
- #  # },
