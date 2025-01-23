@@ -6,6 +6,17 @@ from services.llm_service import LLMService
 class LLMRepository:
     def __init__(self, llm_service: LLMService):
         self.llm_service = llm_service
+
+    @staticmethod
+    def parse_model_response(response_text: str) -> typing.Optional[dict]:
+        try:
+            start_index = response_text.find('{')
+            end_index = response_text.rfind('}') + 1
+            json_text = response_text[start_index:end_index]
+            return json.loads(json_text)
+        except (ValueError, json.JSONDecodeError):
+            logging.warning(f"Formato incorrecto en la respuesta del modelo. Response: {response_text}")
+            return None
     
 
     def create_topic_name_and_summary(self,
@@ -49,19 +60,14 @@ class LLMRepository:
             try:
                 outputs = self.llm_service.generate_text(messages, max_new_tokens=350)
 
-                response_text = outputs[-1]["content"]
-
-                start_index = response_text.find('{')
-                end_index = response_text.rfind('}') + 1
-                json_text = response_text[start_index:end_index]
+                response_data = self.parse_model_response(outputs[-1]["content"])
 
                 try:
-                    response_data = json.loads(json_text)
                     topic_name = response_data["topic_name"]
                     topic_description = response_data["topic_description"]
                     return topic_name, topic_description
                 except:
-                    logging.warning(f"Formato incorrecto en la respuesta del modelo, intento número {attempt + 1}. Response: {response_text}")
+                    logging.warning(f"Formato incorrecto en la respuesta del modelo, intento número {attempt + 1}. Response: {response_data}")
             
             except:
                 logging.warning(f"Error en la generación de Nombre y Tópico, intento número {attempt + 1}")
@@ -69,109 +75,127 @@ class LLMRepository:
         logging.error(f"No se pudo generar una respuesta válida después de {MAX_ATTEMPTS} intentos")
         return None, None   
     
-    def apply_prompt_classification(self, docs_list: typing.List[str] = None) -> str:
+    def apply_prompt_classification(self, prompt_template, task_key, docs_list: typing.List[str] = None) -> str:
+
+        if not docs_list:
+            logging.error("docs_list no puede ser None o vacío.")
+            return []
+        if not prompt_template:
+            logging.error("El template de prompt no puede ser None o vacío.")
+            return []
+
         predictions = []
         for doc in docs_list:
-            topic_categories = """                  
-                                    1)Category: RECIPES
-                                    
-                                    Definition: Posts related to the direct preparation of food or beverages.
-                                    
-                                    Key indicators:
-                                    
-                                    Includes ingredients and preparation steps.
-                                    
-                                    May mention cooking times/temperatures.
-                                    
-                                    Common phrases: "mix", "add", "bake", "recipe".
-                                    
-                                    Example:
-                                    
-                                    "Cake recipe: mix flour, eggs, and bake for 30 minutes." → RECIPES
-                                    
-                                    2)Category: NUTRITIONAL INFORMATION
-                                    
-                                    Definition: Informative content related to health and nutrition concepts.
-                                    
-                                    Key indicators:
-                                    
-                                    Explains the nutritional properties of foods or healthy habits.
-                                    
-                                    Use of scientific data or explicit health benefits.
-                                    
-                                    Common phrases: "benefits", "properties", "nutrition".
-                                    
-                                    Example:
-                                    
-                                    "Quinoa is rich in protein and contains all essential amino acids." → NUTRITIONAL INFORMATION
-                                    
-                                    3)Category: RECOMMENDATIONS
-                                    
-                                    Definition: Posts offering practical or promotional recommendations related to food, brands, or healthy lifestyles.
-                                    
-                                    Key indicators:
-                                    
-                                    Absence of detailed procedures or specific ingredients.
-                                    
-                                    General tips, organizational advice, or commercial mentions.
-                                    
-                                    Common phrases: "buy", "organize", "promotion".
-                                    
-                                    Example:
-                                    
-                                    "Buy seasonal fruits to save money and get better nutrients." → RECOMMENDATIONS
-                                    
-                                    4)Category: OTHERS
-                                    
-                                    Definition: Content not directly related to food preparation, nutrition, or practical recommendations.
-                                    
-                                    Key indicators:
-                                    
-                                    Focus on personal topics, landscapes, general events, or reflections unrelated to food topics.
-                                    
-                                    Example:
-                                    
-                                    "How beautiful the city is at this time of year." → OTHERS
-            """
-            prompt = {
-                "system_1": f"""You are a text classifier analyzing social media posts. You must assign ONE category according to these definitions: {topic_categories}
-                            Respond with one of the four categories (RECIPES, NUTRITIONAL INFORMATION, RECOMMENDATIONS, OTHERS) in JSON format: {{"type_of_posting": "CATEGORY"}}.
+            prompt = prompt_template.format(doc=doc)
+            attempts = 0
+            success = False
 
-                            Rules:
-                            1. Only ONE category per post
-                            2. If more than one category applies, prioritize: RECIPES > NUTRITIONAL INFORMATION > RECOMMENDATIONS > OTHERS
-                            3. Respond in JSON format: {{"type_of_posting": "CATEGORY"}}""",
-                "user_1": f"Classify this post: {doc}"
-            },
+            while attempts < 5 and not success:
+                try:
+                    outputs = self.llm_service.generate_text(prompt, max_new_tokens=20)
+                    try:
+                        response_data = self.parse_model_response(outputs[-1]["content"])
+                        label = response_data[task_key]
+                        predictions.append(label)
+                        success = True
+                    except Exception as parse_error:
+                        logging.warning(f"Formato incorrecto en la respuesta del modelo. Intento {attempts + 1}. Error: {parse_error}")
+                except Exception as error:
+                    logging.error(f"Error generando texto en el intento {attempts + 1}: {error}")
 
+                attempts += 1
+
+            if not success:
+                logging.error(f"Fallo procesando el documento tras 5 intentos. Documento descartado: {doc}") #cómo manejar los documentos descartados? Guardar indice?
+
+        return predictions
+
+    
+    def apply_prompt(self, prompt):
+        attempts = 0
+        while attempts < 5:
             try:
                 outputs = self.llm_service.generate_text(prompt, max_new_tokens=350)
                 response_text = outputs[-1]["content"]
-
-                start_index = response_text.find('{')
-                end_index = response_text.rfind('}') + 1
-                json_text = response_text[start_index:end_index]
-                try:
-                    response_data = json.loads(json_text)
-                    posting_type = response_data["posting_type"]
-                    predictions.append(posting_type)
-                except:
-                    logging.warning(f"Formato incorrecto en la respuesta del modelo. Response: {response_text}")                
-            except Exception as error:
-                logging.error(f"Error generando texto: {error}")
-                return None
-            
-    def apply_prompt(self, prompt):
-        try:
-                outputs = self.llm_service.generate_text(prompt, max_new_tokens=350)
-                response_text = outputs[-1]["content"]
-                return response_text
-        except:
-            logging.error(f"Error generando texto")
-            return None
+                return response_text 
+            except Exception as e:
+                logging.error(f"Error generando texto en el intento {attempts + 1}: {e}")
+                attempts += 1
+        
+        logging.error("Fallo en todos los intentos para generar texto.")
+        return None
 
 
 # Worker recibe tarea, manda prompt, filtros y reglas de ingesta (qué campo, etl) a endpoint, 
 # API transforma (agregar métodos según uso), ingesta a elastic y envía reporte a worker
 
-# Jinja para templates de prompts
+#  topic_categories = """                  
+  #                         1)Category: RECIPES
+                          
+  #                         Definition: Posts related to the direct preparation of food or beverages.
+                          
+  #                         Key indicators:
+                          
+  #                         Includes ingredients and preparation steps.
+                          
+  #                         May mention cooking times/temperatures.
+                          
+  #                         Common phrases: "mix", "add", "bake", "recipe".
+                          
+  #                         Example:
+                          
+  #                         "Cake recipe: mix flour, eggs, and bake for 30 minutes." → RECIPES
+                          
+  #                         2)Category: NUTRITIONAL INFORMATION
+                          
+  #                         Definition: Informative content related to health and nutrition concepts.
+                          
+  #                         Key indicators:
+                          
+  #                         Explains the nutritional properties of foods or healthy habits.
+                          
+  #                         Use of scientific data or explicit health benefits.
+                          
+  #                         Common phrases: "benefits", "properties", "nutrition".
+                          
+  #                         Example:
+                          
+  #                         "Quinoa is rich in protein and contains all essential amino acids." → NUTRITIONAL INFORMATION
+                          
+  #                         3)Category: RECOMMENDATIONS
+                          
+  #                         Definition: Posts offering practical or promotional recommendations related to food, brands, or healthy lifestyles.
+                          
+  #                         Key indicators:
+                          
+  #                         Absence of detailed procedures or specific ingredients.
+                          
+  #                         General tips, organizational advice, or commercial mentions.
+                          
+  #                         Common phrases: "buy", "organize", "promotion".
+                          
+  #                         Example:
+                          
+  #                         "Buy seasonal fruits to save money and get better nutrients." → RECOMMENDATIONS
+                          
+  #                         4)Category: OTHERS
+                          
+  #                         Definition: Content not directly related to food preparation, nutrition, or practical recommendations.
+                          
+  #                         Key indicators:
+                          
+  #                         Focus on personal topics, landscapes, general events, or reflections unrelated to food topics.
+                          
+  #                         Example:
+                          
+  #                         "How beautiful the city is at this time of year." → OTHERS
+  # """
+ #  # prompt = {
+ #  #     "system_1": f"""You are a text classifier analyzing social media posts. You must assign ONE category according to these definitions: {topic_categories}
+ #  #                 Respond with one of the four categories (RECIPES, NUTRITIONAL INFORMATION, RECOMMENDATIONS, OTHERS) in JSON format: {{"type_of_posting": "CATEGORY"
+ #  #                 Rules:
+ #  #                 1. Only ONE category per post
+ #  #                 2. If more than one category applies, prioritize: RECIPES > NUTRITIONAL INFORMATION > RECOMMENDATIONS > OTHERS
+ #  #                 3. Respond in JSON format: {{"type_of_posting": "CATEGORY"}}""",
+ #  #     "user_1": f"Classify this post: {doc}"
+ #  # },
