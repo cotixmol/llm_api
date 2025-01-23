@@ -21,9 +21,10 @@ app.add_middleware(
 )
 
 app.include_router(router=topic_router, prefix=('/topics'), tags=["Topics"])
+app.include_router(router=topic_router, prefix=('/llm'), tags=["Llm"])
 
 def check_models():
-    minio_client.update_model(MODEL_NAME, MINIO_BUCKET)
+    minio_client.update_model_folder(MODEL_NAME, MINIO_BUCKET)
 
 @app.on_event("startup")
 async def startup_event():
