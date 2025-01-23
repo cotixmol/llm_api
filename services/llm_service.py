@@ -5,10 +5,10 @@ from transformers import AutoModelForCausalLM, AutoTokenizer, pipeline
 import logging
 
 
-class LlmException(Exception):
+class LLMException(Exception):
     pass
 
-class LlmService:
+class LLMService:
     def __init__(self, model_path: str) -> None:
         self.model = AutoModelForCausalLM.from_pretrained(model_path)
         self.tokenizer = AutoTokenizer.from_pretrained(model_path)
@@ -19,11 +19,11 @@ class LlmService:
                                  device=self.device,
                                  torch_dtype=torch.bfloat16)
     
-    def generate_text(self, prompt: str, max_new_tokens: int) -> str:
+    async def generate_text(self, prompt: str, max_new_tokens: int) -> str:
         try:
             return self.pipeline(prompt, max_new_tokens)[0]["generated_text"]
         except Exception as error:
             logging.error(f"Error generating text: {error}")
-            raise LlmException(f"Error generating text: {error}")
+            raise LLMException(f"Error generating text: {error}")
         
     
