@@ -12,3 +12,6 @@ __pycache__/
 venv/*
 venv
 test.py
+
+# models
+models/*

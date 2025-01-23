@@ -14,7 +14,6 @@ from sklearn.decomposition import PCA
 from hdbscan import HDBSCAN
 #from cuml.cluster import HDBSCAN
 #from cuml.manifold import UMAP
-import numpy as np
 import re
 
 CUSTOM_STOPWORDS = ["co", "rt", "dice", "min", "asi" "eh", "etc", "decis", 'http', "link", "bio", 'https', 'amp', "va", 'com', "si", "mas", "anos", "ano", "vos", "RT", "usted", "ustedes", "tenes", "tambien", "tan", "sos", "solo"]
@@ -58,6 +57,8 @@ class GetTopicChartsCase:
             filters=self.extra_args.model_dump()
         )
         self.query_repository.set_order(field="@timestamp", order="desc")
+        self.query_repository.set_order(field="created_at", order="desc")
+
 
         ### SEARCH DOCUMENTS ###
 
@@ -67,7 +68,6 @@ class GetTopicChartsCase:
         created_at_list, content_list, embedding_list = self.__prepare_data(documents_list)
 
         if not all((content_list, embedding_list)):
-            #logger.error("There are no documents to calculate topics")
             raise BertopicRepositoryException("There are no documents to calculate topics")
 
         bertopic_repository = BertopicRepository(

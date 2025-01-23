@@ -15,7 +15,7 @@ from core.objects.network_graph import NetworkGraph, NetworkCategory, NetworkLin
 from core.objects.trending_chart import Trend, TrendChart
 from core.objects.metric import Metric
 from services.elasticsearch_service import ElasticsearchService
-from repositories.query_repository import Query
+from core.repositories.query_repository import Query
 from api.config.logger import logger
 import typing
 import pandas as pd
@@ -68,7 +68,7 @@ class ElasticsearchRepository:
         ]
         return documents, search_results.last_sort_id
     
-    async def search_data(self, index_pattern: str, query: Query, max_ndocs: int = 0) -> typing.List[Document]:
+    async def search_data(self, index_pattern: str, query: Query) -> typing.List[Document]:
         total_hits = []
             
         standar_index = self.elasticsearch_service.standard_index(index=index_pattern)
@@ -77,9 +77,6 @@ class ElasticsearchRepository:
         last_sort = []
         i = 1
         while package_size == self.page_size:
-
-            if _N_DOCS >= max_ndocs and max_ndocs != 0:
-                break
 
             if last_sort:
                 query.set_search_after(last_sort)
@@ -99,7 +96,7 @@ class ElasticsearchRepository:
             
             last_sort = hits[-1]["sort"]
             total_hits.extend(hits)
-            _N_DOCS = len(total_hits) 
+
         documents = [
             Document(
                 **doc
@@ -109,6 +106,7 @@ class ElasticsearchRepository:
         return documents
 
     ### CHART METHODS ###
+    """
 
     async def get_index_data_preview_and_histogram(
             self,
@@ -524,3 +522,4 @@ class ElasticsearchRepository:
             )
         return library
 
+"""
