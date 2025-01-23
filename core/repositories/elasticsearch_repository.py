@@ -15,6 +15,8 @@ from core.objects.network_graph import NetworkGraph, NetworkCategory, NetworkLin
 from core.objects.trending_chart import Trend, TrendChart
 from core.objects.metric import Metric
 from services.elasticsearch_service import ElasticsearchService
+from core.repositories.query_repository import Query
+from api.config.logger import logger
 import typing
 import pandas as pd
 import numpy as np
@@ -27,6 +29,8 @@ class ElasticsearchRepository:
         self.elasticsearch_service = elasticsearch_service
         self.page_size = int(page_size)
 
+    ### SEARCH METHODS ###
+
     async def get_workspace_indexes(self,
                                     workspace: str) -> typing.List[Index]:
         workspace_indexes = await self.elasticsearch_service.get_indexes_information(
@@ -37,6 +41,72 @@ class ElasticsearchRepository:
                   size_bytes=index.pri_store_size)
             for index in workspace_indexes
         ]
+
+    async def get_aggs_data(self, index_pattern: str, body: typing.Dict) -> typing.Dict:
+        response = await self.elasticsearch_service.run_search_query(
+            index_pattern=index_pattern,
+            query=body
+        )
+        aggs_data = defaultdict(dict)
+        for agg_name, agg_result in response.aggregations.items():
+            aggs_data[agg_name] = {
+                item["key"].lower(): aggs_data[agg_name].get(item["key"].lower(), 0) + item["doc_count"]
+                for item in agg_result["buckets"] if item["key"]
+            }
+        return dict(aggs_data)
+    
+    async def get_index_data(self, index_pattern: str, body: dict ) -> typing.Tuple[typing.List[Document], typing.List]:
+        search_results = await self.elasticsearch_service.run_search_query(
+            index_pattern=index_pattern, query=body)
+        if not search_results.hits:
+            return ([], [])
+        documents = [
+            Document(
+                **doc
+            )
+            for doc in search_results.hits
+        ]
+        return documents, search_results.last_sort_id
+    
+    async def search_data(self, index_pattern: str, query: Query) -> typing.List[Document]:
+        total_hits = []
+            
+        standar_index = self.elasticsearch_service.standard_index(index=index_pattern)
+        query.set_size(self.page_size)
+        package_size = self.page_size
+        last_sort = []
+        i = 1
+        while package_size == self.page_size:
+
+            if last_sort:
+                query.set_search_after(last_sort)
+
+            es_response = self.elasticsearch_service.run_search_query(
+                index_pattern=standar_index, 
+                query=query.body
+            )
+
+            hits = es_response.hits
+            package_size = len(hits)
+            logger.debug(f"{package_size} documents brought in the page number {i} from the index: {standar_index}") 
+            i+=1
+            if not hits:
+                logger.info(f"No documents found for index {standar_index}")
+                break
+            
+            last_sort = hits[-1]["sort"]
+            total_hits.extend(hits)
+
+        documents = [
+            Document(
+                **doc
+            )
+            for doc in total_hits
+        ]
+        return documents
+
+    ### CHART METHODS ###
+    """
 
     async def get_index_data_preview_and_histogram(
             self,
@@ -76,38 +146,7 @@ class ElasticsearchRepository:
                 )
             )
         return Histogram(points=histogram_points)
-    
-    async def open_pit(self, index_pattern: str, keep: str) -> str:
-        return await self.elasticsearch_service.open_pit(index_pattern=index_pattern, keep=keep)
-    
-    async def close_pit(self, pit_id: str) -> None:
-        return await self.elasticsearch_service.close_pit(pit_id=pit_id)
-    
-    async def get_index_data_pit(self, query: dict ) -> typing.Tuple[typing.List[Document], typing.List]:
-        search_results = await self.elasticsearch_service.run_pit_search_query(query=query)
-        if not search_results.hits:
-            return ([], [])
-        documents = [
-            Document(
-                **doc
-            )
-            for doc in search_results.hits
-        ]
-        return documents, search_results.last_sort_id
         
-    async def get_index_data(self, index_pattern: str, body: dict ) -> typing.Tuple[typing.List[Document], typing.List]:
-        search_results = await self.elasticsearch_service.run_search_query(
-            index_pattern=index_pattern, query=body)
-        if not search_results.hits:
-            return ([], [])
-        documents = [
-            Document(
-                **doc
-            )
-            for doc in search_results.hits
-        ]
-        return documents, search_results.last_sort_id
-
     async def get_metric_timeline_chart(
             self,
             bucket: dict,
@@ -442,19 +481,6 @@ class ElasticsearchRepository:
             library.append(await self.get_table_interactions(data=response.hits))
         return library
 
-    async def get_aggs_data(self, index_pattern: str, body: typing.Dict) -> typing.Dict:
-        response = await self.elasticsearch_service.run_search_query(
-            index_pattern=index_pattern,
-            query=body
-        )
-        aggs_data = defaultdict(dict)
-        for agg_name, agg_result in response.aggregations.items():
-            aggs_data[agg_name] = {
-                item["key"].lower(): aggs_data[agg_name].get(item["key"].lower(), 0) + item["doc_count"]
-                for item in agg_result["buckets"] if item["key"]
-            }
-        return dict(aggs_data)
-
     async def get_trending_charts(
             self,
             current_dataset: typing.Dict,
@@ -496,5 +522,4 @@ class ElasticsearchRepository:
             )
         return library
 
-
-
+"""

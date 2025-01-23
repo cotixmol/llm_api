@@ -16,8 +16,6 @@ from core.repositories.bertopic_repository import BertopicRepositoryException
 
 topic_router = APIRouter()
 
-
-
 @topic_router.post(
         '/',
         response_model=BaseResponse[None, typing.Dict],
@@ -55,5 +53,4 @@ async def get_topic_report(
     except Exception as error:
         logger.error(f"{type(error)}: {error}")
         raise HTTPException(status_code=500, detail="It seems that there is not enough data to build topics")
-
 
