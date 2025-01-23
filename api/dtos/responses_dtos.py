@@ -9,3 +9,8 @@ class BaseResponse(BaseModel, typing.Generic[Data, Chart]):
     data: Data
     chart: Chart
     n_docs: typing.Optional[int]
+
+class LLMClassificationResponse(BaseModel, typing.Generic[Data, Chart]):
+    total_docs: int
+    updated_docs: int
+    

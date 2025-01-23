@@ -41,3 +41,12 @@ class TopicPreviewPayload(BaseModel):
     since_date: str
     to_date: str
     filters: typing.Optional[Filters] = None
+
+class LLMPreviewPayload(BaseModel):
+    index_pattern: str
+    since_date: str
+    to_date: str
+    filters: typing.Optional[Filters] = None
+    prompt: str
+    update_field: str
+

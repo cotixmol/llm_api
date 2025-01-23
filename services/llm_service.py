@@ -21,7 +21,7 @@ class LlmService:
     
     def generate_text(self, prompt: str, max_new_tokens: int) -> str:
         try:
-            return self.pipeline(prompt, max_new_tokens, do_sample=True, temperature=0.9)[0]["generated_text"]
+            return self.pipeline(prompt, max_new_tokens)[0]["generated_text"]
         except Exception as error:
             logging.error(f"Error generating text: {error}")
             raise LlmException(f"Error generating text: {error}")
