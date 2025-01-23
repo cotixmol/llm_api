@@ -1,10 +1,10 @@
 import typing
 import json
 import logging
-from services.llm_service import LlmService
+from services.llm_service import LLMService
 
 class LLMRepository:
-    def __init__(self, llm_service: LlmService):
+    def __init__(self, llm_service: LLMService):
         self.llm_service = llm_service
     
 

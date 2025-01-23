@@ -2,6 +2,7 @@ from fastapi import FastAPI
 from api.config.settings import VERSION
 from fastapi.middleware.cors import CORSMiddleware
 from api.routes.topic_router import topic_router
+from api.routes.llm_router import llm_router
 from api.config.secrets import (MINIO_BUCKET, MODEL_NAME)
 from api.config.settings import minio_client
 
@@ -21,7 +22,7 @@ app.add_middleware(
 )
 
 app.include_router(router=topic_router, prefix=('/topics'), tags=["Topics"])
-app.include_router(router=topic_router, prefix=('/llm'), tags=["Llm"])
+app.include_router(router=llm_router, prefix=('/llm'), tags=["LLM"])
 
 def check_models():
     minio_client.update_model_folder(MODEL_NAME, MINIO_BUCKET)

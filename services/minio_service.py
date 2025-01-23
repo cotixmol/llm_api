@@ -17,29 +17,6 @@ class MinIOClient:
                             secret_key=minio_secret_key,
                             secure=False)
 
-    def get_file(self, bucket: str, file: str) -> any:
-        object = self.client.get_object(bucket_name=bucket, object_name=file)
-        return object
-
-    def update_model(self, model_name: str, bucket: str) -> bool:
-        logging.info(f"Updating model {model_name}")
-        model_path = os.path.join(f"{os.getcwd()}/models/",
-                                  f"{model_name}.pickle")
-        if os.path.isfile(model_path):
-            logging.info("Model already exist")
-            return True
-        try:
-            model_file = self.get_file(bucket=bucket,
-                                       file=f"{model_name}.pickle")
-            print("found new model", model_file)
-            with open(model_path, 'wb') as f:
-                f.write(model_file.read())
-            logging.info("Model updated")
-            return True
-        except S3Error as error:
-            logging.error(f"{error}")
-            raise MinIOException(error)
-
     def update_model_folder(self, bucket: str, model_name: str) -> None:
         logging.info(f"Updating model {model_name}")
         # folder that stores the models

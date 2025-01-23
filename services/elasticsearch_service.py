@@ -1,7 +1,7 @@
-# services/elasticsearch_service.py
-import typing
-from elasticsearch import Elasticsearch, NotFoundError, BadRequestError, ConnectionTimeout
-from api.dtos.elasticsearch_dtos import IndexStatus, SearchResponse
+from typing import List, Dict
+from elasticsearch import Elasticsearch, NotFoundError, BadRequestError
+from elasticsearch.helpers import streaming_bulk, parallel_bulk, bulk
+from api.dtos.elasticsearch_dtos import SearchResponse
 import logging
 
 
@@ -18,22 +18,6 @@ class ElasticsearchService:
             retry_on_timeout=True,
             max_retries=5,
             verify_certs=False)
-
-    async def get_indexes_information(
-            self, index_patern: str) -> typing.List[IndexStatus]:
-
-        indexes_status = self.client.cat.indices(
-            index=index_patern,
-            bytes='b',
-            format="json"
-        )
-        return [
-            IndexStatus(health=index["health"],
-                        index=index["index"],
-                        docs_count=index["docs.count"],
-                        pri_store_size=index["pri.store.size"])
-            for index in indexes_status
-        ]
 
     async def run_search_query(
         self,
@@ -61,3 +45,53 @@ class ElasticsearchService:
                 raise ElasticsearchException(f"ElasticService error: Bad query. Check that the index pattern is correct")
             aggs = search_results['aggregations']
         return SearchResponse(hits=hits, aggregations=aggs, total_hits=total_hits)
+    
+    async def run_helpers_bulk(
+            self,
+            es_index_list: List[str],
+            doc_id_list: List[str],
+            data_to_update: List[Dict],
+            bulk_method: int = 1,
+            bulk_size: int = 500):
+        """toma una lista de es_id y doc_id y actualiza dentro de elastic en nuevo campo
+
+        Args:
+            es_index_list (List[str]): index column
+            doc_id_list (List[str]): document id column
+            data_to_update (List[dict]): list of ojects with data to update. ej: [{"token": "token_value"}]
+            bulk_method (int): 0 for bulk, 1 for parallel_bulk, 2 for streaming_bulk. Defaults to 1.
+            bulk_size (int): size of the bulk. Defaults to 500.
+        """
+
+        actions = [{"_op_type": "update", "_index": idx, "_id": doc_id, "doc": update_data} 
+                   for idx, doc_id, update_data 
+                   in zip(es_index_list, doc_id_list, data_to_update)]
+        
+        try:
+            failures = 0            
+
+            match bulk_method:
+                case 0:
+                    response = bulk(client = self.client, 
+                        actions = actions, 
+                        chunk_size = bulk_size)
+                    errors = len(response[1])
+                    failures += errors
+                case 1:
+                    for success, info in parallel_bulk(client = self.client, 
+                                        actions = actions, 
+                                        chunk_size = bulk_size):
+                        if not success:
+                            failures += 1
+                case 2:
+                    for success, info in streaming_bulk(client = self.client, 
+                                        actions = actions, 
+                                        chunk_size = bulk_size):
+                        if not success:
+                            failures += 1
+            logging.info(f"Ingest done with {failures} failures.")
+            return            
+        except Exception as e:
+            msg = f"An error ocurred {e}"
+            raise ElasticsearchException(msg)
+
