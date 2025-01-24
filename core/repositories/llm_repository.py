@@ -75,7 +75,7 @@ class LLMRepository:
         logging.error(f"No se pudo generar una respuesta válida después de {MAX_ATTEMPTS} intentos")
         return None, None   
     
-    def apply_prompt_classification(self, prompt_template, task_key, docs_list: typing.List[str] = None) -> str:
+    def apply_prompt_classification(self, prompt_template, task_key, docs_list: typing.List[str] = None) -> str: #BATCHES
 
         if not docs_list:
             logging.error("docs_list no puede ser None o vacío.")

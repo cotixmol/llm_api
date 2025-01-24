@@ -10,10 +10,10 @@ class BaseResponse(BaseModel, typing.Generic[Data, Chart]):
     chart: Chart
     n_docs: typing.Optional[int]
 
-class LLMClassificationResponse(BaseModel, typing.Generic[Data, Chart]):
+class LLMClassificationResponse(BaseModel): #######!!!!!!!!!!
     total_docs: int
     updated_docs: int
     
-class LLMPromptResponse(BaseModel, typing.Generic[Data, Chart]):
+class LLMPromptResponse(BaseModel): ############!!!!!!!!!
     response: str
     

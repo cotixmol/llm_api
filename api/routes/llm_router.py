@@ -11,12 +11,15 @@ from factories.repositories.query_repository_factory import get_query_repository
 from factories.repositories.lllm_repository_factory import get_llm_repository
 from services.elasticsearch_service import ElasticsearchException
 from core.cases.get_prompt_response import GetPromptResponseCase
+from api.dtos.responses_dtos import LLMPromptResponse
+from api.dtos.requests_dtos import LLMPromptPreviewPayload
+from core.cases.get_prompt_response2 import GetPromptResponseCase2
 
 
 llm_router = APIRouter()
 
 @llm_router.post(
-        '/llm',
+        '/classification',
         response_model=LLMClassificationResponse,
         response_model_exclude_none=True
     )
@@ -52,3 +55,26 @@ async def get_classification_ipcva(
     except Exception as error:
         logger.error(f"{type(error)}: {error}")
         raise HTTPException(status_code=500, detail="It seems that there is not enough data to build topics")
+
+
+@llm_router.post(
+        '/prompt',
+        response_model=LLMPromptResponse,
+        response_model_exclude_none=True
+    )
+async def get_llm_prompt(
+    parameters: LLMPromptPreviewPayload,
+    llm_repository: LLMRepository = Depends(
+        get_llm_repository
+    )
+) -> LLMPromptResponse:
+    try:
+        llm_case = GetPromptResponseCase2(
+            llm_repository=llm_repository,
+            prompt=parameters.prompt
+        )
+        response = await llm_case()
+        return response
+    except Exception as error:
+        logger.error(f"{type(error)}: {error}")
+        raise HTTPException(status_code=500, detail="It seems that IA is not available right now. Please try again later.")
