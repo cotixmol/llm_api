@@ -58,10 +58,10 @@ class GetPromptResponseCase:
         self.query_repository.set_order(field="created_at", order="desc")
 
         ### SEARCH DOCUMENTS ###
-        documents_list = self.es_repository.get_paginated_data(query = self.query_repository, index_pattern=self.index_pattern)
+        documents_list = await self.es_repository.get_paginated_data(query = self.query_repository, index_pattern=self.index_pattern)
 
         ### MAKE CLASSIFICATION ###
-        predictions_list = self.llm_repository.apply_prompt_classification(prompt=self.prompt, task_key=self.task_key, docs_list=documents_list)
+        predictions_list = await self.llm_repository.apply_prompt_classification(prompt=self.prompt, task_key=self.task_key, docs_list=documents_list)
         
 
         ### UPDATE DOCUMENTS ###

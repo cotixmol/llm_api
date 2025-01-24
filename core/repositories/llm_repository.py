@@ -75,7 +75,7 @@ class LLMRepository:
         logging.error(f"No se pudo generar una respuesta válida después de {MAX_ATTEMPTS} intentos")
         return None, None   
     
-    def apply_prompt_classification(self, prompt_template, task_key, docs_list: typing.List[str] = None) -> str: #BATCHES
+    async def apply_prompt_classification(self, prompt_template, task_key, docs_list: typing.List[str] = None) -> str: #BATCHES
 
         if not docs_list:
             logging.error("docs_list no puede ser None o vacío.")
@@ -92,7 +92,7 @@ class LLMRepository:
 
             while attempts < 5 and not success:
                 try:
-                    outputs = self.llm_service.generate_text(prompt, max_new_tokens=20)
+                    outputs = await self.llm_service.generate_text(prompt, max_new_tokens=20)
                     try:
                         response_data = self.parse_model_response(outputs[-1]["content"])
                         label = response_data[task_key]
@@ -111,11 +111,11 @@ class LLMRepository:
         return predictions
 
     
-    def apply_prompt(self, prompt):
+    async def apply_prompt(self, prompt):
         attempts = 0
         while attempts < 5:
             try:
-                outputs = self.llm_service.generate_text(prompt, max_new_tokens=350)
+                outputs = await self.llm_service.generate_text(prompt, max_new_tokens=350)
                 response_text = outputs[-1]["content"]
                 return response_text 
             except Exception as e:
