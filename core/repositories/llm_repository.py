@@ -115,9 +115,8 @@ class LLMRepository:
         attempts = 0
         while attempts < 5:
             try:
-                outputs = await self.llm_service.generate_text(prompt, max_new_tokens=350)
-                response_text = outputs[-1]["content"]
-                return response_text 
+                output = await self.llm_service.generate_text(prompt, max_new_tokens=50)
+                return output 
             except Exception as e:
                 logging.error(f"Error generando texto en el intento {attempts + 1}: {e}")
                 attempts += 1
