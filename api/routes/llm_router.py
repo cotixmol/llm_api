@@ -1,7 +1,7 @@
 import typing
 from fastapi import APIRouter, HTTPException, Depends
 from api.dtos.responses_dtos import LLMClassificationResponse
-from api.dtos.requests_dtos import LLMPreviewPayload
+from api.dtos.requests_dtos import LLMClassificationPreviewPayload
 from api.config.logger import logger
 from core.repositories.elasticsearch_repository import ElasticsearchRepository
 from core.repositories.query_repository import Query
@@ -10,10 +10,10 @@ from factories.repositories.elasticsearch_repository_factory import get_elastics
 from factories.repositories.query_repository_factory import get_query_repository
 from factories.repositories.lllm_repository_factory import get_llm_repository
 from services.elasticsearch_service import ElasticsearchException
-from core.cases.get_prompt_response import GetPromptResponseCase
+from core.cases.get_classification_response import GetClassificationResponseCase
 from api.dtos.responses_dtos import LLMPromptResponse
 from api.dtos.requests_dtos import LLMPromptPreviewPayload
-from core.cases.get_prompt_response2 import GetPromptResponseCase2
+from core.cases.get_prompt_response import GetPromptResponseCase
 
 
 llm_router = APIRouter()
@@ -24,7 +24,7 @@ llm_router = APIRouter()
         response_model_exclude_none=True
     )
 async def get_classification_ipcva(
-    parameters: LLMPreviewPayload,
+    parameters: LLMClassificationPreviewPayload,
     es_repository: ElasticsearchRepository = Depends(
         get_elasticsearch_repository),
     query_repository: Query = Depends(
@@ -35,7 +35,7 @@ async def get_classification_ipcva(
     )
 ) -> LLMClassificationResponse:
     try:
-        llm_case = GetPromptResponseCase(
+        llm_case = GetClassificationResponseCase(
             es_repository=es_repository,
             query_repository=query_repository,
             llm_repository=llm_repository,
@@ -69,7 +69,7 @@ async def get_llm_prompt(
     )
 ) -> LLMPromptResponse:
     try:
-        llm_case = GetPromptResponseCase2(
+        llm_case = GetPromptResponseCase(
             llm_repository=llm_repository,
             prompt=parameters.prompt
         )
