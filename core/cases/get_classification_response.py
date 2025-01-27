@@ -58,18 +58,19 @@ class GetClassificationResponseCase:
         self.query_repository.set_order(field="created_at", order="desc")
 
         ### SEARCH DOCUMENTS ###
-        documents_list = await self.es_repository.get_paginated_data(query = self.query_repository, index_pattern=self.index_pattern)
+        hits = await self.es_repository.get_paginated_data(query = self.query_repository, index_pattern=self.index_pattern)
 
         ### MAKE CLASSIFICATION ###
-        predictions_list = await self.llm_repository.apply_prompt_classification(prompt=self.prompt, task_key=self.task_key, docs_list=documents_list)
+        predictions_dict = await self.llm_repository.apply_prompt_classification(prompt=self.prompt, task_key=self.task_key, docs=hits)
         
 
         ### UPDATE DOCUMENTS ###
-        self.es_repository.update_documents_bulk(documents_list, predictions_list, self.update_field)
-        #CAMPOS QUE ESPERA EL UPDATE Y QUE TENEMOS QUE TRAERNOS:
-        # es_index_list: List[str], ¿LISTA DE STRINGS? ESTAMOS MANEJANDO UN SÓLO INDEX EN PPIO
-        # doc_id_list: List[str], ¿HAY QUE TRAERSE LOS IDS DE LOS DOCUMENTOS EXPLICITAMENTE?
-        # data_to_update: List[Dict], {update_field: prediction}
+        self.es_repository.update_documents_bulk(
+            es_index_list=predictions_dict["es_index_list"], 
+            data_to_update=predictions_dict["classification_list"],
+            doc_id_list=predictions_dict["doc_id_list"]
+            )
+
 
         ### REPORT TO WORKER ###
         return 

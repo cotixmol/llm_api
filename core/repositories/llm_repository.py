@@ -2,6 +2,7 @@ import typing
 import json
 import logging
 from services.llm_service import LLMService
+from typing import List 
 
 class LLMRepository:
     def __init__(self, llm_service: LLMService):
@@ -87,19 +88,41 @@ class LLMRepository:
         prompt_template: typing.Dict[str, str],
         task_key: str,
         valid_labels: typing.List[str],
-        docs_list: typing.List[str] = None,
+        docs: List[dict] = None,
         batch_size: int = 32,
-    ) -> typing.List[typing.Optional[str]]:
+    ) -> typing.List[typing.Dict[str, typing.Optional[str]]]:
         
-        if not docs_list:
+        if not docs:
             logging.error("docs_list no puede ser None o vacío.")
             return []
         if not prompt_template:
             logging.error("El template de prompt no puede ser None o vacío.")
             return []
+        
+        es_index_list = [] #Se puede tener más de un índice?
+        doc_id_list = []
+        content = []
+        skiped_es_index_list = []#idem
+        skiped_doc_id_list = []
+        skiped_category = []
 
-        predictions = [None] * len(docs_list)
-        pending_indices = list(range(len(docs_list))) 
+        predictions = [None] * len(docs)
+        pending_indices = list(range(len(docs))) 
+
+        for doc in docs:
+            # check if content exits in "_source" dict
+            doc_content = doc["_source"]["content"] if "content" in doc["_source"] else None
+            # check if content is None, an empty string, or the word "empty"
+            if not doc_content or doc_content=="empty":
+                skiped_es_index_list.append(doc["_index"])
+                skiped_doc_id_list.append(doc["_id"])
+                skiped_category.append({
+                    task_key: None
+                })
+                continue
+            content.append(doc_content)
+            es_index_list.append(doc["_index"])
+            doc_id_list.append(doc["_id"])
 
         for attempt in range(5): 
             if not pending_indices:
@@ -109,7 +132,7 @@ class LLMRepository:
 
             for i in range(0, len(pending_indices), batch_size):
                 batch_indices = pending_indices[i:i + batch_size]
-                batch_prompts = [f"{prompt_template['system_1']}\n{prompt_template['user_1'].format(doc=docs_list[idx])}" for idx in batch_indices]
+                batch_prompts = [f"{prompt_template['system_1']}\n{prompt_template['user_1'].format(doc=doc_content[idx])}" for idx in batch_indices]
 
                 try:
                     outputs = await self.llm_service.generate_text(batch_prompts, max_new_tokens=40)
@@ -156,10 +179,16 @@ class LLMRepository:
             pending_indices = [idx for idx in pending_indices if predictions[idx] is None]
 
         for idx in pending_indices:
-            logging.error(f"Documento descartado tras 5 intentos: {docs_list[idx]}")
+            logging.error(f"Documento descartado tras 5 intentos: {doc_content[idx]}")
 
-        return predictions
+        category_list = [{task_key: prediction} for prediction in predictions]
 
+        return {
+        "es_index_list": es_index_list + skiped_es_index_list,
+        "doc_id_list": doc_id_list + skiped_doc_id_list,
+        "classification_list": category_list + skiped_category
+         }
+    
 
     
     async def apply_prompt(self, prompt: typing.List[typing.Dict[str, str]]) -> typing.Optional[str]:
