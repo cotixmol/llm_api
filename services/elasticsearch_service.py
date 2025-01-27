@@ -43,7 +43,7 @@ class ElasticsearchService:
             logging.error(f"ERROR: {client_errors}")
             raise ElasticsearchException(client_errors)
         total_hits = search_results['hits']['total']['value']
-        hits = [hit['_source'] for hit in search_results['hits']['hits']]
+        hits = [hit for hit in search_results['hits']['hits']]
         aggs = {}
         if query.get("aggs"):
             if "aggregations" not in search_results.keys():
@@ -51,12 +51,12 @@ class ElasticsearchService:
             aggs = search_results['aggregations']
         return SearchResponse(hits=hits, aggregations=aggs, total_hits=total_hits)
     
-    async def run_helpers_bulk(
+    async def run_helpers_bulk_2(
             self,
             es_index_list: List[str],
             doc_id_list: List[str],
             data_to_update: List[Dict],
-            bulk_method: int = 1,
+            bulk_method: int = 2,
             bulk_size: int = 500):
         """toma una lista de es_id y doc_id y actualiza dentro de elastic en nuevo campo
 
@@ -77,11 +77,11 @@ class ElasticsearchService:
 
             match bulk_method:
                 case 0:
-                    response = await async_bulk(client = self.client, 
+                    async_bulk(client = self.client, 
                         actions = actions, 
                         chunk_size = bulk_size)
-                    errors = len(response[1])
-                    failures += errors
+                    #errors = len(response[1])
+                    #failures += errors
                 case 1:
                     for success, info in parallel_bulk(client = self.client, 
                                         actions = actions, 
@@ -99,4 +99,35 @@ class ElasticsearchService:
         except Exception as e:
             msg = f"An error ocurred {e}"
             raise ElasticsearchException(msg)
+        
+    async def bulk_update(self, es_index_list: List[str],
+            doc_id_list: List[str],
+            data_to_update: List[Dict], chunk_size: int = 500) -> bool:
+        """
+        Perform a bulk update using async_streaming_bulk.
+
+        Args:
+            actions (List[Dict]): List of actions to perform (e.g., [{"_index": "myindex", "_id": "1", "doc": {...}}]).
+            chunk_size (int): Number of actions to process in each chunk. Defaults to 500.
+
+        Returns:
+            bool: True if all operations were successful, False otherwise.
+        """
+
+        actions = [{"_op_type": "update", "_index": idx, "_id": doc_id, "doc": update_data} 
+                   for idx, doc_id, update_data 
+                   in zip(es_index_list, doc_id_list, data_to_update)]
+        try:
+            success = True
+            async for ok, result in async_streaming_bulk(self.client, actions, chunk_size=chunk_size):
+                action, res = result.popitem()
+                if not ok:
+                    success = False
+                    logging.error(f"Failed to {action} document: {res}")
+                else:
+                    logging.info(f"Successfully {action} document: {res}")
+            return success
+        except Exception as e:
+            logging.error(f"Error during bulk operation: {e}")
+            return False
 

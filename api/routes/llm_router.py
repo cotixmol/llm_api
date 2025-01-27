@@ -45,7 +45,8 @@ async def get_classification_ipcva(
             extra_args=parameters.filters,
             update_field= parameters.update_field,
             task_key= parameters.task_key,
-            prompt=parameters.prompt
+            prompt=parameters.prompt,
+            valid_labels=parameters.valid_labels
         )
         response = await llm_case()
         return response
@@ -54,7 +55,7 @@ async def get_classification_ipcva(
         raise HTTPException(status_code=404, detail=f"{error}")
     except Exception as error:
         logger.error(f"{type(error)}: {error}")
-        raise HTTPException(status_code=500, detail="It seems that there is not enough data to build topics")
+        raise HTTPException(status_code=500, detail="Error!!")
 
 
 @llm_router.post(

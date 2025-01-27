@@ -47,12 +47,10 @@ class LLMClassificationPreviewPayload(BaseModel):
     since_date: str
     to_date: str
     filters: typing.Optional[Filters] = None
-    prompt: str
+    prompt: dict
     update_field: str
     task_key: str
+    valid_labels: typing.List[str]
 
 class LLMPromptPreviewPayload(BaseModel):
-    prompt: str
-
-class LLMClassificationPreviewPayload(BaseModel):
     prompt: str

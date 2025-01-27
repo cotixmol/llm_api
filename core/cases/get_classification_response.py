@@ -22,7 +22,8 @@ class GetClassificationResponseCase:
             extra_args: dict,
             prompt: str, 
             task_key: str,
-            update_field:str
+            update_field:str,
+            valid_labels: List[str]
     ):
         since_iso_time = iso8601.parse_date(since_date).isoformat()
         to_iso_time = iso8601.parse_date(to_date).isoformat()
@@ -36,6 +37,7 @@ class GetClassificationResponseCase:
         self.prompt = prompt
         self.task_key = task_key
         self.update_field = update_field
+        self.valid_labels = valid_labels
 
     async def __call__(self) -> LLMClassificationResponse:
         ### CREATE QUERY ###
@@ -56,27 +58,31 @@ class GetClassificationResponseCase:
         )
         self.query_repository.set_order(field="@timestamp", order="desc")
         self.query_repository.set_order(field="created_at", order="desc")
+        try:
+            ### SEARCH DOCUMENTS ###
+            hits = await self.es_repository.get_paginated_data(query = self.query_repository, index_pattern=self.index_pattern)
 
-        ### SEARCH DOCUMENTS ###
-        hits = await self.es_repository.get_paginated_data(query = self.query_repository, index_pattern=self.index_pattern)
+            ### MAKE CLASSIFICATION ###
+            predictions_dict = await self.llm_repository.apply_prompt_classification(prompt_template=self.prompt, task_key=self.task_key, docs=hits, valid_labels=self.valid_labels, update_field=self.update_field)
+            
+            print(predictions_dict)
 
-        ### MAKE CLASSIFICATION ###
-        predictions_dict = await self.llm_repository.apply_prompt_classification(prompt=self.prompt, task_key=self.task_key, docs=hits)
+            ### UPDATE DOCUMENTS ###
+            await self.es_repository.update_documents_bulk(
+                es_index_list=predictions_dict["es_index_list"], 
+                data_to_update=predictions_dict["classification_list"],
+                doc_id_list=predictions_dict["doc_id_list"]
+                )
+        finally:
+            ### CLOSE CLIENT ###
+            await self.es_repository.close_client()
+            logger.info(f"Client closed")
         
-
-        ### UPDATE DOCUMENTS ###
-        self.es_repository.update_documents_bulk(
-            es_index_list=predictions_dict["es_index_list"], 
-            data_to_update=predictions_dict["classification_list"],
-            doc_id_list=predictions_dict["doc_id_list"]
-            )
-
-
-        ### CLOSE CLIENT ###
-        await self.es_repository.close_client()
-        logger.info(f"Client closed")
         ### REPORT TO WORKER ###
 
-        
+        response = LLMClassificationResponse(
+            total_docs=len(predictions_dict["classification_list"]),
+            updated_docs=len([doc for doc in predictions_dict["classification_list"] if doc is not None])
+        )
 
-        return 
+        return response

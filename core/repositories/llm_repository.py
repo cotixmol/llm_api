@@ -87,9 +87,10 @@ class LLMRepository:
         self,
         prompt_template: typing.Dict[str, str],
         task_key: str,
+        update_field: str,
         valid_labels: typing.List[str],
         docs: List[dict] = None,
-        batch_size: int = 32,
+        batch_size: int = 2,
     ) -> typing.List[typing.Dict[str, typing.Optional[str]]]:
         
         if not docs:
@@ -111,18 +112,18 @@ class LLMRepository:
 
         for doc in docs:
             # check if content exits in "_source" dict
-            doc_content = doc["_source"]["content"] if "content" in doc["_source"] else None
+            doc_content = doc.content if doc.content else "empty"
             # check if content is None, an empty string, or the word "empty"
             if not doc_content or doc_content=="empty":
-                skiped_es_index_list.append(doc["_index"])
-                skiped_doc_id_list.append(doc["_id"])
+                skiped_es_index_list.append(doc.index)
+                skiped_doc_id_list.append(doc.id)
                 skiped_category.append({
                     task_key: None
                 })
                 continue
             content.append(doc_content)
-            es_index_list.append(doc["_index"])
-            doc_id_list.append(doc["_id"])
+            es_index_list.append(doc.index)
+            doc_id_list.append(doc.id)
 
         for attempt in range(5): 
             if not pending_indices:
@@ -130,9 +131,23 @@ class LLMRepository:
 
             logging.info(f"Intento {attempt + 1} con {len(pending_indices)} documentos pendientes.")
 
+            # iteramos sobre batches de documentos de tamaño batch_size    
             for i in range(0, len(pending_indices), batch_size):
                 batch_indices = pending_indices[i:i + batch_size]
-                batch_prompts = [f"{prompt_template['system_1']}\n{prompt_template['user_1'].format(doc=doc_content[idx])}" for idx in batch_indices]
+                #batch_prompts = List[List[Dict[str, str]]]
+                batch_prompts = [
+                    [
+                        {
+                            "role": "system",
+                            "content": prompt_template["system"],
+                        },
+                        {
+                            "role": "user",
+                            "content": prompt_template["user"].format(doc=content[idx])
+                        }
+                    ]
+                    for idx in batch_indices
+                ]
 
                 try:
                     outputs = await self.llm_service.generate_text(batch_prompts, max_new_tokens=40)
@@ -181,7 +196,7 @@ class LLMRepository:
         for idx in pending_indices:
             logging.error(f"Documento descartado tras 5 intentos: {doc_content[idx]}")
 
-        category_list = [{task_key: prediction} for prediction in predictions]
+        category_list = [{update_field: prediction} for prediction in predictions]
 
         return {
         "es_index_list": es_index_list + skiped_es_index_list,

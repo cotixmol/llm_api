@@ -5,6 +5,7 @@ from api.config.logger import logger
 import typing
 from collections import defaultdict
 from typing import List, Dict
+import asyncio
 
 class ElasticsearchRepository:
 
@@ -51,22 +52,26 @@ class ElasticsearchRepository:
             if last_sort:
                 query.set_search_after(last_sort)
 
-            es_response = self.elasticsearch_service.run_search_query(
+            es_response = await self.elasticsearch_service.run_search_query(
                 index_pattern=index_pattern, 
                 query=query.body
             )
 
             hits = es_response.hits
             package_size = len(hits)
-            logger.debug(f"{package_size} documents brought in the page number {i} from the index: {index_pattern}") 
+            logger.info(f"{package_size} documents brought in the page number {i} from the index: {index_pattern}") 
             i+=1
             if not hits:
                 logger.info(f"No documents found for index {index_pattern}")
                 break
             
             last_sort = hits[-1]["sort"]
-            total_hits.extend(hits)
-
+            hits_data = []
+            for hit in hits:
+                flat_hit = {'_index': hit['_index'], '_id': hit['_id']}
+                flat_hit.update(hit['_source'])
+                hits_data.append(flat_hit)
+            total_hits.extend(hits_data)
         documents = [
             Document(
                 **doc
@@ -82,15 +87,14 @@ class ElasticsearchRepository:
         data_to_update: List[Dict],
         bulk_method: int = 1,
         bulk_size: int = 500):
-
-        self.elasticsearch_service.run_helpers_bulk(
+        
+        is_successful = await self.elasticsearch_service.bulk_update(
             es_index_list=es_index_list,
             doc_id_list=doc_id_list,
             data_to_update=data_to_update,
-            bulk_method=bulk_method,
-            bulk_size=bulk_size
+            chunk_size=bulk_size
          )
-        #¿Debería retornar algo?
+        print(is_successful)
 
     async def close_client(self):
         response = await self.elasticsearch_service.close()

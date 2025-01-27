@@ -20,7 +20,6 @@ class LLMService:
     
     async def generate_text(self, prompt: str, max_new_tokens: int) -> str:
         try:
-            print(f"Prompt: {prompt}")
             print(self.device)
             response = self.pipe(prompt, max_new_tokens=max_new_tokens)
             return response
