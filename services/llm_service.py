@@ -1,6 +1,4 @@
 import torch
-from elasticsearch import Elasticsearch, NotFoundError, BadRequestError, ConnectionTimeout
-from api.dtos.elasticsearch_dtos import IndexStatus, SearchResponse
 from transformers import AutoModelForCausalLM, AutoTokenizer, pipeline
 import logging
 
@@ -17,7 +15,8 @@ class LLMService:
                                 model=self.model, 
                                 tokenizer=self.tokenizer, 
                                 device=self.device,
-                                torch_dtype=torch.bfloat16)
+                                torch_dtype=torch.bfloat16,
+                                return_full_text=False)
     
     async def generate_text(self, prompt: str, max_new_tokens: int) -> str:
         try:
