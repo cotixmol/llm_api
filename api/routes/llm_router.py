@@ -8,7 +8,7 @@ from core.repositories.query_repository import Query
 from core.repositories.llm_repository import LLMRepository
 from factories.repositories.elasticsearch_repository_factory import get_elasticsearch_repository
 from factories.repositories.query_repository_factory import get_query_repository
-from factories.repositories.lllm_repository_factory import get_llm_repository
+from factories.repositories.llm_repository_factory import get_llm_repository
 from services.elasticsearch_service import ElasticsearchException
 from core.cases.get_classification_response import GetClassificationResponseCase
 from api.dtos.responses_dtos import LLMPromptResponse

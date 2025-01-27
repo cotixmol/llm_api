@@ -8,12 +8,19 @@ class LLMRepository:
         self.llm_service = llm_service
 
     @staticmethod
-    def parse_model_response(response_text: str) -> typing.Optional[dict]:
+    def parse_model_response(response_text: str, valid_labels: typing.List[str]) -> typing.Optional[dict]:
         try:
             start_index = response_text.find('{')
             end_index = response_text.rfind('}') + 1
             json_text = response_text[start_index:end_index]
-            return json.loads(json_text)
+            response_data = json.loads(json_text)
+            
+            # Validar que el valor de la clave 'task_key' esté en las etiquetas válidas
+            for key, value in response_data.items():
+                if value not in valid_labels:
+                    logging.warning(f"Etiqueta no válida '{value}' para la clave '{key}'.")
+                    return None
+            return response_data
         except (ValueError, json.JSONDecodeError):
             logging.warning(f"Formato incorrecto en la respuesta del modelo. Response: {response_text}")
             return None
@@ -75,7 +82,15 @@ class LLMRepository:
         logging.error(f"No se pudo generar una respuesta válida después de {MAX_ATTEMPTS} intentos")
         return None, None   
     
-    async def apply_prompt_classification(self, prompt_template, task_key, docs_list: typing.List[str] = None, batch_size=32) -> typing.List[typing.Optional[str]]:
+    async def apply_prompt_classification(
+        self,
+        prompt_template: typing.Dict[str, str],
+        task_key: str,
+        valid_labels: typing.List[str],
+        docs_list: typing.List[str] = None,
+        batch_size: int = 32,
+    ) -> typing.List[typing.Optional[str]]:
+        
         if not docs_list:
             logging.error("docs_list no puede ser None o vacío.")
             return []
@@ -118,7 +133,7 @@ class LLMRepository:
                         logging.debug(f"Texto generado para el documento {idx}: {generated_text}")
 
                         # Parsear el texto generado
-                        response_data = self.parse_model_response(generated_text)
+                        response_data = self.parse_model_response(generated_text, valid_labels)
 
                         # Validar si el response_data es un diccionario y contiene la clave esperada
                         if not isinstance(response_data, dict):
@@ -147,7 +162,7 @@ class LLMRepository:
 
 
     
-    async def apply_prompt(self, prompt):
+    async def apply_prompt(self, prompt: typing.List[typing.Dict[str, str]]) -> typing.Optional[str]:
         attempts = 0
         while attempts < 5:
             try:
