@@ -97,18 +97,46 @@ class LLMRepository:
                 batch_prompts = [f"{prompt_template['system_1']}\n{prompt_template['user_1'].format(doc=docs_list[idx])}" for idx in batch_indices]
 
                 try:
-                    outputs = await self.llm_service.generate_text(batch_prompts, max_new_tokens=20)
-
-                    for idx, output in zip(batch_indices, outputs):
-                        try:
-                            response_data = self.parse_model_response(output[0]['generated_text'])
-                            label = response_data[task_key]
-                            predictions[idx] = label  
-                        except Exception as parse_error:
-                            logging.warning(f"Formato incorrecto para el documento {idx}. Error: {parse_error}")
-
+                    outputs = await self.llm_service.generate_text(batch_prompts, max_new_tokens=40)
                 except Exception as batch_error:
                     logging.error(f"Error procesando el batch {i // batch_size + 1}: {batch_error}")
+
+
+                for idx, output in zip(batch_indices, outputs):
+                    try:
+                        # Validar si el output es una lista y contiene al menos un elemento
+                        if not isinstance(output, list) or len(output) == 0:
+                            logging.warning(f"Output inesperado para el documento {idx}. Output: {output}")
+                            continue
+
+                        # Validar si el primer elemento contiene la clave 'generated_text'
+                        if 'generated_text' not in output[0]:
+                            logging.warning(f"El output no contiene 'generated_text' para el documento {idx}. Output: {output[0]}")
+                            continue
+
+                        generated_text = output[0]['generated_text']
+                        logging.debug(f"Texto generado para el documento {idx}: {generated_text}")
+
+                        # Parsear el texto generado
+                        response_data = self.parse_model_response(generated_text)
+
+                        # Validar si el response_data es un diccionario y contiene la clave esperada
+                        if not isinstance(response_data, dict):
+                            logging.warning(f"Formato inesperado del response_data para el documento {idx}. Response: {response_data}")
+                            continue
+
+                        if task_key not in response_data:
+                            logging.warning(f"El response_data no contiene la clave '{task_key}' para el documento {idx}. Response: {response_data}")
+                            continue
+
+                        # Extraer la etiqueta y asignarla a las predicciones
+                        label = response_data[task_key]
+                        predictions[idx] = label
+                        logging.info(f"Predicción exitosa para el documento {idx}: {label}")
+
+                    except Exception as parse_error:
+                        logging.error(f"Error al procesar el documento {idx}. Detalles: {parse_error}", exc_info=True)
+
 
             pending_indices = [idx for idx in pending_indices if predictions[idx] is None]
 

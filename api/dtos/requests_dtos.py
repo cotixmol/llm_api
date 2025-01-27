@@ -42,7 +42,7 @@ class TopicPreviewPayload(BaseModel):
     to_date: str
     filters: typing.Optional[Filters] = None
 
-class LLMPreviewPayload(BaseModel):
+class LLMClassificationPreviewPayload(BaseModel):
     index_pattern: str
     since_date: str
     to_date: str
