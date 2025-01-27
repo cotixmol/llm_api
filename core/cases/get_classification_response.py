@@ -71,5 +71,11 @@ class GetClassificationResponseCase:
         # doc_id_list: List[str], ¿HAY QUE TRAERSE LOS IDS DE LOS DOCUMENTOS EXPLICITAMENTE?
         # data_to_update: List[Dict], {update_field: prediction}
 
+        ### CLOSE CLIENT ###
+        await self.es_repository.close_client()
+        logger.info(f"Client closed")
         ### REPORT TO WORKER ###
+
+        
+
         return 

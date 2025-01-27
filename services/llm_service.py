@@ -10,9 +10,9 @@ class LLMException(Exception):
 
 class LLMService:
     def __init__(self, model_path: str) -> None:
+        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.model = AutoModelForCausalLM.from_pretrained(model_path)
         self.tokenizer = AutoTokenizer.from_pretrained(model_path)
-        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.pipe = pipeline("text-generation", 
                                 model=self.model, 
                                 tokenizer=self.tokenizer, 
@@ -24,7 +24,7 @@ class LLMService:
             print(f"Prompt: {prompt}")
             print(self.device)
             response = self.pipe(prompt, max_new_tokens=max_new_tokens)
-            return response[-1]["generated_text"]
+            return response
         except Exception as error:
             logging.error(f"Error generating text: {error}")
             raise LLMException(f"Error generating text: {error}")

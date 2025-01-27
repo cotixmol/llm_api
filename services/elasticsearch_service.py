@@ -1,6 +1,6 @@
 from typing import List, Dict
-from elasticsearch import Elasticsearch, NotFoundError, BadRequestError
-from elasticsearch.helpers import streaming_bulk, parallel_bulk, bulk
+from elasticsearch import NotFoundError, BadRequestError, AsyncElasticsearch
+from elasticsearch.helpers import async_bulk, async_streaming_bulk, parallel_bulk
 from api.dtos.elasticsearch_dtos import SearchResponse
 import logging
 
@@ -12,12 +12,17 @@ class ElasticsearchService:
 
     def __init__(self, elasticsearch_ip: str, elasticsearch_prt: str,
                  elasticsearch_usr: str, elasticsearch_psw: str) -> None:
-        self.client = Elasticsearch(
+        self.client = AsyncElasticsearch(
             hosts=[f"https://{elasticsearch_ip}:{elasticsearch_prt}"],
-            basic_auth=(elasticsearch_usr, elasticsearch_psw),
+            http_auth=(elasticsearch_usr, elasticsearch_psw),
             retry_on_timeout=True,
             max_retries=5,
             verify_certs=False)
+            
+    async def close(self) -> None:
+        """Closes the Elasticsearch client."""
+        response = await self.client.close()
+        return response
 
     async def run_search_query(
         self,
@@ -25,7 +30,7 @@ class ElasticsearchService:
         query: dict,
     ) -> SearchResponse:
         try:
-            search_results = self.client.options(request_timeout=10).search(index=index_pattern, body=query)
+            search_results = await self.client.options(request_timeout=10).search(index=index_pattern, body=query)
         except NotFoundError as not_found:
             logging.error(f"ElasticService error: {not_found}")
             raise ElasticsearchException(f"ElasticService error: {not_found}")
@@ -72,7 +77,7 @@ class ElasticsearchService:
 
             match bulk_method:
                 case 0:
-                    response = bulk(client = self.client, 
+                    response = await async_bulk(client = self.client, 
                         actions = actions, 
                         chunk_size = bulk_size)
                     errors = len(response[1])
@@ -84,7 +89,7 @@ class ElasticsearchService:
                         if not success:
                             failures += 1
                 case 2:
-                    for success, info in streaming_bulk(client = self.client, 
+                    async for success, info in async_streaming_bulk(client = self.client, 
                                         actions = actions, 
                                         chunk_size = bulk_size):
                         if not success:

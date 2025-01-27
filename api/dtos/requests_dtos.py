@@ -54,3 +54,5 @@ class LLMPreviewPayload(BaseModel):
 class LLMPromptPreviewPayload(BaseModel):
     prompt: str
 
+class LLMClassificationPreviewPayload(BaseModel):
+    prompt: str
