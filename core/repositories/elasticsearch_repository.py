@@ -1,26 +1,8 @@
-from core.objects.index import Index
 from core.objects.document import Document
-from core.objects.wordcloud import Wordcloud, Word
-from core.objects import table_author
-from core.objects import table_source
-from core.objects import table_interaction
-from core.objects.radar import Radar, RadarUnit
-from core.objects.timeline import Timeline
-from core.objects.heatmap import HeatMap, Point
-from core.objects.lineal_heatmap import LinealHeatmap
-from core.objects.histogram_point import HistogramPoint, Histogram
-from core.objects.pie import PieChart, PieSlice, ColorPalet
-from core.objects.barplot import Barplot, BarPlotUnit
-from core.objects.network_graph import NetworkGraph, NetworkCategory, NetworkLink, NetworkNode
-from core.objects.trending_chart import Trend, TrendChart
-from core.objects.metric import Metric
 from services.elasticsearch_service import ElasticsearchService
 from core.repositories.query_repository import Query
 from api.config.logger import logger
 import typing
-import pandas as pd
-import numpy as np
-from itertools import permutations
 from collections import defaultdict
 from typing import List, Dict
 

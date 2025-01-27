@@ -75,8 +75,7 @@ class LLMRepository:
         logging.error(f"No se pudo generar una respuesta válida después de {MAX_ATTEMPTS} intentos")
         return None, None   
     
-    async def apply_prompt_classification(self, prompt_template, task_key, docs_list: typing.List[str] = None) -> str: #BATCHES
-
+    async def apply_prompt_classification(self, prompt_template, task_key, docs_list: typing.List[str] = None, batch_size=32) -> typing.List[typing.Optional[str]]:
         if not docs_list:
             logging.error("docs_list no puede ser None o vacío.")
             return []
@@ -84,31 +83,40 @@ class LLMRepository:
             logging.error("El template de prompt no puede ser None o vacío.")
             return []
 
-        predictions = []
-        for doc in docs_list:
-            prompt = prompt_template.format(doc=doc)
-            attempts = 0
-            success = False
+        predictions = [None] * len(docs_list)
+        pending_indices = list(range(len(docs_list))) 
 
-            while attempts < 5 and not success:
+        for attempt in range(5): 
+            if not pending_indices:
+                break 
+
+            logging.info(f"Intento {attempt + 1} con {len(pending_indices)} documentos pendientes.")
+
+            for i in range(0, len(pending_indices), batch_size):
+                batch_indices = pending_indices[i:i + batch_size]
+                batch_prompts = [f"{prompt_template['system_1']}\n{prompt_template['user_1'].format(doc=docs_list[idx])}" for idx in batch_indices]
+
                 try:
-                    outputs = await self.llm_service.generate_text(prompt, max_new_tokens=20)
-                    try:
-                        response_data = self.parse_model_response(outputs[-1]["content"])
-                        label = response_data[task_key]
-                        predictions.append(label)
-                        success = True
-                    except Exception as parse_error:
-                        logging.warning(f"Formato incorrecto en la respuesta del modelo. Intento {attempts + 1}. Error: {parse_error}") #Debería chequearse no sólo la key, sino también el value. Tiene que venir lista de values válidos desde worker
-                except Exception as error:
-                    logging.error(f"Error generando texto en el intento {attempts + 1}: {error}")
+                    outputs = await self.llm_service.generate_text(batch_prompts, max_new_tokens=20)
 
-                attempts += 1
+                    for idx, output in zip(batch_indices, outputs):
+                        try:
+                            response_data = self.parse_model_response(output[0]['generated_text'])
+                            label = response_data[task_key]
+                            predictions[idx] = label  
+                        except Exception as parse_error:
+                            logging.warning(f"Formato incorrecto para el documento {idx}. Error: {parse_error}")
 
-            if not success:
-                logging.error(f"Fallo procesando el documento tras 5 intentos. Documento descartado: {doc}") #cómo manejar los documentos descartados? Guardar indice?
+                except Exception as batch_error:
+                    logging.error(f"Error procesando el batch {i // batch_size + 1}: {batch_error}")
+
+            pending_indices = [idx for idx in pending_indices if predictions[idx] is None]
+
+        for idx in pending_indices:
+            logging.error(f"Documento descartado tras 5 intentos: {docs_list[idx]}")
 
         return predictions
+
 
     
     async def apply_prompt(self, prompt):
@@ -116,7 +124,7 @@ class LLMRepository:
         while attempts < 5:
             try:
                 output = await self.llm_service.generate_text(prompt, max_new_tokens=50)
-                return output 
+                return output[-1]["generated_text"]
             except Exception as e:
                 logging.error(f"Error generando texto en el intento {attempts + 1}: {e}")
                 attempts += 1

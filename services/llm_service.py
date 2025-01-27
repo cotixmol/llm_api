@@ -1,6 +1,4 @@
 import torch
-from elasticsearch import Elasticsearch, NotFoundError, BadRequestError, ConnectionTimeout
-from api.dtos.elasticsearch_dtos import IndexStatus, SearchResponse
 from transformers import AutoModelForCausalLM, AutoTokenizer, pipeline
 import logging
 
@@ -24,7 +22,7 @@ class LLMService:
             print(f"Prompt: {prompt}")
             print(self.device)
             response = self.pipe(prompt, max_new_tokens=max_new_tokens)
-            return response[-1]["generated_text"]
+            return response
         except Exception as error:
             logging.error(f"Error generating text: {error}")
             raise LLMException(f"Error generating text: {error}")
