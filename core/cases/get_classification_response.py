@@ -72,5 +72,11 @@ class GetClassificationResponseCase:
             )
 
 
+        ### CLOSE CLIENT ###
+        await self.es_repository.close_client()
+        logger.info(f"Client closed")
         ### REPORT TO WORKER ###
+
+        
+
         return 

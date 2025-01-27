@@ -8,9 +8,9 @@ class LLMException(Exception):
 
 class LLMService:
     def __init__(self, model_path: str) -> None:
+        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.model = AutoModelForCausalLM.from_pretrained(model_path)
         self.tokenizer = AutoTokenizer.from_pretrained(model_path)
-        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.pipe = pipeline("text-generation", 
                                 model=self.model, 
                                 tokenizer=self.tokenizer, 

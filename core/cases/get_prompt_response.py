@@ -1,6 +1,7 @@
 from typing import List, Tuple, Dict
 from api.config.logger import logger
 from api.dtos.responses_dtos import LLMPromptResponse
+from core.repositories.elasticsearch_repository import ElasticsearchRepository
 from core.repositories.llm_repository import LLMRepository
 
 
@@ -18,4 +19,6 @@ class GetPromptResponseCase:
     async def __call__(self) -> LLMPromptResponse:      
         ### MAKE CLASSIFICATION ###
         prediction = await self.llm_repository.apply_prompt(prompt=self.prompt)
+
         return LLMPromptResponse(response=prediction)
+

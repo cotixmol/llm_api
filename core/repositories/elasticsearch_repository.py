@@ -91,3 +91,7 @@ class ElasticsearchRepository:
             bulk_size=bulk_size
          )
         #¿Debería retornar algo?
+
+    async def close_client(self):
+        response = await self.elasticsearch_service.close()
+        return response
