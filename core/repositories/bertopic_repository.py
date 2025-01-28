@@ -74,7 +74,7 @@ class BertopicRepository:
     def __calculate_topics(self, content_list: typing.List[str], created_at_list: typing.List[str]):
         return self.model.topics_over_time(docs=content_list, timestamps=created_at_list, nr_bins=20, datetime_format="%Y-%m-%dT%H:%M:%S")
 
-    def get_topics(self,
+    async def get_topics(self,
     created_at_list: typing.List[str],
     content_list: typing.List[str],
     embeddings_list: typing.List[typing.List[float]]
@@ -119,7 +119,7 @@ class BertopicRepository:
             topic_docs = doc_info[doc_info['Topic'] == topic].sort_values('Probability', ascending=False)
 
             try:
-                name, description = self.llm_repository.create_topic_name_and_summary(num_keywords= 8, 
+                name, description = await self.llm_repository.create_topic_name_and_summary(num_keywords= 8, 
                                                                             num_docs= 8, 
                                                                             keywords = valid_words, 
                                                                             docs_list= topic_docs["Document"].tolist())

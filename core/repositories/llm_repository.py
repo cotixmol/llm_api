@@ -27,7 +27,7 @@ class LLMRepository:
             return None
     
 
-    def create_topic_name_and_summary(self,
+    async def create_topic_name_and_summary(self,
                                     num_keywords: int = 8, 
                                     num_docs: int = 8, 
                                     keywords: typing.List[str] = None, 
@@ -66,7 +66,7 @@ class LLMRepository:
             ]
 
             try:
-                outputs = self.llm_service.generate_text(messages, max_new_tokens=350)
+                outputs = await self.llm_service.generate_text(messages, max_new_tokens=350)
 
                 response_data = self.parse_model_response(outputs[-1]["content"])
 
