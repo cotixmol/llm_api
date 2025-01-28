@@ -43,7 +43,7 @@ class ElasticsearchRepository:
     
     async def get_paginated_data(self, index_pattern: str, query: Query) -> typing.List[Document]:
         total_hits = []
-        query.set_size(self.page_size)
+        #query.set_size(self.page_size)
         package_size = self.page_size
         last_sort = []
         i = 1

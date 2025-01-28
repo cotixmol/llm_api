@@ -51,6 +51,7 @@ class LLMClassificationPreviewPayload(BaseModel):
     update_field: str
     task_key: str
     valid_labels: typing.List[str]
+    max_ndocs: int
 
 class LLMPromptPreviewPayload(BaseModel):
     prompt: str

@@ -4,6 +4,7 @@ from api.dtos.responses_dtos import LLMClassificationResponse
 from core.repositories.elasticsearch_repository import ElasticsearchRepository
 from core.repositories.query_repository import Query
 from core.repositories.llm_repository import LLMRepository
+from api.config.secrets import ELASTIC_PAGE_SIZE
 import iso8601
 
 import re
@@ -23,7 +24,8 @@ class GetClassificationResponseCase:
             prompt: str, 
             task_key: str,
             update_field:str,
-            valid_labels: List[str]
+            valid_labels: List[str],
+            max_ndocs: int
     ):
         since_iso_time = iso8601.parse_date(since_date).isoformat()
         to_iso_time = iso8601.parse_date(to_date).isoformat()
@@ -38,6 +40,7 @@ class GetClassificationResponseCase:
         self.task_key = task_key
         self.update_field = update_field
         self.valid_labels = valid_labels
+        self.max_ndocs = max_ndocs
 
     async def __call__(self) -> LLMClassificationResponse:
         ### CREATE QUERY ###
@@ -53,9 +56,12 @@ class GetClassificationResponseCase:
             fields=fields
         )
         self.query_repository.set_match_by_field(field="content")
+        #self.query_repository.set_not_match_by_field(field=self.update_field)
         self.query_repository.set_filters(
             filters=self.extra_args.model_dump()
         )
+        PAGE_SIZE = min(int(ELASTIC_PAGE_SIZE), int(self.max_ndocs)) if self.max_ndocs else int(ELASTIC_PAGE_SIZE)
+        self.query_repository.set_size(PAGE_SIZE)
         self.query_repository.set_order(field="@timestamp", order="desc")
         self.query_repository.set_order(field="created_at", order="desc")
         try:
