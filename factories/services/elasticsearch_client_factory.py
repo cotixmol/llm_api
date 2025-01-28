@@ -3,9 +3,6 @@ from fastapi import HTTPException
 from services.elasticsearch_service import ElasticsearchService
 from api.config.secrets import ELASTIC_PSW, ELASTIC_USR, ELASTIC_PRT, ELASTIC_IP
 
-
-
-
 def get_elasticsearch_client():
     try:
         return ElasticsearchService(elasticsearch_ip=ELASTIC_IP,

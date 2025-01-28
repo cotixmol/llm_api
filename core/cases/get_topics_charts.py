@@ -9,12 +9,11 @@ from core.objects.document import Document
 from sklearn.feature_extraction.text import CountVectorizer
 from bertopic.representation import MaximalMarginalRelevance
 from bertopic.vectorizers import ClassTfidfTransformer
-# from umap import UMAP
+from umap import UMAP
 from sklearn.decomposition import PCA
-# from hdbscan import HDBSCAN
-from cuml.cluster import HDBSCAN
-from cuml.manifold import UMAP
-import numpy as np
+from hdbscan import HDBSCAN
+#from cuml.cluster import HDBSCAN
+#from cuml.manifold import UMAP
 import re
 
 CUSTOM_STOPWORDS = ["co", "rt", "dice", "min", "asi" "eh", "etc", "decis", 'http', "link", "bio", 'https', 'amp', "va", 'com', "si", "mas", "anos", "ano", "vos", "RT", "usted", "ustedes", "tenes", "tambien", "tan", "sos", "solo"]
@@ -43,6 +42,7 @@ class GetTopicChartsCase:
         self.extra_args = extra_args
 
     async def __call__(self) -> Tuple[Dict, int]:
+        ### CREATE QUERY ###
         self.query_repository.set_date_range(
             since_iso_time=self.since_iso_time, to_iso_time=self.to_iso_time
         )
@@ -56,31 +56,17 @@ class GetTopicChartsCase:
         self.query_repository.set_filters(
             filters=self.extra_args.model_dump()
         )
-        self.query_repository.set_size(size=self.es_repository.page_size)
         self.query_repository.set_order(field="@timestamp", order="desc")
-        package_size = self.es_repository.page_size
-        documents_list = []
-        page_number = 0
-        pit_id = await self.es_repository.open_pit(index_pattern=self.index_pattern, keep="5m")
-        self.query_repository.set_pit(id=pit_id)
+        self.query_repository.set_order(field="created_at", order="desc")
 
-        while package_size >= int(self.es_repository.page_size):
-            page_number += 1
-            documents, last_sort_id = await self.es_repository.get_index_data_pit(
-                query=self.query_repository.body
-            )
-            package_size = len(documents)
-            documents_list.extend(documents)
-            logger.info(f"Reading {len(documents)} documents from {page_number} pages")
-            self.query_repository.set_search_after(search_after=last_sort_id)
-        if "search_after" in self.query_repository.body:
-            self.query_repository.clean_search_after()
-        await self.es_repository.close_pit(pit_id=pit_id)
-        logger.info(f"Found {len(documents_list)} in {page_number} pages")
+
+        ### SEARCH DOCUMENTS ###
+
+        documents_list = await self.es_repository.get_paginated_data(query = self.query_repository, index_pattern=self.index_pattern)
+        ### GET TOPICS ###
         created_at_list, content_list, embedding_list = self.__prepare_data(documents_list)
 
         if not all((content_list, embedding_list)):
-            #logger.error("There are no documents to calculate topics")
             raise BertopicRepositoryException("There are no documents to calculate topics")
 
         bertopic_repository = BertopicRepository(
@@ -98,7 +84,7 @@ class GetTopicChartsCase:
         )
 
         
-        topics = bertopic_repository.get_topics(
+        topics = await bertopic_repository.get_topics(
             created_at_list=created_at_list,
             content_list=content_list,
             embeddings_list=embedding_list

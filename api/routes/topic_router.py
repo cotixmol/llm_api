@@ -8,15 +8,13 @@ from core.repositories.query_repository import Query
 from core.repositories.llm_repository import LLMRepository
 from factories.repositories.elasticsearch_repository_factory import get_elasticsearch_repository
 from factories.repositories.query_repository_factory import get_query_repository
-from factories.repositories.lllm_repository_factory import get_llm_repository
+from factories.repositories.llm_repository_factory import get_llm_repository
 
 from core.cases.get_topics_charts import GetTopicChartsCase
 from services.elasticsearch_service import ElasticsearchException
 from core.repositories.bertopic_repository import BertopicRepositoryException
 
 topic_router = APIRouter()
-
-
 
 @topic_router.post(
         '/',
@@ -55,3 +53,4 @@ async def get_topic_report(
     except Exception as error:
         logger.error(f"{type(error)}: {error}")
         raise HTTPException(status_code=500, detail="It seems that there is not enough data to build topics")
+

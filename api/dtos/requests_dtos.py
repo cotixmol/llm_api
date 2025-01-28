@@ -41,3 +41,17 @@ class TopicPreviewPayload(BaseModel):
     since_date: str
     to_date: str
     filters: typing.Optional[Filters] = None
+
+class LLMClassificationPreviewPayload(BaseModel):
+    index_pattern: str
+    since_date: str
+    to_date: str
+    filters: typing.Optional[Filters] = None
+    prompt: dict
+    update_field: str
+    task_key: str
+    valid_labels: typing.List[str]
+    max_ndocs: int
+
+class LLMPromptPreviewPayload(BaseModel):
+    prompt: str

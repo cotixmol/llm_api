@@ -4,7 +4,8 @@ from datetime import datetime
 
 
 class Document(BaseModel):
-    _id: str
+    id: str = Field(alias="_id")
+    index: str = Field(alias="_index")
     created_at: datetime
     category: typing.Optional[str] = None 
     author: typing.Optional[str] = None
