@@ -55,3 +55,11 @@ class LLMClassificationPreviewPayload(BaseModel):
 
 class LLMPromptPreviewPayload(BaseModel):
     prompt: str
+
+class LLMSummaryPreviewPayload(BaseModel):
+    index_pattern: str
+    since_date: str
+    to_date: str
+    filters: typing.Optional[Filters] = None
+    prompt: str
+    max_ndocs: int

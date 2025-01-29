@@ -16,4 +16,7 @@ class LLMClassificationResponse(BaseModel):
     
 class LLMPromptResponse(BaseModel): 
     response: str
+
+class LLMSummaryResponse(BaseModel): 
+    response: typing.Dict[str, str]
     

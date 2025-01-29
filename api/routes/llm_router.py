@@ -1,7 +1,7 @@
 import typing
 from fastapi import APIRouter, HTTPException, Depends
-from api.dtos.responses_dtos import LLMClassificationResponse
-from api.dtos.requests_dtos import LLMClassificationPreviewPayload
+from api.dtos.responses_dtos import LLMClassificationResponse, LLMSummaryResponse, LLMPromptResponse
+from api.dtos.requests_dtos import LLMClassificationPreviewPayload, LLMPromptPreviewPayload, LLMSummaryPreviewPayload
 from api.config.logger import logger
 from core.repositories.elasticsearch_repository import ElasticsearchRepository
 from core.repositories.query_repository import Query
@@ -11,8 +11,6 @@ from factories.repositories.query_repository_factory import get_query_repository
 from factories.repositories.llm_repository_factory import get_llm_repository
 from services.elasticsearch_service import ElasticsearchException
 from core.cases.get_classification_response import GetClassificationResponseCase
-from api.dtos.responses_dtos import LLMPromptResponse
-from api.dtos.requests_dtos import LLMPromptPreviewPayload
 from core.cases.get_prompt_response import GetPromptResponseCase
 
 
@@ -74,6 +72,41 @@ async def get_llm_prompt(
         llm_case = GetPromptResponseCase(
             llm_repository=llm_repository,
             prompt=parameters.prompt
+        )
+        response = await llm_case()
+        return response
+    except Exception as error:
+        logger.error(f"{type(error)}: {error}")
+        raise HTTPException(status_code=500, detail="It seems that IA is not available right now. Please try again later.")
+
+
+@llm_router.post(
+        '/summary',
+        response_model=LLMSummaryResponse,
+        response_model_exclude_none=True
+    )
+async def get_llm_summary(
+    parameters: LLMClassificationPreviewPayload,
+    es_repository: ElasticsearchRepository = Depends(
+        get_elasticsearch_repository),
+    query_repository: Query = Depends(
+        get_query_repository
+    ),
+    llm_repository: LLMRepository = Depends(
+        get_llm_repository
+    )
+) -> LLMSummaryResponse:
+    try:
+        llm_case = GetSummaryResponseCase(
+            es_repository=es_repository,
+            query_repository=query_repository,
+            llm_repository=llm_repository,
+            index_pattern=parameters.index_pattern,
+            since_date=parameters.since_date,
+            to_date=parameters.to_date,
+            extra_args=parameters.filters,
+            prompt=parameters.prompt,
+            max_ndocs=parameters.max_ndocs
         )
         response = await llm_case()
         return response
