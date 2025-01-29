@@ -12,6 +12,7 @@ from factories.repositories.llm_repository_factory import get_llm_repository
 from services.elasticsearch_service import ElasticsearchException
 from core.cases.get_classification_response import GetClassificationResponseCase
 from core.cases.get_prompt_response import GetPromptResponseCase
+from core.cases.get_summary_response import GetSummaryResponseCase
 
 
 llm_router = APIRouter()
@@ -86,7 +87,7 @@ async def get_llm_prompt(
         response_model_exclude_none=True
     )
 async def get_llm_summary(
-    parameters: LLMClassificationPreviewPayload,
+    parameters: LLMSummaryPreviewPayload,
     es_repository: ElasticsearchRepository = Depends(
         get_elasticsearch_repository),
     query_repository: Query = Depends(
