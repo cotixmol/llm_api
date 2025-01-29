@@ -2,7 +2,8 @@ import typing
 import json
 import logging
 from services.llm_service import LLMService
-from typing import List 
+from typing import List, Dict
+from collections import defaultdict
 
 class LLMRepository:
     def __init__(self, llm_service: LLMService):
@@ -218,4 +219,61 @@ class LLMRepository:
         
         logging.error("Fallo en todos los intentos para generar texto.")
         return None
+    
+    
+    
+    async def apply_prompt_summary(self, docs: List[dict]) -> Dict[str, str]:
+        if not docs:
+            logging.error("La lista de documentos no puede estar vacía.")
+            return {}
 
+        # Agrupar documentos por "primary_category", descartando los que no tienen categoría
+        category_docs = defaultdict(list)
+        for doc in docs:
+            category = doc.get("primary_category")
+            content = doc.get("content", "").strip()
+            
+            # Si falta "primary_category" o el contenido está vacío, se descarta
+            if not category or not content:
+                logging.warning(f"Documento descartado: {doc}")  
+                continue
+            
+            category_docs[category].append(content)
+
+        # Limitamso a 50 documentos por categoría
+        for category in category_docs:
+            category_docs[category] = category_docs[category][:50]
+
+        summaries = {}
+
+        for category, contents in category_docs.items():
+            prompt = [
+                {
+                    "role": "system",
+                    "content": "You are an AI assistant specialized in summarizing large amounts of text into concise and structured bullet points."
+                },
+                {
+                    "role": "user",
+                    "content": f"""
+                    Below are documents classified under the category "{category}".  
+                    Each document contains relevant information on this topic.
+
+                    {contents}
+
+                    Based on these documents, generate a summary with the most relevant points in bullet point format:
+                    - Point 1
+                    - Point 2
+                    - Point 3
+                    - ...
+                    """
+                }
+            ]
+
+            try:
+                output = await self.llm_service.generate_text(prompt, max_new_tokens=5000)
+                summaries[category] = output[-1]["content"] 
+            except Exception as e:
+                logging.error(f"Error generando resumen para la categoría '{category}': {e}")
+                summaries[category] = "Error en la generación del resumen."
+
+        return summaries
