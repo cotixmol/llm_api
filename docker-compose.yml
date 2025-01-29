@@ -10,7 +10,7 @@ services:
     restart: always
     volumes:
       - ./.env:/app/.env
-      - ./models:/app/models
+      - ./models:/app/models:rw
     ports:
       - 8002:8002
     logging:
