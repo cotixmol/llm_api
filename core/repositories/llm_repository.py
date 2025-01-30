@@ -230,7 +230,6 @@ class LLMRepository:
         # Agrupar documentos por el campo dinámico (summary_field), descartando los que no lo tengan
         category_docs = defaultdict(list)
         for doc in docs:
-            print("DOC:", doc)
             category = getattr(doc, summary_field, None) 
             content = getattr(doc, "content", "").strip()
             
@@ -240,7 +239,6 @@ class LLMRepository:
                 continue
             
             category_docs[category].append(content)
-        print("Category_docs", category_docs)
         # Limitar a 50 documentos por categoría
         for category in category_docs:
             category_docs[category] = category_docs[category][:50]
@@ -264,10 +262,9 @@ class LLMRepository:
                             "content": prompt_template["user"].format(contents=contents, category=category)
                         }
                     ]
-                    print("Prompt", prompt)
+
                     output = await self.llm_service.generate_text(prompt, max_new_tokens=5000)
-                    print("Output", output)
-                    print("Output[-1]['generated_text']", output[-1]['generated_text'])
+
                     # Validar la respuesta del modelo antes de guardarla
                     if isinstance(output, list) and output and 'generated_text' in output[-1]:
                         summaries[category] = output[-1]['generated_text']

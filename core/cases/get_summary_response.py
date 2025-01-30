@@ -46,7 +46,6 @@ class GetSummaryResponseCase:
             since_iso_time=self.since_iso_time, 
             to_iso_time=self.to_iso_time
         )
-        print("Query 1", self.query_repository.body)
         
         fields = self.extra_args.fields
         if "content" not in fields:
@@ -59,35 +58,33 @@ class GetSummaryResponseCase:
         self.query_repository.set_fields(
             fields=fields
         )
-        print("Query 2", self.query_repository.body)
+
         self.query_repository.set_match_by_field(field="content")
         self.query_repository.set_match_by_field(field=self.summary_field)
-        print("Query 3", self.query_repository.body)
+
         if isinstance(self.query, str):   
             self.query_repository.set_query_string(query_string=f'(NOT category.keyword: "Streaming") AND (content_type.keyword: ("Post" OR "tweet" OR "New" OR "videos" OR "shorts")) AND ({self.query})')
         else:
             self.query_repository.set_query_string(query_string='(NOT category.keyword: "Streaming") AND (content_type.keyword: ("Post" OR "tweet" OR "New" OR "videos" OR "shorts"))')
-        print("Query 4", self.query_repository.body)
+
         self.query_repository.set_filters(
             filters=self.extra_args.model_dump()
         )
         PAGE_SIZE = min(int(ELASTIC_PAGE_SIZE), int(self.max_ndocs)) if self.max_ndocs else int(ELASTIC_PAGE_SIZE)
         self.query_repository.set_size(PAGE_SIZE)
-        print("Query 5", self.query_repository.body)
+
         self.query_repository.set_order(field="interactions", order="desc")
         self.query_repository.set_order(field="@timestamp", order="desc")
         self.query_repository.set_order(field="created_at", order="desc")
-        print("Query 6", self.query_repository.body)
+
 
         try:
             ### SEARCH DOCUMENTS ###
             hits = await self.es_repository.get_paginated_data(query = self.query_repository, index_pattern=self.index_pattern)
-            print("HITS", hits)
-            print("Query", self.query_repository.body)
+
             ### MAKE PREDICTION ###
             response_dict = await self.llm_repository.apply_prompt_summary(docs=hits, prompt_template=self.prompt, summary_field=self.summary_field)
             
-            print(response_dict)
 
         finally:
             ### CLOSE CLIENT ###
