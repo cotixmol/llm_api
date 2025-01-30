@@ -73,7 +73,8 @@ class GetSummaryResponseCase:
         try:
             ### SEARCH DOCUMENTS ###
             hits = await self.es_repository.get_paginated_data(query = self.query_repository, index_pattern=self.index_pattern)
-            
+            print("HITS", hits)
+            print("Query", self.query_repository.body)
             ### MAKE PREDICTION ###
             response_dict = await self.llm_repository.apply_prompt_summary(docs=hits, prompt_template=self.prompt, summary_field=self.summary_field)
             

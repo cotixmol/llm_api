@@ -230,8 +230,9 @@ class LLMRepository:
         # Agrupar documentos por el campo dinámico (summary_field), descartando los que no lo tengan
         category_docs = defaultdict(list)
         for doc in docs:
-            category = doc.get(summary_field)
-            content = doc.get("content", "").strip()
+            print("DOC:", doc)
+            category = getattr(doc, summary_field, None) 
+            content = getattr(doc, "content", "").strip()
             
             # Si falta la categoría o el contenido está vacío, se descarta
             if not category or not content:
