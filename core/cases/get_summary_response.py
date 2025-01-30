@@ -52,13 +52,15 @@ class GetSummaryResponseCase:
             fields.append("content")
         if self.summary_field not in fields:
             fields.append(self.summary_field)
+        print("Summary Field: ", self.summary_field)
+        print("FIELDS: ", fields)
         self.query_repository.set_fields(
             fields=fields
         )
         self.query_repository.set_match_by_field(field="content")
         self.query_repository.set_match_by_field(field=self.summary_field)
         print(f"DEBUG: self.query = {repr(self.query)}, type = {type(self.query)}")
-        if self.query is not None:  
+        if isinstance(self.query, str):   
             self.query_repository.set_query_string(query_string=f'(NOT category.keyword: "Streaming") AND (content_type.keyword: ("Post" OR "tweet" OR "New" OR "videos" OR "shorts")) AND ({self.query})')
         else:
             self.query_repository.set_query_string(query_string='(NOT category.keyword: "Streaming") AND (content_type.keyword: ("Post" OR "tweet" OR "New" OR "videos" OR "shorts"))')
