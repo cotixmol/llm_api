@@ -71,8 +71,6 @@ class GetClassificationResponseCase:
             ### MAKE CLASSIFICATION ###
             predictions_dict = await self.llm_repository.apply_prompt_classification(prompt_template=self.prompt, task_key=self.task_key, docs=hits, valid_labels=self.valid_labels, update_field=self.update_field)
             
-            print(predictions_dict)
-
             ### UPDATE DOCUMENTS ###
             await self.es_repository.update_documents_bulk(
                 es_index_list=predictions_dict["es_index_list"], 
