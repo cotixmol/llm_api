@@ -28,6 +28,7 @@ class Document(BaseModel):
     author_thumbnail: typing.Optional[str] = None
     sentiment_name: typing.Optional[str] = None
     embedding: typing.Optional[typing.List[float]] = None
+    primary_category: typing.Optional[str] = None
 
 
 class ContentText(BaseModel):
