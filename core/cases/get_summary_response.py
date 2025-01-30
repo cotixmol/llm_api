@@ -57,10 +57,11 @@ class GetSummaryResponseCase:
         )
         self.query_repository.set_match_by_field(field="content")
         self.query_repository.set_match_by_field(field=self.summary_field)
-        if self.query is not None:
-            self.query_repository.set_query_string(query_string=f'(NOT category.keyword: "Streaming") AND (content_type.keyword: ("Post" OR "tweet" OR "New" OR "videos" OR "shorts")) AND {self.query}') #Definir
+        if self.query and self.query.strip():  # Asegura que no sea None ni un string vacío
+            self.query_repository.set_query_string(query_string=f'(NOT category.keyword: "Streaming") AND (content_type.keyword: ("Post" OR "tweet" OR "New" OR "videos" OR "shorts")) AND ({self.query})')
         else:
             self.query_repository.set_query_string(query_string='(NOT category.keyword: "Streaming") AND (content_type.keyword: ("Post" OR "tweet" OR "New" OR "videos" OR "shorts"))')
+
         self.query_repository.set_filters(
             filters=self.extra_args.model_dump()
         )
