@@ -21,8 +21,10 @@ class GetSummaryResponseCase:
             since_date: str,
             to_date: str,
             extra_args: dict,
-            #prompt: str, 
-            max_ndocs: int
+            prompt: dict, 
+            max_ndocs: int,
+            summary_field: str,
+            query: str = None,            
     ):
         since_iso_time = iso8601.parse_date(since_date).isoformat()
         to_iso_time = iso8601.parse_date(to_date).isoformat()
@@ -33,8 +35,10 @@ class GetSummaryResponseCase:
         self.since_iso_time = since_iso_time
         self.to_iso_time = to_iso_time
         self.extra_args = extra_args
-        #self.prompt = prompt
+        self.prompt = prompt
         self.max_ndocs = max_ndocs
+        self.query = query
+        self.summary_field = summary_field
 
     async def __call__(self) -> LLMSummaryResponse:
         ### CREATE QUERY ###
@@ -46,14 +50,17 @@ class GetSummaryResponseCase:
         fields = self.extra_args.fields
         if "content" not in fields:
             fields.append("content")
-        if "primary_category" not in fields:
-            fields.append("primary_category")
+        if self.summary_field not in fields:
+            fields.append(self.summary_field)
         self.query_repository.set_fields(
             fields=fields
         )
         self.query_repository.set_match_by_field(field="content")
-        self.query_repository.set_match_by_field(field="primary_category")
-        self.query_repository.set_query_string(query_string='NOT category.keyword : "Streaming" AND content_type.keyword: ("Post" OR "tweet" OR "New" OR "videos" OR "shorts")') #Definir
+        self.query_repository.set_match_by_field(field=self.summary_field)
+        if self.query is not None:
+            self.query_repository.set_query_string(query_string=f'(NOT category.keyword: "Streaming") AND (content_type.keyword: ("Post" OR "tweet" OR "New" OR "videos" OR "shorts")) AND {self.query}') #Definir
+        else:
+            self.query_repository.set_query_string(query_string='(NOT category.keyword: "Streaming") AND (content_type.keyword: ("Post" OR "tweet" OR "New" OR "videos" OR "shorts"))')
         self.query_repository.set_filters(
             filters=self.extra_args.model_dump()
         )
@@ -66,9 +73,9 @@ class GetSummaryResponseCase:
         try:
             ### SEARCH DOCUMENTS ###
             hits = await self.es_repository.get_paginated_data(query = self.query_repository, index_pattern=self.index_pattern)
-
-            ### MAKE CLASSIFICATION ###
-            response_dict = await self.llm_repository.apply_prompt_summary(docs=hits)
+            
+            ### MAKE PREDICTION ###
+            response_dict = await self.llm_repository.apply_prompt_summary(docs=hits, prompt_template=self.prompt, summary_field=self.summary_field)
             
             print(response_dict)
 

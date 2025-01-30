@@ -106,8 +106,10 @@ async def get_llm_summary(
             since_date=parameters.since_date,
             to_date=parameters.to_date,
             extra_args=parameters.filters,
+            max_ndocs=parameters.max_ndocs,
             prompt=parameters.prompt,
-            max_ndocs=parameters.max_ndocs
+            query=parameters.query,
+            summary_field=parameters.summary_field
         )
         response = await llm_case()
         return response

@@ -220,60 +220,67 @@ class LLMRepository:
         logging.error("Fallo en todos los intentos para generar texto.")
         return None
     
+
     
-    
-    async def apply_prompt_summary(self, docs: List[dict]) -> Dict[str, str]:
+    async def apply_prompt_summary(self, docs: List[dict], prompt_template: dict, summary_field: str) -> Dict[str, str]:
         if not docs:
             logging.error("La lista de documentos no puede estar vacía.")
             return {}
 
-        # Agrupar documentos por "primary_category", descartando los que no tienen categoría
+        # Agrupar documentos por el campo dinámico (summary_field), descartando los que no lo tengan
         category_docs = defaultdict(list)
         for doc in docs:
-            category = doc.get("primary_category")
+            category = doc.get(summary_field)
             content = doc.get("content", "").strip()
             
-            # Si falta "primary_category" o el contenido está vacío, se descarta
+            # Si falta la categoría o el contenido está vacío, se descarta
             if not category or not content:
                 logging.warning(f"Documento descartado: {doc}")  
                 continue
             
             category_docs[category].append(content)
-
-        # Limitamso a 50 documentos por categoría
+        print("Category_docs", category_docs)
+        # Limitar a 50 documentos por categoría
         for category in category_docs:
             category_docs[category] = category_docs[category][:50]
 
         summaries = {}
+        MAX_ATTEMPTS = 3  # 🔹 Número máximo de intentos por categoría
 
         for category, contents in category_docs.items():
-            prompt = [
-                {
-                    "role": "system",
-                    "content": "You are an AI assistant specialized in summarizing large amounts of text into concise and structured bullet points."
-                },
-                {
-                    "role": "user",
-                    "content": f"""
-                    Below are documents classified under the category "{category}".  
-                    Each document contains relevant information on this topic.
+            attempt = 0
+            success = False
 
-                    {contents}
+            while attempt < MAX_ATTEMPTS and not success:
+                try:
+                    prompt = [
+                        {
+                            "role": "system",
+                            "content": prompt_template["system"],
+                        },
+                        {
+                            "role": "user",
+                            "content": prompt_template["user"].format(contents=contents, category=category)
+                        }
+                    ]
+                    print("Prompt", prompt)
+                    output = await self.llm_service.generate_text(prompt, max_new_tokens=5000)
+                    print("Output", output)
+                    print("Output[-1][content]", output[-1]["content"])
+                    # Validar la respuesta del modelo antes de guardarla
+                    if isinstance(output, list) and output and "content" in output[-1]:
+                        summaries[category] = output[-1]["content"]
+                        success = True  
+                    else:
+                        logging.warning(f"Formato inesperado en la respuesta del modelo para '{category}'. Output: {output}")
+                        attempt += 1
 
-                    Based on these documents, generate a summary with the most relevant points in bullet point format:
-                    - Point 1
-                    - Point 2
-                    - Point 3
-                    - ...
-                    """
-                }
-            ]
+                except Exception as e:
+                    logging.error(f"Error generando resumen para '{category}' (Intento {attempt + 1}): {e}")
+                    attempt += 1  
 
-            try:
-                output = await self.llm_service.generate_text(prompt, max_new_tokens=5000)
-                summaries[category] = output[-1]["content"] 
-            except Exception as e:
-                logging.error(f"Error generando resumen para la categoría '{category}': {e}")
-                summaries[category] = "Error en la generación del resumen."
+            # Si después de varios intentos sigue fallando, guardar un mensaje de error
+            if not success:
+                summaries[category] = "Error en la generación del resumen tras múltiples intentos."
 
         return summaries
