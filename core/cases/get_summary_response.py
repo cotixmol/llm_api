@@ -82,6 +82,31 @@ class GetSummaryResponseCase:
         self.query_repository.set_order(field="@timestamp", order="desc")
         self.query_repository.set_order(field="created_at", order="desc")
 
+        if self.summary_field:
+            self.query_repository.set_custom_agg(
+                {
+                    "terms": {
+                        "field": summary_field,
+                        "size": 100
+                    },
+                    "aggs": {
+                        "top_docs": {
+                            "top_hits": {
+                                "size": 1000,
+                                "sort": [
+                                    {
+                                        "interactions": {
+                                            "order": "desc"
+                                        }
+                                    }
+                                ]
+                            }
+                        }
+                    }
+                },
+                name="top_categories_hits"
+            )
+            print(self.query_repository.body)
 
         try:
             ### SEARCH DOCUMENTS ###
@@ -89,18 +114,19 @@ class GetSummaryResponseCase:
 
             ### MAKE PREDICTION ###
             match (self.summary_field, self.query):
-                case (str() as summary_field, None):
+                case (str() as summary_field, _):  #Entra si summary_field es un str, sin importar query
                     response_dict = await self.llm_repository.apply_prompt_categories_summary(
                         docs=hits, prompt_template=self.prompt, summary_field=summary_field
                     )
-                case (None, str() as query):
+                case (None, str() as query):  #Entra solo si summary_field es None y query es un str
                     response_dict = await self.llm_repository.apply_prompt_query_summary(
                         docs=hits, prompt_template=self.prompt, query=query
                     )
-                case (None, None):
+                case (None, None):  #Entra solo si ambos son None
                     response_dict = await self.llm_repository.apply_prompt_summary(
                         docs=hits, prompt_template=self.prompt
                     )
+
 
         finally:
             ### CLOSE CLIENT ###

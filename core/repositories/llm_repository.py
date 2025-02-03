@@ -282,6 +282,7 @@ class LLMRepository:
                 summaries[category] = "Error en la generación del resumen tras múltiples intentos."
 
         return summaries
+    
 
     async def apply_prompt_query_summary(self, docs: List[dict], prompt_template: dict, query: str) -> Dict[str, str]:
         if not docs:
@@ -323,6 +324,7 @@ class LLMRepository:
                 attempt += 1  
 
         return response
+    
     
     async def apply_prompt_summary(self, docs: List[dict], prompt_template: dict) -> Dict[str, str]:
         if not docs:
