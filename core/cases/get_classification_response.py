@@ -67,7 +67,7 @@ class GetClassificationResponseCase:
         try:
             ### SEARCH DOCUMENTS ###
             hits = await self.es_repository.get_paginated_data(query = self.query_repository, index_pattern=self.index_pattern)
-
+            print("HINTS", hits)
             ### MAKE CLASSIFICATION ###
             predictions_dict = await self.llm_repository.apply_prompt_classification(prompt_template=self.prompt, task_key=self.task_key, docs=hits, valid_labels=self.valid_labels, update_field=self.update_field)
             

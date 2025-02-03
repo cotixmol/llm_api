@@ -1,5 +1,5 @@
 import typing
-from pydantic import BaseModel
+from pydantic import BaseModel, field_validator
 
 
 class Filters(BaseModel):
@@ -63,5 +63,12 @@ class LLMSummaryPreviewPayload(BaseModel):
     filters: typing.Optional[Filters] = None
     prompt: dict
     max_ndocs: typing.Optional[int] = 10000
-    query: typing.Optional[str] = None,
-    summary_field: str
+    query: typing.Optional[str] = None
+    summary_field: typing.Optional[str] = None  # Hacemos summary_field opcional
+
+    @field_validator("query", "summary_field", mode="before", check_fields=False)
+    @classmethod
+    def check_query_or_summary_field(cls, v, values):
+        if not values.get("query") and not values.get("summary_field"):
+            raise ValueError("Debe proporcionarse al menos 'query' o 'summary_field'.")
+        return v

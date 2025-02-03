@@ -23,9 +23,13 @@ class GetSummaryResponseCase:
             extra_args: dict,
             prompt: dict, 
             max_ndocs: int,
-            summary_field: str,
+            summary_field: str = None,
             query: str = None,            
     ):
+        
+        if summary_field is None and query is None:
+            raise ValueError("Debe proporcionarse al menos 'summary_field' o 'query'.")
+
         since_iso_time = iso8601.parse_date(since_date).isoformat()
         to_iso_time = iso8601.parse_date(to_date).isoformat()
         self.query_repository = query_repository      
@@ -52,7 +56,7 @@ class GetSummaryResponseCase:
             fields.append("content")
         if "interactions" not in fields:
             fields.append("interactions")
-        if self.summary_field not in fields:
+        if self.summary_field and self.summary_field not in fields:
             fields.append(self.summary_field)
 
         self.query_repository.set_fields(
@@ -60,7 +64,8 @@ class GetSummaryResponseCase:
         )
 
         self.query_repository.set_match_by_field(field="content")
-        self.query_repository.set_match_by_field(field=self.summary_field)
+        if self.summary_field:
+            self.query_repository.set_match_by_field(field=self.summary_field)
 
         if isinstance(self.query, str):   
             self.query_repository.set_query_string(query_string=f'(NOT category.keyword: "Streaming") AND (content_type.keyword: ("Post" OR "tweet" OR "New" OR "videos" OR "shorts")) AND ({self.query})')
@@ -83,8 +88,19 @@ class GetSummaryResponseCase:
             hits = await self.es_repository.get_paginated_data(query = self.query_repository, index_pattern=self.index_pattern)
 
             ### MAKE PREDICTION ###
-            response_dict = await self.llm_repository.apply_prompt_summary(docs=hits, prompt_template=self.prompt, summary_field=self.summary_field)
-            
+            match (self.summary_field, self.query):
+                case (str() as summary_field, None):
+                    response_dict = await self.llm_repository.apply_prompt_categories_summary(
+                        docs=hits, prompt_template=self.prompt, summary_field=summary_field
+                    )
+                case (None, str() as query):
+                    response_dict = await self.llm_repository.apply_prompt_query_summary(
+                        docs=hits, prompt_template=self.prompt, query=query
+                    )
+                case (None, None):
+                    response_dict = await self.llm_repository.apply_prompt_summary(
+                        docs=hits, prompt_template=self.prompt
+                    )
 
         finally:
             ### CLOSE CLIENT ###
