@@ -76,7 +76,7 @@ class GetSummaryResponseCase:
         PAGE_SIZE = min(int(ELASTIC_PAGE_SIZE), int(self.max_ndocs)) if self.max_ndocs else int(ELASTIC_PAGE_SIZE)
         self.query_repository.set_size(PAGE_SIZE)
 
-        self.query_repository.set_order(field="reach", order="desc")#DEBERÍA SER INTERACTIONS PERO EN DEV ES TIPO TEXTO Y SE ROMPE
+        self.query_repository.set_order(field="interactions", order="desc", unmapped_type="long")
         self.query_repository.set_order(field="@timestamp", order="desc")
         self.query_repository.set_order(field="created_at", order="desc")
 
@@ -93,8 +93,9 @@ class GetSummaryResponseCase:
                                 "size": 1000,
                                 "sort": [
                                     {
-                                        "reach": { #DEBERÍA SER INTERACTIONS PERO EN DEV ES TIPO TEXTO Y SE ROMPE
-                                            "order": "desc"
+                                        "interactions": { 
+                                            "order": "desc",
+                                            "unmapped_type": "long"
                                         }
                                     }
                                 ]
