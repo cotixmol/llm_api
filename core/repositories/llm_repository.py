@@ -298,7 +298,7 @@ class LLMRepository:
         MAX_ATTEMPTS = 3
         attempt = 0
         success = False
-        response = "Error en la generación del resumen tras múltiples intentos."
+        response = {"summary": "Error en la generación del resumen tras múltiples intentos."}
         while attempt < MAX_ATTEMPTS and not success:
             try:
                 prompt = [
@@ -311,9 +311,9 @@ class LLMRepository:
                         "content": prompt_template["user"].format(contents=content_list, query=query)
                     }
                 ]
-                print("El prompt es:", prompt)
+                
                 output = await self.llm_service.generate_text(prompt, max_new_tokens=5000)
-                print("El output es:", output)
+                
                 if isinstance(output, list) and output and 'generated_text' in output[-1]:
                     response = {"summary": output[-1]['generated_text']}
                     success = True  
@@ -342,7 +342,7 @@ class LLMRepository:
         MAX_ATTEMPTS = 3
         attempt = 0
         success = False
-        response = "Error en la generación del resumen tras múltiples intentos."
+        response = {"summary": "Error en la generación del resumen tras múltiples intentos."}
         while attempt < MAX_ATTEMPTS and not success:
             try:
                 prompt = [
@@ -355,9 +355,9 @@ class LLMRepository:
                         "content": prompt_template["user"].format(contents=content_list)
                     }
                 ]
-                print("El prompt es:", prompt)
+                
                 output = await self.llm_service.generate_text(prompt, max_new_tokens=5000)
-                print("El output es:", output)
+                
                 if isinstance(output, list) and output and 'generated_text' in output[-1]:
                     response = {"summary": output[-1]['generated_text']}
                     success = True  

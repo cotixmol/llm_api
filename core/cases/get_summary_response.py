@@ -80,53 +80,46 @@ class GetSummaryResponseCase:
         self.query_repository.set_order(field="@timestamp", order="desc")
         self.query_repository.set_order(field="created_at", order="desc")
 
-        # if self.summary_field:
-        #     self.query_repository.set_custom_agg(
-        #         {
-        #             "terms": {
-        #                 "field": self.summary_field,
-        #                 "size": 100
-        #             },
-        #             "aggs": {
-        #                 "top_docs": {
-        #                     "top_hits": {
-        #                         "size": 1000,
-        #                         "sort": [
-        #                             {
-        #                                 "reach": { #DEBERÍA SER INTERACTIONS PERO EN DEV ES TIPO TEXTO Y SE ROMPE
-        #                                     "order": "desc"
-        #                                 }
-        #                             }
-        #                         ]
-        #                     }
-        #                 }
-        #             }
-        #         },
-        #         name="top_categories_hits"
-        #     )
-        print("QUERY:", self.query_repository.body)
+        if self.summary_field:
+            self.query_repository.set_custom_agg(
+                {
+                    "terms": {
+                        "field": self.summary_field,
+                        "size": 100
+                    },
+                    "aggs": {
+                        "top_docs": {
+                            "top_hits": {
+                                "size": 1000,
+                                "sort": [
+                                    {
+                                        "reach": { #DEBERÍA SER INTERACTIONS PERO EN DEV ES TIPO TEXTO Y SE ROMPE
+                                            "order": "desc"
+                                        }
+                                    }
+                                ]
+                            }
+                        }
+                    }
+                },
+                name="top_categories_hits"
+            )
 
         try:
             ### SEARCH DOCUMENTS ###
             hits = await self.es_repository.get_paginated_data(query = self.query_repository, index_pattern=self.index_pattern)
 
-            print("summary field:", self.summary_field)
-            print("summary field type:", type(self.summary_field))
-
             ### MAKE PREDICTION ###
             match (self.summary_field, self.query):
                 case (str() as summary_field, _):  #Entra si summary_field es un str, sin importar query
-                    print("Entrando a apply_prompt_categories_summary")
                     response_dict = await self.llm_repository.apply_prompt_categories_summary(
                         docs=hits, prompt_template=self.prompt, summary_field=summary_field
                     )
                 case (None, str() as query):  #Entra solo si summary_field es None y query es un str
-                    print("Entrando a apply_prompt_query_summary")
                     response_dict = await self.llm_repository.apply_prompt_query_summary(
                         docs=hits, prompt_template=self.prompt, query=query
                     )
                 case (None, None):  #Entra solo si ambos son None
-                    print("Entrando a apply_prompt_summary")
                     response_dict = await self.llm_repository.apply_prompt_summary(
                         docs=hits, prompt_template=self.prompt
                     )
