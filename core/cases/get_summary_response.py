@@ -86,7 +86,6 @@ class GetSummaryResponseCase:
                     "aggs": {
                         "top_docs": {
                             "top_hits": {
-                                "size": 1000,
                                 "sort": [
                                     {
                                         "reach": { #DEBERÍA SER INTERACTIONS PERO EN DEV ES TIPO TEXTO Y SE ROMPE
