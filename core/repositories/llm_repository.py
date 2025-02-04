@@ -222,7 +222,7 @@ class LLMRepository:
     
 
     
-    async def apply_prompt_summary(self, docs: List[dict], prompt_template: dict, summary_field: str) -> Dict[str, str]:
+    async def apply_prompt_categories_summary(self, docs: List[dict], prompt_template: dict, summary_field: str) -> Dict[str, str]:
         if not docs:
             logging.error("La lista de documentos no puede estar vacía.")
             return {}
@@ -282,3 +282,87 @@ class LLMRepository:
                 summaries[category] = "Error en la generación del resumen tras múltiples intentos."
 
         return summaries
+    
+
+    async def apply_prompt_query_summary(self, docs: List[dict], prompt_template: dict, query: str) -> Dict[str, str]:
+        if not docs:
+            logging.error("La lista de documentos no puede estar vacía.")
+            return {}
+         
+        content_list = [getattr(doc, "content", "").strip() for doc in docs if getattr(doc, "content", "").strip()][:50]
+
+        if not content_list:
+            logging.error("No se encontraron documentos con contenido válido.")
+            return "No hay contenido válido para generar un resumen."
+
+        MAX_ATTEMPTS = 3
+        attempt = 0
+        success = False
+        response = "Error en la generación del resumen tras múltiples intentos."
+        while attempt < MAX_ATTEMPTS and not success:
+            try:
+                prompt = [
+                    {
+                        "role": "system",
+                        "content": prompt_template["system"],
+                    },
+                    {
+                        "role": "user",
+                        "content": prompt_template["user"].format(contents=content_list, query=query)
+                    }
+                ]
+                output = await self.llm_service.generate_text(prompt, max_new_tokens=5000)
+                if isinstance(output, list) and output and 'generated_text' in output[-1]:
+                    response = output[-1]['generated_text']
+                    success = True  
+                else:
+                    logging.warning(f"Formato inesperado en la respuesta del modelo. Output: {output}")
+                    attempt += 1
+
+            except Exception as e:
+                logging.error(f"Error generando resumen para la query '{query}' (Intento {attempt + 1}): {e}")
+                attempt += 1  
+
+        return response
+    
+    
+    async def apply_prompt_summary(self, docs: List[dict], prompt_template: dict) -> Dict[str, str]:
+        if not docs:
+            logging.error("La lista de documentos no puede estar vacía.")
+            return {}
+         
+        content_list = [getattr(doc, "content", "").strip() for doc in docs if getattr(doc, "content", "").strip()][:50]
+
+        if not content_list:
+            logging.error("No se encontraron documentos con contenido válido.")
+            return "No hay contenido válido para generar un resumen."
+
+        MAX_ATTEMPTS = 3
+        attempt = 0
+        success = False
+        response = "Error en la generación del resumen tras múltiples intentos."
+        while attempt < MAX_ATTEMPTS and not success:
+            try:
+                prompt = [
+                    {
+                        "role": "system",
+                        "content": prompt_template["system"],
+                    },
+                    {
+                        "role": "user",
+                        "content": prompt_template["user"].format(contents=content_list)
+                    }
+                ]
+                output = await self.llm_service.generate_text(prompt, max_new_tokens=5000)
+                if isinstance(output, list) and output and 'generated_text' in output[-1]:
+                    response = output[-1]['generated_text']
+                    success = True  
+                else:
+                    logging.warning(f"Formato inesperado en la respuesta del modelo. Output: {output}")
+                    attempt += 1
+
+            except Exception as e:
+                logging.error(f"Error generando resumen (Intento {attempt + 1}): {e}")
+                attempt += 1  
+
+        return response

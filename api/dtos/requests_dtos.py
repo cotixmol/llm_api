@@ -63,5 +63,5 @@ class LLMSummaryPreviewPayload(BaseModel):
     filters: typing.Optional[Filters] = None
     prompt: dict
     max_ndocs: typing.Optional[int] = 10000
-    query: typing.Optional[str] = None,
-    summary_field: str
+    query: typing.Optional[str] = None
+    summary_field: typing.Optional[str] = None  # Hacemos summary_field opcional
