@@ -84,7 +84,7 @@ class GetSummaryResponseCase:
             self.query_repository.set_custom_agg(
                 {
                     "terms": {
-                        "field": summary_field,
+                        "field": self.summary_field,
                         "size": 100
                     },
                     "aggs": {
@@ -110,8 +110,8 @@ class GetSummaryResponseCase:
             ### SEARCH DOCUMENTS ###
             hits = await self.es_repository.get_paginated_data(query = self.query_repository, index_pattern=self.index_pattern)
 
-            print(summary_field)
-            print(type(summary_field))
+            print(self.summary_field)
+            print(type(self.summary_field))
 
             ### MAKE PREDICTION ###
             match (self.summary_field, self.query):
