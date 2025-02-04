@@ -27,8 +27,6 @@ class GetSummaryResponseCase:
             query: str = None,            
     ):
         
-        if summary_field is None and query is None:
-            raise ValueError("Debe proporcionarse al menos 'summary_field' o 'query'.")
 
         since_iso_time = iso8601.parse_date(since_date).isoformat()
         to_iso_time = iso8601.parse_date(to_date).isoformat()
@@ -78,7 +76,7 @@ class GetSummaryResponseCase:
         PAGE_SIZE = min(int(ELASTIC_PAGE_SIZE), int(self.max_ndocs)) if self.max_ndocs else int(ELASTIC_PAGE_SIZE)
         self.query_repository.set_size(PAGE_SIZE)
 
-        self.query_repository.set_order(field="interactions", order="desc")
+        self.query_repository.set_order(field="reach", order="desc")#DEBERÍA SER INTERACTIONS PERO EN DEV ES TIPO TEXTO Y SE ROMPE
         self.query_repository.set_order(field="@timestamp", order="desc")
         self.query_repository.set_order(field="created_at", order="desc")
 
@@ -95,7 +93,7 @@ class GetSummaryResponseCase:
                                 "size": 1000,
                                 "sort": [
                                     {
-                                        "interactions": {
+                                        "reach": { #DEBERÍA SER INTERACTIONS PERO EN DEV ES TIPO TEXTO Y SE ROMPE
                                             "order": "desc"
                                         }
                                     }
@@ -111,6 +109,9 @@ class GetSummaryResponseCase:
         try:
             ### SEARCH DOCUMENTS ###
             hits = await self.es_repository.get_paginated_data(query = self.query_repository, index_pattern=self.index_pattern)
+
+            print(summary_field)
+            print(type(summary_field))
 
             ### MAKE PREDICTION ###
             match (self.summary_field, self.query):
