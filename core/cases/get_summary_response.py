@@ -1,10 +1,8 @@
-from typing import List, Tuple, Dict
 from api.config.logger import logger
 from api.dtos.responses_dtos import LLMSummaryResponse
 from core.repositories.elasticsearch_repository import ElasticsearchRepository
 from core.repositories.query_repository import Query
 from core.repositories.llm_repository import LLMRepository
-from api.config.secrets import ELASTIC_PAGE_SIZE
 import iso8601
 
 import re
@@ -73,8 +71,6 @@ class GetSummaryResponseCase:
         self.query_repository.set_filters(
             filters=self.extra_args.model_dump()
         )
-        PAGE_SIZE = min(int(ELASTIC_PAGE_SIZE), int(self.max_ndocs)) if self.max_ndocs else int(ELASTIC_PAGE_SIZE)
-        self.query_repository.set_size(PAGE_SIZE)
 
         self.query_repository.set_order(field="reach", order="desc")#DEBERÍA SER INTERACTIONS PERO EN DEV ES TIPO TEXTO Y SE ROMPE
         self.query_repository.set_order(field="@timestamp", order="desc")
@@ -107,7 +103,7 @@ class GetSummaryResponseCase:
 
         try:
             ### SEARCH DOCUMENTS ###
-            hits = await self.es_repository.get_paginated_data(query = self.query_repository, index_pattern=self.index_pattern)
+            hits = await self.es_repository.get_paginated_data(query = self.query_repository, index_pattern=self.index_pattern, max_ndocs=self.max_ndocs)
 
             ### MAKE PREDICTION ###
             match (self.summary_field, self.query):

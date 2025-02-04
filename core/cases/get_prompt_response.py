@@ -1,7 +1,4 @@
-from typing import List, Tuple, Dict
-from api.config.logger import logger
 from api.dtos.responses_dtos import LLMPromptResponse
-from core.repositories.elasticsearch_repository import ElasticsearchRepository
 from core.repositories.llm_repository import LLMRepository
 
 

@@ -41,6 +41,7 @@ class TopicPreviewPayload(BaseModel):
     since_date: str
     to_date: str
     filters: typing.Optional[Filters] = None
+    max_ndocs: typing.Optional[int] = 10000
 
 class LLMClassificationPreviewPayload(BaseModel):
     index_pattern: str
@@ -51,7 +52,7 @@ class LLMClassificationPreviewPayload(BaseModel):
     update_field: str
     task_key: str
     valid_labels: typing.List[str]
-    max_ndocs: int
+    max_ndocs: typing.Optional[int] = 10000
 
 class LLMPromptPreviewPayload(BaseModel):
     prompt: str

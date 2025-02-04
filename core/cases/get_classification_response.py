@@ -1,10 +1,9 @@
-from typing import List, Tuple, Dict
+from typing import List
 from api.config.logger import logger
 from api.dtos.responses_dtos import LLMClassificationResponse
 from core.repositories.elasticsearch_repository import ElasticsearchRepository
 from core.repositories.query_repository import Query
 from core.repositories.llm_repository import LLMRepository
-from api.config.secrets import ELASTIC_PAGE_SIZE
 import iso8601
 
 import re
@@ -60,13 +59,11 @@ class GetClassificationResponseCase:
         self.query_repository.set_filters(
             filters=self.extra_args.model_dump()
         )
-        PAGE_SIZE = min(int(ELASTIC_PAGE_SIZE), int(self.max_ndocs)) if self.max_ndocs else int(ELASTIC_PAGE_SIZE)
-        self.query_repository.set_size(PAGE_SIZE)
         self.query_repository.set_order(field="@timestamp", order="desc")
         self.query_repository.set_order(field="created_at", order="desc")
         try:
             ### SEARCH DOCUMENTS ###
-            hits = await self.es_repository.get_paginated_data(query = self.query_repository, index_pattern=self.index_pattern)
+            hits = await self.es_repository.get_paginated_data(query = self.query_repository, index_pattern=self.index_pattern, max_ndocs=self.max_ndocs)
             ### MAKE CLASSIFICATION ###
             predictions_dict = await self.llm_repository.apply_prompt_classification(prompt_template=self.prompt, task_key=self.task_key, docs=hits, valid_labels=self.valid_labels, update_field=self.update_field)
             
