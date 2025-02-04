@@ -1,10 +1,12 @@
-from fastapi import FastAPI, Depends
+from fastapi import FastAPI
 from api.config.settings import VERSION
 from fastapi.middleware.cors import CORSMiddleware
 from api.routes.topic_router import topic_router
 from api.routes.llm_router import llm_router
 from api.config.secrets import (MINIO_BUCKET, MODEL_NAME)
+from api.config.secrets import MODEL_NAME
 from api.config.settings import minio_client
+from factories.services.llm_client_initialization import initilialize_llm_client
 from contextlib import asynccontextmanager
 
 
@@ -17,6 +19,8 @@ description = """# API overview
 async def lifespan(app: FastAPI):
     # Startup event
     minio_client.update_model_folder(model_name=MODEL_NAME, bucket=MINIO_BUCKET)
+    MODEL_PATH = f"models/{MODEL_NAME}"
+    app.state.llm_service = initilialize_llm_client(model_path=MODEL_PATH)
     yield
     # Shutdown event
     
