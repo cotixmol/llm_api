@@ -116,14 +116,17 @@ class GetSummaryResponseCase:
             ### MAKE PREDICTION ###
             match (self.summary_field, self.query):
                 case (str() as summary_field, _):  #Entra si summary_field es un str, sin importar query
+                    print("Entrando a apply_prompt_categories_summary")
                     response_dict = await self.llm_repository.apply_prompt_categories_summary(
                         docs=hits, prompt_template=self.prompt, summary_field=summary_field
                     )
                 case (None, str() as query):  #Entra solo si summary_field es None y query es un str
+                    print("Entrando a apply_prompt_query_summary")
                     response_dict = await self.llm_repository.apply_prompt_query_summary(
                         docs=hits, prompt_template=self.prompt, query=query
                     )
                 case (None, None):  #Entra solo si ambos son None
+                    print("Entrando a apply_prompt_summary")
                     response_dict = await self.llm_repository.apply_prompt_summary(
                         docs=hits, prompt_template=self.prompt
                     )
