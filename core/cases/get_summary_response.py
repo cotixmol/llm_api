@@ -84,7 +84,7 @@ class GetSummaryResponseCase:
             self.query_repository.set_custom_agg(
                 {
                     "terms": {
-                        "field": self.summary_field,
+                        "field": f"{self.summary_field}.keyword",
                         "size": 100
                     },
                     "aggs": {
