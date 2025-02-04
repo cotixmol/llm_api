@@ -313,7 +313,7 @@ class LLMRepository:
                 ]
                 output = await self.llm_service.generate_text(prompt, max_new_tokens=5000)
                 if isinstance(output, list) and output and 'generated_text' in output[-1]:
-                    response = output[-1]['generated_text']
+                    response = {"summary": output[-1]['generated_text']}
                     success = True  
                 else:
                     logging.warning(f"Formato inesperado en la respuesta del modelo. Output: {output}")
@@ -355,7 +355,7 @@ class LLMRepository:
                 ]
                 output = await self.llm_service.generate_text(prompt, max_new_tokens=5000)
                 if isinstance(output, list) and output and 'generated_text' in output[-1]:
-                    response = output[-1]['generated_text']
+                    response = {"summary": output[-1]['generated_text']}
                     success = True  
                 else:
                     logging.warning(f"Formato inesperado en la respuesta del modelo. Output: {output}")
