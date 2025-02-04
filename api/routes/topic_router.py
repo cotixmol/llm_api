@@ -40,7 +40,8 @@ async def get_topic_report(
             index_pattern=parameters.index_pattern,
             since_date=parameters.since_date,
             to_date=parameters.to_date,
-            extra_args=parameters.filters
+            extra_args=parameters.filters,
+            max_ndocs=parameters.max_ndocs
         )
         topics, n_docs = await case()
         return BaseResponse(data=None, chart=topics, n_docs=n_docs)

@@ -4,9 +4,8 @@ WORKDIR /app
 RUN python -m pip install --upgrade pip
 #RUN pip install     --extra-index-url=https://pypi.nvidia.com     cuml-cu12==24.10.*
 RUN pip install --no-deps bertopic==0.16.2
-RUN pip install torch --index-url https://download.pytorch.org/whl/cu118
-COPY ./requirements.txt ./requirements.txt
-RUN pip install -r requirements.txt
+COPY ./requirements.txt ./requirements.txt 
+RUN pip install -r requirements.txt --no-deps
 RUN rm requirements.txt
 COPY ./ .
 ENTRYPOINT ["python", "app.py"]

@@ -5,7 +5,6 @@ from api.config.logger import logger
 import typing
 from collections import defaultdict
 from typing import List, Dict
-import asyncio
 
 class ElasticsearchRepository:
 
@@ -41,13 +40,15 @@ class ElasticsearchRepository:
         ]
         return documents, search_results.last_sort_id
     
-    async def get_paginated_data(self, index_pattern: str, query: Query) -> typing.List[Document]:
+    async def get_paginated_data(self, index_pattern: str, query: Query, max_ndocs: int = None) -> typing.List[Document]:
         total_hits = []
-        #query.set_size(self.page_size)
+        query.set_size(self.page_size)
         package_size = self.page_size
         last_sort = []
         i = 1
         while package_size == self.page_size:
+            if max_ndocs and len(total_hits) >= max_ndocs:
+                break
 
             if last_sort:
                 query.set_search_after(last_sort)

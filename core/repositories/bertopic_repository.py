@@ -21,6 +21,7 @@ from core.objects.stackedline import StackedLine, StackedSerie
 from core.objects.document import ContentText, DocumentGroup
 from core.objects.pie import PieChart, PieSlice
 from core.objects.topic_info import TopicInfo
+from api.config.logger import logger
 
 class BertopicRepositoryException(Exception):
     pass
@@ -63,7 +64,11 @@ class BertopicRepository:
  
     def __fit_model(self, content_list: typing.List[str], embeddings_list: typing.List[typing.List[float]]):
         embeddings_np = np.array(embeddings_list)
+        logger.info(f"Embeddings shape: {embeddings_np.shape}")
         reduced_embeddings = self.umap_model.fit_transform(embeddings_np)
+        logger.info(f"Reduced embeddings shape: {reduced_embeddings.shape}")
+        logger.info(f"reduce embeddings: {len(reduced_embeddings)}")
+        logger.info(f"content_list: {len(content_list)}")
         try:
             self.model.fit_transform(content_list, reduced_embeddings)
         except Exception as e:

@@ -4,13 +4,17 @@ import logging
 from services.llm_service import LLMService
 from typing import List, Dict
 from collections import defaultdict
+from api.config.logger import logger
 
 class LLMRepository:
     def __init__(self, llm_service: LLMService):
         self.llm_service = llm_service
 
     @staticmethod
-    def parse_model_response(response_text: str, valid_labels: typing.List[str]) -> typing.Optional[dict]:
+    def parse_model_response(response_text: str, valid_labels: typing.Optional[List[str]] = None) -> typing.Optional[dict]:
+        """
+            checks if the response_text is a valid json and if the value of the key 'task_key' is in the valid_labels
+        """
         try:
             start_index = response_text.find('{')
             end_index = response_text.rfind('}') + 1
@@ -18,10 +22,11 @@ class LLMRepository:
             response_data = json.loads(json_text)
             
             # Validar que el valor de la clave 'task_key' esté en las etiquetas válidas
-            for key, value in response_data.items():
-                if value not in valid_labels:
-                    logging.warning(f"Etiqueta no válida '{value}' para la clave '{key}'.")
-                    return None
+            if valid_labels:
+                for key, value in response_data.items():
+                    if value not in valid_labels:
+                        logging.warning(f"Etiqueta no válida '{value}' para la clave '{key}'.")
+                        return None
             return response_data
         except (ValueError, json.JSONDecodeError):
             logging.warning(f"Formato incorrecto en la respuesta del modelo. Response: {response_text}")
@@ -65,11 +70,11 @@ class LLMRepository:
             messages = [
             {"role": "user", "content": prompt},
             ]
+            logger.info(f"prompt: {messages}")
 
             try:
                 outputs = await self.llm_service.generate_text(messages, max_new_tokens=350)
-
-                response_data = self.parse_model_response(outputs[-1]["content"])
+                response_data = self.parse_model_response(outputs[-1]["generated_text"])
 
                 try:
                     topic_name = response_data["topic_name"]
@@ -78,8 +83,8 @@ class LLMRepository:
                 except:
                     logging.warning(f"Formato incorrecto en la respuesta del modelo, intento número {attempt + 1}. Response: {response_data}")
             
-            except:
-                logging.warning(f"Error en la generación de Nombre y Tópico, intento número {attempt + 1}")
+            except Exception as e:
+                logging.warning(f"Error en la generación de Nombre y Tópico, intento número {attempt + 1}. Error: {e}")
 
         logging.error(f"No se pudo generar una respuesta válida después de {MAX_ATTEMPTS} intentos")
         return None, None   

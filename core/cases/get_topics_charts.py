@@ -29,7 +29,8 @@ class GetTopicChartsCase:
             index_pattern: str,
             since_date: str,
             to_date: str,
-            extra_args: dict
+            extra_args: dict,
+            max_ndocs: int
     ):
         since_iso_time = iso8601.parse_date(since_date).isoformat()
         to_iso_time = iso8601.parse_date(to_date).isoformat()
@@ -40,6 +41,7 @@ class GetTopicChartsCase:
         self.since_iso_time = since_iso_time
         self.to_iso_time = to_iso_time
         self.extra_args = extra_args
+        self.max_ndocs = max_ndocs
 
     async def __call__(self) -> Tuple[Dict, int]:
         ### CREATE QUERY ###
@@ -59,10 +61,17 @@ class GetTopicChartsCase:
         self.query_repository.set_order(field="@timestamp", order="desc")
         self.query_repository.set_order(field="created_at", order="desc")
 
+        try:
+            ### SEARCH DOCUMENTS ###
 
-        ### SEARCH DOCUMENTS ###
-
-        documents_list = await self.es_repository.get_paginated_data(query = self.query_repository, index_pattern=self.index_pattern)
+            documents_list = await self.es_repository.get_paginated_data(
+                query = self.query_repository, 
+                index_pattern=self.index_pattern, 
+                max_ndocs=self.max_ndocs)
+        finally:
+            ### CLOSE CLIENT ###
+            await self.es_repository.close_client()
+            logger.info(f"Client closed")
         ### GET TOPICS ###
         created_at_list, content_list, embedding_list = self.__prepare_data(documents_list)
 
