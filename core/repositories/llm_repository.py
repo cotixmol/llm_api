@@ -70,7 +70,6 @@ class LLMRepository:
             messages = [
             {"role": "user", "content": prompt},
             ]
-            logger.info(f"prompt: {messages}")
 
             try:
                 outputs = await self.llm_service.generate_text(messages, max_new_tokens=350)
@@ -227,13 +226,12 @@ class LLMRepository:
     
 
     
-    async def apply_prompt_categories_summary(self, es_response: dict, prompt_template: dict, summary_field: str) -> Dict[str, str]:
+    async def apply_prompt_categories_summary(self, aggs: dict, prompt_template: dict, summary_field: str) -> Dict[str, str]:
         buckets = (
-            es_response
+            aggs
             .get("top_categories_hits", {})
             .get("buckets", [])
         )
-        
         if not buckets:
             logging.error("No se encontraron buckets en la respuesta de Elasticsearch.")
             return {}
@@ -288,9 +286,7 @@ class LLMRepository:
                             "content": prompt_template["user"].format(contents=contents, category=category)
                         }
                     ]
-
                     output = await self.llm_service.generate_text(prompt, max_new_tokens=5000)
-
                     # Validar la respuesta del modelo antes de guardarla
                     if isinstance(output, list) and output and 'generated_text' in output[-1]:
                         summaries[category] = output[-1]['generated_text']

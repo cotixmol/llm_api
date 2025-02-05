@@ -55,7 +55,7 @@ class GetClassificationResponseCase:
             fields=fields
         )
         self.query_repository.set_match_by_field(field="content")
-        self.query_repository.set_not_match_by_field(field=self.update_field)
+        #self.query_repository.set_not_match_by_field(field=self.update_field)
         self.query_repository.set_filters(
             filters=self.extra_args.model_dump()
         )
@@ -65,7 +65,11 @@ class GetClassificationResponseCase:
             ### SEARCH DOCUMENTS ###
             hits = await self.es_repository.get_paginated_data(query = self.query_repository, index_pattern=self.index_pattern, max_ndocs=self.max_ndocs)
             ### MAKE CLASSIFICATION ###
-            predictions_dict = await self.llm_repository.apply_prompt_classification(prompt_template=self.prompt, task_key=self.task_key, docs=hits, valid_labels=self.valid_labels, update_field=self.update_field)
+            predictions_dict = await self.llm_repository.apply_prompt_classification(prompt_template=self.prompt, 
+                                                                                     task_key=self.task_key, 
+                                                                                     docs=hits, 
+                                                                                     valid_labels=self.valid_labels, 
+                                                                                     update_field=self.update_field)
             
             ### UPDATE DOCUMENTS ###
             await self.es_repository.update_documents_bulk(

@@ -206,7 +206,5 @@ class BertopicRepository:
     def __parse_response(response):
         parsed_response = defaultdict(dict)
         for chart in response:
-            # print(type(chart))
             parsed_response[type(chart).__name__].update(chart.model_dump())
-        # print((parsed_response))
         return dict(parsed_response)

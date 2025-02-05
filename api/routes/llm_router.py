@@ -55,7 +55,7 @@ async def get_classification_ipcva(
         raise HTTPException(status_code=404, detail=f"{error}")
     except Exception as error:
         logger.error(f"{type(error)}: {error}")
-        raise HTTPException(status_code=500, detail="Error!!")
+        raise HTTPException(status_code=500, detail=error)
 
 
 @llm_router.post(

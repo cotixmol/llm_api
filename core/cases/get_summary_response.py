@@ -59,9 +59,9 @@ class GetSummaryResponseCase:
         self.query_repository.set_match_by_field(field="content")
             
         if isinstance(self.query, str):   
-            self.query_repository.set_query_string(query_string=f'(NOT category.keyword: "Streaming") AND (content_type.keyword: ("Post" OR "tweet" OR "New" OR "videos" OR "shorts")) AND ({self.query})')
+            self.query_repository.set_query_string(query_string=f'(NOT category.keyword: "Streaming") AND (NOT content_type.keyword: "Repost") AND ({self.query})')
         else:
-            self.query_repository.set_query_string(query_string='(NOT category.keyword: "Streaming") AND (content_type.keyword: ("Post" OR "tweet" OR "New" OR "videos" OR "shorts"))')
+            self.query_repository.set_query_string(query_string='(NOT category.keyword: "Streaming") AND (NOT content_type.keyword: "Repost")')
 
         self.query_repository.set_filters(
             filters=self.extra_args.model_dump()
@@ -111,6 +111,8 @@ class GetSummaryResponseCase:
                 self.query_repository.set_order(field="@timestamp", order="desc")
                 self.query_repository.set_order(field="created_at", order="desc")
 
+                self.query_repository.set_fields(fields=fields)
+
                 response = await self.es_repository.get_paginated_data(
                                                     query = self.query_repository, 
                                                     index_pattern=self.index_pattern, 
@@ -119,15 +121,15 @@ class GetSummaryResponseCase:
             match (self.summary_field, self.query):
                 case (str() as summary_field, _):  #Entra si summary_field es un str, sin importar query
                     response_dict = await self.llm_repository.apply_prompt_categories_summary(
-                        es_response=response, prompt_template=self.prompt, summary_field=summary_field
+                        aggs=response, prompt_template=self.prompt, summary_field=summary_field
                     )
                 case (None, str() as query):  #Entra solo si summary_field es None y query es un str
                     response_dict = await self.llm_repository.apply_prompt_query_summary(
-                        es_response=response, prompt_template=self.prompt, query=query
+                        docs=response, prompt_template=self.prompt, query=query
                     )
                 case (None, None):  #Entra solo si ambos son None
                     response_dict = await self.llm_repository.apply_prompt_summary(
-                        es_response=response, prompt_template=self.prompt
+                        docs=response, prompt_template=self.prompt
                     )
 
 

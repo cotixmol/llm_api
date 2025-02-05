@@ -109,7 +109,6 @@ class GetTopicChartsCase:
             doc_embedding = doc.embedding
             doc_created_at = doc.created_at
             if not doc_content or not doc_embedding:
-                print(f"skiped document", doc_content)
                 continue
             content.append(doc_content)
             embeddings.append(doc_embedding)

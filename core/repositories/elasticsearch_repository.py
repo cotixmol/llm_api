@@ -111,7 +111,6 @@ class ElasticsearchRepository:
             data_to_update=data_to_update,
             chunk_size=bulk_size
          )
-        print(is_successful)
     async def close_client(self):
         response = await self.elasticsearch_service.close()
         return response

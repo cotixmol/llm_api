@@ -36,7 +36,6 @@ class Query:
         """
         for condition in  self.body["query"]["bool"]["must"]:
             if "range" in condition.keys():
-                print("updating range time")
                 self.body["query"]["bool"]["must"].remove(condition)
                 
 
