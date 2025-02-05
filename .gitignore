@@ -13,5 +13,6 @@ venv/*
 venv
 test.py
 test_bertopic.py
+test_api
 # models
 models/*

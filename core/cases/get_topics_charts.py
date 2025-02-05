@@ -9,11 +9,11 @@ from core.objects.document import Document
 from sklearn.feature_extraction.text import CountVectorizer
 from bertopic.representation import MaximalMarginalRelevance
 from bertopic.vectorizers import ClassTfidfTransformer
-#from umap import UMAP
 from sklearn.decomposition import PCA
+from cuml.cluster import HDBSCAN3
+from cuml.manifold import UMAP
+#from umap import UMAP
 #from hdbscan import HDBSCAN
-#from cuml.cluster import HDBSCAN
-#from cuml.manifold import UMAP
 import re
 
 CUSTOM_STOPWORDS = ["co", "rt", "dice", "min", "asi" "eh", "etc", "decis", 'http', "link", "bio", 'https', 'amp', "va", 'com', "si", "mas", "anos", "ano", "vos", "RT", "usted", "ustedes", "tenes", "tambien", "tan", "sos", "solo"]

@@ -228,10 +228,8 @@ class LLMRepository:
 
     
     async def apply_prompt_categories_summary(self, es_response: dict, prompt_template: dict, summary_field: str) -> Dict[str, str]:
-        # Extraer los buckets de la agregación
         buckets = (
             es_response
-            .get("aggregations", {})
             .get("top_categories_hits", {})
             .get("buckets", [])
         )

@@ -14,11 +14,16 @@ class ElasticsearchRepository:
 
     ### SEARCH METHODS ###
 
-    async def get_aggs_data(self, index_pattern: str, body: typing.Dict) -> typing.Dict:
+    async def get_aggs_data(self, index_pattern: str, query: Query) -> typing.Dict:
+        """
+            retrieve the aggregations keywords and number of documents for each keyword
+        """
+        query.set_size(0)
         response = await self.elasticsearch_service.run_search_query(
             index_pattern=index_pattern,
-            query=body
+            query=query.body
         )
+
         aggs_data = defaultdict(dict)
         for agg_name, agg_result in response.aggregations.items():
             aggs_data[agg_name] = {
@@ -27,6 +32,18 @@ class ElasticsearchRepository:
             }
         return dict(aggs_data)
     
+    async def get_aggs(self, index_pattern: str, query: Query) -> typing.Dict:
+        """
+            return the whole aggregations response
+        """
+        query.set_size(0)
+        response = await self.elasticsearch_service.run_search_query(
+            index_pattern=index_pattern,
+            query=query.body
+        )
+    
+        return response.aggregations
+
     async def get_index_data(self, index_pattern: str, body: dict ) -> typing.Tuple[typing.List[Document], typing.List]:
         search_results = await self.elasticsearch_service.run_search_query(
             index_pattern=index_pattern, query=body)

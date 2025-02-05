@@ -7,8 +7,8 @@ from bertopic.representation import MaximalMarginalRelevance
 import numpy as np
 from cuml.manifold import UMAP
 from cuml.cluster import HDBSCAN
-f#rom umap import UMAP
-f#rom hdbscan import HDBSCAN
+#from umap import UMAP
+#from hdbscan import HDBSCAN
 from sklearn.feature_extraction.text import CountVectorizer
 from bertopic.vectorizers import ClassTfidfTransformer
 from bertopic.dimensionality import BaseDimensionalityReduction

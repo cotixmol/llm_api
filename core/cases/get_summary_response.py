@@ -48,21 +48,16 @@ class GetSummaryResponseCase:
         )
         
         fields = self.extra_args.fields
+
+        # fields necessary to process the document
         if "content" not in fields:
             fields.append("content")
         if "interactions" not in fields:
             fields.append("interactions")
-        if self.summary_field and self.summary_field not in fields:
-            fields.append(self.summary_field)
 
-        self.query_repository.set_fields(
-            fields=fields
-        )
-
+        #document needs to have content to be processed
         self.query_repository.set_match_by_field(field="content")
-        if self.summary_field:
-            self.query_repository.set_match_by_field(field=self.summary_field)
-
+            
         if isinstance(self.query, str):   
             self.query_repository.set_query_string(query_string=f'(NOT category.keyword: "Streaming") AND (content_type.keyword: ("Post" OR "tweet" OR "New" OR "videos" OR "shorts")) AND ({self.query})')
         else:
@@ -72,39 +67,54 @@ class GetSummaryResponseCase:
             filters=self.extra_args.model_dump()
         )
 
-        self.query_repository.set_order(field="interactions", order="desc", unmapped_type="long")
-        self.query_repository.set_order(field="@timestamp", order="desc")
-        self.query_repository.set_order(field="created_at", order="desc")
-
-        if self.summary_field:
-            self.query_repository.set_custom_agg(
-                {
-                    "terms": {
-                        "field": f"{self.summary_field}.keyword",
-                        "size": 100
-                    },
-                    "aggs": {
-                        "top_docs": {
-                            "top_hits": {
-                                "sort": [
-                                    {
-                                        "interactions": { 
-                                            "order": "desc",
-                                            "unmapped_type": "long"
-                                        }
-                                    }
-                                ]
-                            }
-                        }
-                    }
-                },
-                name="top_categories_hits"
-            )
-
         try:
             ### SEARCH DOCUMENTS ###
-            response = await self.es_repository.get_paginated_data(query = self.query_repository, index_pattern=self.index_pattern, max_ndocs=self.max_ndocs)
-            print(response[0])
+            if self.summary_field:
+                #add summary_field to fields if not already in present
+                if self.summary_field not in fields:
+                    fields.append(self.summary_field)
+
+                #if summary field set match by field
+                self.query_repository.set_match_by_field(field=self.summary_field)
+
+                #if summary field set custom aggregation to get top documents for each category
+                self.query_repository.set_custom_agg(
+                    {
+                        "terms": {
+                            "field": f"{self.summary_field}.keyword",
+                            "size": 100
+                        },
+                        "aggs": {
+                            "top_docs": {
+                                "top_hits": {
+                                    "sort": [
+                                        {
+                                            "interactions": { 
+                                                "order": "desc",
+                                                "unmapped_type": "long"
+                                            }
+                                        }
+                                    ],
+                                    "_source": {
+                                        "includes": fields
+                                    },
+                                }
+                            }
+                        }
+                    },
+                    name="top_categories_hits"
+                )
+                response = await self.es_repository.get_aggs(query = self.query_repository, index_pattern=self.index_pattern)
+            else:
+                #if not summary field set order of documents by interactions
+                self.query_repository.set_order(field="interactions", order="desc", unmapped_type="long")
+                self.query_repository.set_order(field="@timestamp", order="desc")
+                self.query_repository.set_order(field="created_at", order="desc")
+
+                response = await self.es_repository.get_paginated_data(
+                                                    query = self.query_repository, 
+                                                    index_pattern=self.index_pattern, 
+                                                    max_ndocs=self.max_ndocs)
             ### MAKE PREDICTION ###
             match (self.summary_field, self.query):
                 case (str() as summary_field, _):  #Entra si summary_field es un str, sin importar query
