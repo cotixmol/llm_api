@@ -72,7 +72,7 @@ class GetSummaryResponseCase:
             filters=self.extra_args.model_dump()
         )
 
-        self.query_repository.set_order(field="reach", order="desc")#DEBERÍA SER INTERACTIONS PERO EN DEV ES TIPO TEXTO Y SE ROMPE
+        self.query_repository.set_order(field="interactions", order="desc", unmapped_type="long")
         self.query_repository.set_order(field="@timestamp", order="desc")
         self.query_repository.set_order(field="created_at", order="desc")
 
@@ -88,8 +88,9 @@ class GetSummaryResponseCase:
                             "top_hits": {
                                 "sort": [
                                     {
-                                        "reach": { #DEBERÍA SER INTERACTIONS PERO EN DEV ES TIPO TEXTO Y SE ROMPE
-                                            "order": "desc"
+                                        "interactions": { 
+                                            "order": "desc",
+                                            "unmapped_type": "long"
                                         }
                                     }
                                 ]

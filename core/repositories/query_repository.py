@@ -71,7 +71,7 @@ class Query:
         self.body["size"] = size
         return
     
-    def set_order(self, field: str, order: typing.Literal["asc", "desc"]) -> None:
+    def set_order(self, field: str, order: typing.Literal["asc", "desc"], unmapped_type: str = "boolean") -> None:
         """Define el orden de los documentos. Si el campo solicitado no está dentro 
            de "_source" se ordena por "@timestamp"
 
@@ -86,7 +86,7 @@ class Query:
             {
                 field: {
                     "order": order,
-                    "unmapped_type": "boolean"
+                    "unmapped_type": unmapped_type
                 }
             }
         )

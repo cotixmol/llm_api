@@ -227,29 +227,52 @@ class LLMRepository:
     
 
     
-    async def apply_prompt_categories_summary(self, docs: List[dict], prompt_template: dict, summary_field: str) -> Dict[str, str]:
-        if not docs:
-            logging.error("La lista de documentos no puede estar vacía.")
+    async def apply_prompt_categories_summary(self, es_response: dict, prompt_template: dict, summary_field: str) -> Dict[str, str]:
+        # Extraer los buckets de la agregación
+        buckets = (
+            es_response
+            .get("aggregations", {})
+            .get("top_categories_hits", {})
+            .get("buckets", [])
+        )
+        
+        if not buckets:
+            logging.error("No se encontraron buckets en la respuesta de Elasticsearch.")
             return {}
 
-        # Agrupar documentos por el campo dinámico (summary_field), descartando los que no lo tengan
-        category_docs = defaultdict(list)
-        for doc in docs:
-            category = getattr(doc, summary_field, None) 
-            content = getattr(doc, "content", "").strip()
+        # Para cada bucket se extraen los contenidos de los documentos (hits) de la subagregación 'top_interactions'
+        category_docs = {}
+        for bucket in buckets:
+            # La categoría se obtiene directamente de la clave del bucket
+            category = bucket.get("key")
             
-            # Si falta la categoría o el contenido está vacío, se descarta
-            if not category or not content:
-                logging.warning(f"Documento descartado: {doc}")  
-                continue
+            # Extraer los documentos del subbucket 'top_interactions'
+            hits = (
+                bucket
+                .get("top_docs", {})
+                .get("hits", {})
+                .get("hits", [])
+            )
             
-            category_docs[category].append(content)
-        # Limitar a 50 documentos por categoría
-        for category in category_docs:
-            category_docs[category] = category_docs[category][:50]
+            contents = []
+            for hit in hits:
+                source = hit.get("_source", {})
+                # Se extrae y limpia el contenido
+                content = source.get("content", "").strip()
+                if not content:
+                    logging.warning(f"Documento sin contenido en bucket '{category}': {hit}")
+                    continue
+                contents.append(content)
+            
+            if contents:
+                # Limitar a 50 documentos por categoría
+                category_docs[category] = contents[:50]
+            else:
+                logging.warning(f"No se encontraron contenidos válidos para la categoría '{category}'.")
 
+        # Procesar cada categoría usando el LLM para generar un resumen
         summaries = {}
-        MAX_ATTEMPTS = 3  # 🔹 Número máximo de intentos por categoría
+        MAX_ATTEMPTS = 3  # Número máximo de intentos por categoría
 
         for category, contents in category_docs.items():
             attempt = 0
