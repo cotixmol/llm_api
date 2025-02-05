@@ -10,7 +10,7 @@ from sklearn.feature_extraction.text import CountVectorizer
 from bertopic.representation import MaximalMarginalRelevance
 from bertopic.vectorizers import ClassTfidfTransformer
 from sklearn.decomposition import PCA
-from cuml.cluster import HDBSCAN3
+from cuml.cluster import HDBSCAN
 from cuml.manifold import UMAP
 #from umap import UMAP
 #from hdbscan import HDBSCAN
