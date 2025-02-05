@@ -57,7 +57,6 @@ class ElasticsearchRepository:
                 index_pattern=index_pattern, 
                 query=query.body
             )
-
             hits = es_response.hits
             package_size = len(hits)
             logger.info(f"{package_size} documents brought in the page number {i} from the index: {index_pattern}") 

@@ -103,21 +103,21 @@ class GetSummaryResponseCase:
 
         try:
             ### SEARCH DOCUMENTS ###
-            hits = await self.es_repository.get_paginated_data(query = self.query_repository, index_pattern=self.index_pattern, max_ndocs=self.max_ndocs)
-
+            response = await self.es_repository.get_paginated_data(query = self.query_repository, index_pattern=self.index_pattern, max_ndocs=self.max_ndocs)
+            print(response[0])
             ### MAKE PREDICTION ###
             match (self.summary_field, self.query):
                 case (str() as summary_field, _):  #Entra si summary_field es un str, sin importar query
                     response_dict = await self.llm_repository.apply_prompt_categories_summary(
-                        docs=hits, prompt_template=self.prompt, summary_field=summary_field
+                        es_response=response, prompt_template=self.prompt, summary_field=summary_field
                     )
                 case (None, str() as query):  #Entra solo si summary_field es None y query es un str
                     response_dict = await self.llm_repository.apply_prompt_query_summary(
-                        docs=hits, prompt_template=self.prompt, query=query
+                        es_response=response, prompt_template=self.prompt, query=query
                     )
                 case (None, None):  #Entra solo si ambos son None
                     response_dict = await self.llm_repository.apply_prompt_summary(
-                        docs=hits, prompt_template=self.prompt
+                        es_response=response, prompt_template=self.prompt
                     )
 
 

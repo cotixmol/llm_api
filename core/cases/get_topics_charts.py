@@ -9,9 +9,9 @@ from core.objects.document import Document
 from sklearn.feature_extraction.text import CountVectorizer
 from bertopic.representation import MaximalMarginalRelevance
 from bertopic.vectorizers import ClassTfidfTransformer
-from umap import UMAP
+#from umap import UMAP
 from sklearn.decomposition import PCA
-from hdbscan import HDBSCAN
+#from hdbscan import HDBSCAN
 #from cuml.cluster import HDBSCAN
 #from cuml.manifold import UMAP
 import re
