@@ -94,8 +94,8 @@ class LLMRepository:
         task_key: str,
         update_field: str,
         valid_labels: typing.List[str],
+        batch_size: int,
         docs: List[dict] = None,
-        batch_size: int = 10,
     ) -> typing.List[typing.Dict[str, typing.Optional[str]]]:
         
         if not docs:
@@ -215,9 +215,9 @@ class LLMRepository:
     
     async def apply_prompt(self, prompt: str) -> typing.Optional[str]:
         attempts = 0
+        prompt = [{"role": "user", "content": prompt}]
         while attempts < 5:
             try:
-                prompt = [{"role": "user", "content": prompt}]
                 output = await self.llm_service.generate_text(prompt)
                 return output[-1]["generated_text"]
             except Exception as e:

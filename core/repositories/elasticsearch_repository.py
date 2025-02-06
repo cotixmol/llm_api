@@ -59,13 +59,16 @@ class ElasticsearchRepository:
     
     async def get_paginated_data(self, index_pattern: str, query: Query, max_ndocs: int = None) -> typing.List[Document]:
         total_hits = []
-        query.set_size(self.page_size)
-        package_size = self.page_size
         last_sort = []
         i = 1
-        while package_size == self.page_size:
-            if max_ndocs and len(total_hits) >= max_ndocs:
-                break
+        while True:
+            remaining_docs = max_ndocs - len(total_hits) if max_ndocs else self.page_size
+
+            if remaining_docs <= 0:
+                break  # Stop searching when we reach max_ndocs
+
+            page_size = min(self.page_size, remaining_docs)  # Adjust page size dynamically
+            query.set_size(page_size)
 
             if last_sort:
                 query.set_search_after(last_sort)
@@ -75,9 +78,9 @@ class ElasticsearchRepository:
                 query=query.body
             )
             hits = es_response.hits
-            package_size = len(hits)
-            logger.info(f"{package_size} documents brought in the page number {i} from the index: {index_pattern}") 
+            logger.info(f"{len(hits)} documents brought in the page number {i} from the index: {index_pattern}") 
             i+=1
+
             if not hits:
                 logger.info(f"No documents found for index {index_pattern}")
                 break
@@ -89,6 +92,10 @@ class ElasticsearchRepository:
                 flat_hit.update(hit['_source'])
                 hits_data.append(flat_hit)
             total_hits.extend(hits_data)
+
+            if len(hits) < self.page_size:
+                break  # Stop searching when we reach the end of the index
+
         documents = [
             Document(
                 **doc

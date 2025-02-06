@@ -46,7 +46,8 @@ async def get_classification_ipcva(
             task_key= parameters.task_key,
             prompt=parameters.prompt,
             valid_labels=parameters.valid_labels,
-            max_ndocs=parameters.max_ndocs
+            max_ndocs=parameters.max_ndocs,
+            batch_size=parameters.batch_size
         )
         response = await llm_case()
         return response

@@ -24,7 +24,8 @@ class GetClassificationResponseCase:
             task_key: str,
             update_field:str,
             valid_labels: List[str],
-            max_ndocs: int
+            max_ndocs: int,
+            batch_size: int
     ):
         since_iso_time = iso8601.parse_date(since_date).isoformat()
         to_iso_time = iso8601.parse_date(to_date).isoformat()
@@ -40,6 +41,8 @@ class GetClassificationResponseCase:
         self.update_field = update_field
         self.valid_labels = valid_labels
         self.max_ndocs = max_ndocs
+        self.batch_size = batch_size
+        
 
     async def __call__(self) -> LLMClassificationResponse:
         ### CREATE QUERY ###
@@ -69,7 +72,8 @@ class GetClassificationResponseCase:
                                                                                      task_key=self.task_key, 
                                                                                      docs=hits, 
                                                                                      valid_labels=self.valid_labels, 
-                                                                                     update_field=self.update_field)
+                                                                                     update_field=self.update_field,
+                                                                                     batch_size=self.batch_size)
             
             ### UPDATE DOCUMENTS ###
             await self.es_repository.update_documents_bulk(
