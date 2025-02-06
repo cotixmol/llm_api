@@ -1,6 +1,7 @@
 import torch
 from transformers import AutoModelForCausalLM, AutoTokenizer, pipeline
 from api.config.logger import logger
+from typing import Optional
 
 
 class LLMException(Exception):
@@ -17,7 +18,7 @@ class LLMService:
                                 torch_dtype=torch.bfloat16,
                                 return_full_text=False)
     
-    async def generate_text(self, prompt: str, max_new_tokens: int) -> str:
+    async def generate_text(self, prompt: str, max_new_tokens: Optional[int] = 10000) -> str:
         try:
             response = self.pipe(prompt, max_new_tokens=max_new_tokens)
             return response

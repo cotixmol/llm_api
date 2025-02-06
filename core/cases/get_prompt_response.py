@@ -1,9 +1,6 @@
 from api.dtos.responses_dtos import LLMPromptResponse
 from core.repositories.llm_repository import LLMRepository
 
-
-_N_DOCS = 0
-
 class GetPromptResponseCase:
     def __init__(
             self,

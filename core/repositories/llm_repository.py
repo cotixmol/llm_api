@@ -95,7 +95,7 @@ class LLMRepository:
         update_field: str,
         valid_labels: typing.List[str],
         docs: List[dict] = None,
-        batch_size: int = 2,
+        batch_size: int = 10,
     ) -> typing.List[typing.Dict[str, typing.Optional[str]]]:
         
         if not docs:
@@ -213,13 +213,12 @@ class LLMRepository:
         "classification_list": category_list + skiped_category
          }
     
-
-    
-    async def apply_prompt(self, prompt: typing.List[typing.Dict[str, str]]) -> typing.Optional[str]:
+    async def apply_prompt(self, prompt: str) -> typing.Optional[str]:
         attempts = 0
         while attempts < 5:
             try:
-                output = await self.llm_service.generate_text(prompt, max_new_tokens=50)
+                prompt = [{"role": "user", "content": prompt}]
+                output = await self.llm_service.generate_text(prompt)
                 return output[-1]["generated_text"]
             except Exception as e:
                 logging.error(f"Error generando texto en el intento {attempts + 1}: {e}")
