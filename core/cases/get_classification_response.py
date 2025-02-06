@@ -55,7 +55,7 @@ class GetClassificationResponseCase:
             fields=fields
         )
         self.query_repository.set_match_by_field(field="content")
-        #self.query_repository.set_not_match_by_field(field=self.update_field)
+        self.query_repository.set_not_match_by_field(field=self.update_field)
         self.query_repository.set_filters(
             filters=self.extra_args.model_dump()
         )
@@ -77,16 +77,18 @@ class GetClassificationResponseCase:
                 data_to_update=predictions_dict["classification_list"],
                 doc_id_list=predictions_dict["doc_id_list"]
                 )
+        except Exception as e:
+            logger.error(f"Error: {e}")
+            raise e
         finally:
             ### CLOSE CLIENT ###
             await self.es_repository.close_client()
             logger.info(f"Client closed")
         
         ### REPORT TO WORKER ###
-
         response = LLMClassificationResponse(
             total_docs=len(predictions_dict["classification_list"]),
-            updated_docs=len([doc for doc in predictions_dict["classification_list"] if doc is not None])
+            updated_docs=len([doc for doc in predictions_dict["classification_list"] if doc[self.update_field] is not None])
         )
 
         return response

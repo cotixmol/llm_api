@@ -100,10 +100,10 @@ class LLMRepository:
         
         if not docs:
             logging.error("docs_list no puede ser None o vacío.")
-            return []
+            raise ValueError("No se encontraron documentos.")
         if not prompt_template:
             logging.error("El template de prompt no puede ser None o vacío.")
-            return []
+            raise ValueError("No se encontró un template de prompt válido.")
         
         es_index_list = [] #Se puede tener más de un índice?
         doc_id_list = []
@@ -129,8 +129,12 @@ class LLMRepository:
             content.append(doc_content)
             es_index_list.append(doc.index)
             doc_id_list.append(doc.id)
+        
+        # check if content is None, an empty string, or the word "empty"
+        if not content:
+            raise ValueError("No se encontraron documentos válidos para procesar.")
 
-        for attempt in range(5): 
+        for attempt in range(3): 
             if not pending_indices:
                 break 
 
@@ -199,7 +203,7 @@ class LLMRepository:
             pending_indices = [idx for idx in pending_indices if predictions[idx] is None]
 
         for idx in pending_indices:
-            logging.error(f"Documento descartado tras 5 intentos: {doc_content[idx]}")
+            logging.error(f"Documento descartado tras 5 intentos: {content[idx]}")
 
         category_list = [{update_field: prediction} for prediction in predictions]
 
