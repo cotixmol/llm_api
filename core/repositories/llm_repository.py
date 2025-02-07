@@ -202,7 +202,7 @@ class LLMRepository:
                         logging.error(f"Error al procesar el documento {idx}. Detalles: {parse_error}", exc_info=True)
 
 
-            pending_indices = [idx for idx in pending_indices if predictions[idx]]
+            pending_indices = [idx for idx in pending_indices if not predictions[idx]]
 
         for idx in pending_indices:
             logging.error(f"Documento descartado tras 5 intentos: {content[idx]}")
