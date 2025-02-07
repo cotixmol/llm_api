@@ -52,8 +52,8 @@ class LLMClassificationPreviewPayload(BaseModel):
     update_field: str
     task_key: str
     valid_labels: typing.List[str]
-    max_ndocs: typing.Optional[int] = 10000,
-    batch_size: typing.Optional[int] = 50,
+    max_ndocs: typing.Optional[int] = 10000
+    batch_size: typing.Optional[int] = 50
     query: typing.Optional[str] = None
 
 class LLMPromptPreviewPayload(BaseModel):

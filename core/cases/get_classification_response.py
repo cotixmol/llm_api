@@ -59,7 +59,7 @@ class GetClassificationResponseCase:
             fields=fields
         )
         self.query_repository.set_match_by_field(field="content")
-        #self.query_repository.set_not_match_by_field(field=self.update_field)
+        self.query_repository.set_not_match_by_field(field=self.update_field)
         self.query_repository.set_filters(
             filters=self.extra_args.model_dump()
         )

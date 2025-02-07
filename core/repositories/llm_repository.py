@@ -105,15 +105,12 @@ class LLMRepository:
             logging.error("El template de prompt no puede ser None o vacío.")
             raise ValueError("No se encontró un template de prompt válido.")
         
-        es_index_list = [] #Se puede tener más de un índice?
+        es_index_list = [] 
         doc_id_list = []
         content = []
-        skiped_es_index_list = []#idem
+        skiped_es_index_list = []
         skiped_doc_id_list = []
         skiped_category = []
-
-        predictions = [None] * len(docs)
-        pending_indices = list(range(len(docs))) 
 
         for doc in docs:
             # check if content exits in "_source" dict
@@ -129,6 +126,9 @@ class LLMRepository:
             content.append(doc_content)
             es_index_list.append(doc.index)
             doc_id_list.append(doc.id)
+
+        pending_indices = list(range(len(content))) 
+        predictions = [None] * len(content)
         
         # check if content is None, an empty string, or the word "empty"
         if not content:
@@ -202,7 +202,7 @@ class LLMRepository:
                         logging.error(f"Error al procesar el documento {idx}. Detalles: {parse_error}", exc_info=True)
 
 
-            pending_indices = [idx for idx in pending_indices if predictions[idx] is None]
+            pending_indices = [idx for idx in pending_indices if predictions[idx]]
 
         for idx in pending_indices:
             logging.error(f"Documento descartado tras 5 intentos: {content[idx]}")
@@ -292,21 +292,22 @@ class LLMRepository:
                 logging.error(f"Error al generar el prompt para '{category}': {e}")
                 continue
         
-        attempt = 0
-        success = False
-        while attempt < MAX_ATTEMPTS and not success:        
-            output = await self.llm_service.generate_text(prompts, max_new_tokens=5000, batch_size=batch_size)
-            # Validar la respuesta del modelo antes de guardarla
-            if isinstance(output, list) and output and 'generated_text' in output[-1]:
-                summaries[category] = output[-1]['generated_text']
-                success = True  
-            else:
-                logging.warning(f"Formato inesperado en la respuesta del modelo en el intent {attempt + 1} para '{category}'. Output: {output}.")
-                attempt += 1
 
-            # Si después de varios intentos sigue fallando, guardar un mensaje de error
-        if not success:
-            summaries[category] = "Error en la generación del resumen tras múltiples intentos."
+      
+        output = await self.llm_service.generate_text(prompts, max_new_tokens=5000, batch_size=batch_size)
+        # Validar la respuesta del modelo antes de guardarla
+        for block in output:
+            if isinstance(block, list) and block and 'generated_text' in block[-1]:
+                category_result = self.parse_model_response(block[-1]['generated_text'])
+                if not category_result:
+                    continue
+                for key, value in category_result.items():
+                    summaries[key] = value
+  
+        for key in summaries.keys():
+            if key not in category_docs.items():
+                logging.warning(f"La categoría '{key}' no tiene un resumen válido.")
+                #VOLVER A HACER EL RESUMEN PARA ESO
 
         return summaries
     
