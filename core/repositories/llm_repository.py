@@ -305,7 +305,7 @@ class LLMRepository:
                     summaries[key] = value
   
         for key in summaries.keys():
-            if key.lower() not in category_docs.items().lower():
+            if key.lower() not in category_docs.keys().lower():
                 logging.warning(f"La categoría '{key}' no tiene un resumen válido.")
                 #VOLVER A HACER EL RESUMEN PARA ESO
 
