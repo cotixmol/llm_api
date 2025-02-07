@@ -5,6 +5,7 @@ services:
     # deploy:
     #   mode: replicated
     #   replicas: ${REPLICAS:-2}
+    network_mode: "host"
     environment:
       LAN_IP: ${LAN_IP:-127.0.0.1}
     restart: always
@@ -24,7 +25,6 @@ services:
             - driver: nvidia
               count: all
               capabilities: [gpu]
-
 
 #     labels:
 #       # Enable Traefik for reports service

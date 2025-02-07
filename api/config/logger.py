@@ -20,13 +20,13 @@ logger.error(f"some_debug_code: {s.MY_STR}" , extra= {"n_docs":23})
 """
 import logging
 from pythonjsonlogger import jsonlogger
-from api.config.secrets import LOG_LEVEL
+from api.config.secrets import settings as s
 
 
 logger = logging.getLogger()
 
 lvl = {"debug": 10, "info": 20, "warning": 30, "error": 40, "critical": 50}
-logger.setLevel(lvl[LOG_LEVEL.lower()])
+logger.setLevel(lvl[s.LOG_LEVEL.lower()])
 logHandler = logging.StreamHandler()
 
 

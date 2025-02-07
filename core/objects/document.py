@@ -4,7 +4,8 @@ from datetime import datetime
 
 
 class Document(BaseModel):
-    _id: str
+    id: str = Field(alias="_id")
+    index: str = Field(alias="_index")
     created_at: datetime
     category: typing.Optional[str] = None 
     author: typing.Optional[str] = None
@@ -27,6 +28,7 @@ class Document(BaseModel):
     author_thumbnail: typing.Optional[str] = None
     sentiment_name: typing.Optional[str] = None
     embedding: typing.Optional[typing.List[float]] = None
+    primary_category: typing.Optional[str] = None
 
 
 class ContentText(BaseModel):

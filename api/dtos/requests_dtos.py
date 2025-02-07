@@ -41,3 +41,30 @@ class TopicPreviewPayload(BaseModel):
     since_date: str
     to_date: str
     filters: typing.Optional[Filters] = None
+    max_ndocs: typing.Optional[int] = 10000
+
+class LLMClassificationPreviewPayload(BaseModel):
+    index_pattern: str
+    since_date: str
+    to_date: str
+    filters: typing.Optional[Filters] = None
+    prompt: dict
+    update_field: str
+    task_key: str
+    valid_labels: typing.List[str]
+    max_ndocs: typing.Optional[int] = 10000,
+    batch_size: typing.Optional[int] = 50
+
+class LLMPromptPreviewPayload(BaseModel):
+    prompt: str
+
+class LLMSummaryPreviewPayload(BaseModel):
+    index_pattern: str
+    since_date: str
+    to_date: str
+    filters: typing.Optional[Filters] = None
+    prompt: dict
+    max_ndocs: typing.Optional[int] = 10000
+    query: typing.Optional[str] = None
+    summary_field: typing.Optional[str] = None  # Hacemos summary_field opcional
+    batch_size: typing.Optional[int] = 2

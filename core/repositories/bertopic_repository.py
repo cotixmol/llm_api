@@ -5,8 +5,10 @@ from bertopic import BERTopic
 from sklearn.feature_extraction.text import CountVectorizer
 from bertopic.representation import MaximalMarginalRelevance
 import numpy as np
-from cuml.manifold import UMAP
-from cuml.cluster import HDBSCAN
+#from cuml.manifold import UMAP
+#from cuml.cluster import HDBSCAN
+from umap import UMAP
+from hdbscan import HDBSCAN
 from sklearn.feature_extraction.text import CountVectorizer
 from bertopic.vectorizers import ClassTfidfTransformer
 from bertopic.dimensionality import BaseDimensionalityReduction
@@ -19,6 +21,7 @@ from core.objects.stackedline import StackedLine, StackedSerie
 from core.objects.document import ContentText, DocumentGroup
 from core.objects.pie import PieChart, PieSlice
 from core.objects.topic_info import TopicInfo
+from api.config.logger import logger
 
 class BertopicRepositoryException(Exception):
     pass
@@ -61,7 +64,11 @@ class BertopicRepository:
  
     def __fit_model(self, content_list: typing.List[str], embeddings_list: typing.List[typing.List[float]]):
         embeddings_np = np.array(embeddings_list)
+        logger.info(f"Embeddings shape: {embeddings_np.shape}")
         reduced_embeddings = self.umap_model.fit_transform(embeddings_np)
+        logger.info(f"Reduced embeddings shape: {reduced_embeddings.shape}")
+        logger.info(f"reduce embeddings: {len(reduced_embeddings)}")
+        logger.info(f"content_list: {len(content_list)}")
         try:
             self.model.fit_transform(content_list, reduced_embeddings)
         except Exception as e:
@@ -72,7 +79,7 @@ class BertopicRepository:
     def __calculate_topics(self, content_list: typing.List[str], created_at_list: typing.List[str]):
         return self.model.topics_over_time(docs=content_list, timestamps=created_at_list, nr_bins=20, datetime_format="%Y-%m-%dT%H:%M:%S")
 
-    def get_topics(self,
+    async def get_topics(self,
     created_at_list: typing.List[str],
     content_list: typing.List[str],
     embeddings_list: typing.List[typing.List[float]]
@@ -117,7 +124,7 @@ class BertopicRepository:
             topic_docs = doc_info[doc_info['Topic'] == topic].sort_values('Probability', ascending=False)
 
             try:
-                name, description = self.llm_repository.create_topic_name_and_summary(num_keywords= 8, 
+                name, description = await self.llm_repository.create_topic_name_and_summary(num_keywords= 8, 
                                                                             num_docs= 8, 
                                                                             keywords = valid_words, 
                                                                             docs_list= topic_docs["Document"].tolist())
@@ -199,7 +206,5 @@ class BertopicRepository:
     def __parse_response(response):
         parsed_response = defaultdict(dict)
         for chart in response:
-            # print(type(chart))
             parsed_response[type(chart).__name__].update(chart.model_dump())
-        # print((parsed_response))
         return dict(parsed_response)
