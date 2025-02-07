@@ -159,6 +159,7 @@ class LLMRepository:
                 ]
 
                 try:
+                    
                     outputs = await self.llm_service.generate_text(batch_prompts, max_new_tokens=40)
                 except Exception as batch_error:
                     logging.error(f"Error procesando el batch {i // batch_size + 1}: {batch_error}")
@@ -226,9 +227,7 @@ class LLMRepository:
         
         logging.error("Fallo en todos los intentos para generar texto.")
         return None
-    
-
-    
+     
     async def apply_prompt_categories_summary(self, aggs: dict, prompt_template: dict, summary_field: str) -> Dict[str, str]:
         buckets = (
             aggs
@@ -307,7 +306,6 @@ class LLMRepository:
                 summaries[category] = "Error en la generación del resumen tras múltiples intentos."
 
         return summaries
-    
 
     async def apply_prompt_query_summary(self, docs: List[dict], prompt_template: dict, query: str) -> Dict[str, str]:
         if not docs:
@@ -351,7 +349,6 @@ class LLMRepository:
                 attempt += 1  
 
         return response
-    
     
     async def apply_prompt_summary(self, docs: List[dict], prompt_template: dict) -> Dict[str, str]:
         if not docs:
