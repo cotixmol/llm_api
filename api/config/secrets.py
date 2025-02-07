@@ -8,7 +8,7 @@ LOG_LEVEL = os.environ.get("LOG_LEVEL")
 ELASTIC_PRT = os.environ.get("ELASTIC_PRT")
 ELASTIC_USR = os.environ.get("ELASTIC_USR")
 ELASTIC_PSW = os.environ.get("ELASTIC_PSW")
-ELASTIC_IP = os.environ.get("ELASTIC_IP")
+ELASTIC_CLUSTER = os.environ.get("ELASTIC_CLUSTER")
 ELASTIC_PAGE_SIZE = os.environ.get("ELASTIC_PAGE_SIZE")
 ELASTIC_TIMEOUT = os.environ.get("ELASTIC_TIMEOUT")
 

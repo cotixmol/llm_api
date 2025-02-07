@@ -25,23 +25,22 @@ services:
               count: all
               capabilities: [gpu]
 
+    labels:
+      # Enable Traefik for reports service
+      - traefik.enable=true
+      # Tell traefic wich port is the container using
+      - traefik.http.services.gpureports.loadbalancer.server.port=8000
+      # http for this container
+      - traefik.http.routers.gpureports-http.entrypoints=http
+      - traefik.http.routers.gpureports-http.rule=Host(`${SERVER_PREFIX:-}gpureports.reputacion.digital`)
+      # Connect to network (must be already created whith: docker)
+      - traefik.docker.network=traefik-public
+      # no https in LAN
+      # make it avaliable for lan only (not working)
+      #- traefik.http.middlewares.reports-ipwhitelist.ipWhiteList.sourceRange=["192.168.40.0/24"]
+    networks:
+      - traefik-public
 
-#     labels:
-#       # Enable Traefik for reports service
-#       - traefik.enable=true
-#       # Tell traefic wich port is the container using
-#       - traefik.http.services.gpureports.loadbalancer.server.port=8000
-#       # http for this container
-#       - traefik.http.routers.gpureports-http.entrypoints=http
-#       - traefik.http.routers.gpureports-http.rule=Host(`${SERVER_PREFIX:-}gpureports.reputacion.digital`)
-#       # Connect to network (must be already created whith: docker)
-#       - traefik.docker.network=traefik-public
-#       # no https in LAN
-#       # make it avaliable for lan only (not working)
-#       #- traefik.http.middlewares.reports-ipwhitelist.ipWhiteList.sourceRange=["192.168.40.0/24"]
-#     networks:
-#       - traefik-public
-
-# networks:
-#   traefik-public:
-#     external: true
+networks:
+  traefik-public:
+    external: true

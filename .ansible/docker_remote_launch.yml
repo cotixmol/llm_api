@@ -38,29 +38,25 @@
         owner: operador
         group: operador
         mode: "0644"
+  
+  # # ###############################################################
 
-    - name: Tear down existing services
-      community.docker.docker_compose_v2:
-        project_src: /home/operador/{{ folder_name }}/
-        state: absent
+- name: Tear down existing services
+  community.docker.docker_compose_v2:
+    project_src: /home/operador/{{ folder_name }}/
+    state: absent
+    remove_orphans: true
 
-    - name: Create and start services
-      community.docker.docker_compose_v2:
-        project_src: /home/operador/{{ folder_name }}/
-        pull: always
-      register: output
+- name: Create and start services
+  community.docker.docker_compose_v2:
+    project_src: /home/operador/{{ folder_name }}/
+    pull: always
+  register: output
 
-    - ansible.builtin.debug:
-        var: output
-
-    - name: Run `docker-compose up` again
-      community.docker.docker_compose_v2:
-        project_src: /home/operador/{{ folder_name }}/
-        pull: never
-      register: output
-
-    - ansible.builtin.debug:
-        var: output
+- name: Run `docker-compose up` again
+  community.docker.docker_compose_v2:
+    project_src: /home/operador/{{ folder_name }}/
+    pull: never
+  register: output
 # # to call this playbook from the root of the repository:
-# # echo $ANSIBLE_VAULT_PASSWORD >  password.txt
-# # ansible-playbook -i .ansible/hosts --vault-password-file=password.txt .ansible/docker_remote_launch.yml --extra-vars "server_name=spiderman"
+# # ansible-playbook -i .ansible/hosts .ansible/docker_remote_launch.yml --extra-vars "server_name=spiderman"

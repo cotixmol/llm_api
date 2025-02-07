@@ -10,10 +10,10 @@ class ElasticsearchException(Exception):
 
 class ElasticsearchService:
 
-    def __init__(self, elasticsearch_ip: str, elasticsearch_prt: str,
-                 elasticsearch_usr: str, elasticsearch_psw: str) -> None:
+    def __init__(self, elasticsearch_prt: str,
+                 elasticsearch_usr: str, elasticsearch_psw: str, elasticsearch_cluster: List[str]) -> None:
         self.client = AsyncElasticsearch(
-            hosts=[f"https://{elasticsearch_ip}:{elasticsearch_prt}"],
+            hosts=[f"https://{node}:{elasticsearch_prt}" for node in elasticsearch_cluster],
             http_auth=(elasticsearch_usr, elasticsearch_psw),
             retry_on_timeout=True,
             max_retries=5,
