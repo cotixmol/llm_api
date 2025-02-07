@@ -314,7 +314,7 @@ class LLMRepository:
             logging.error("La lista de documentos no puede estar vacía.")
             return {}
          
-        content_list = [getattr(doc, "content", "").strip() for doc in docs if getattr(doc, "content", "").strip()][:50]
+        content_list = [getattr(doc, "content", "").strip() for doc in docs if getattr(doc, "content", "").strip()]
 
         if not content_list:
             logging.error("No se encontraron documentos con contenido válido.")
@@ -358,7 +358,7 @@ class LLMRepository:
             logging.error("La lista de documentos no puede estar vacía.")
             return {}
          
-        content_list = [getattr(doc, "content", "").strip() for doc in docs if getattr(doc, "content", "").strip()][:50]
+        content_list = [getattr(doc, "content", "").strip() for doc in docs if getattr(doc, "content", "").strip()]
 
         if not content_list:
             logging.error("No se encontraron documentos con contenido válido.")
