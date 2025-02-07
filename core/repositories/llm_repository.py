@@ -142,6 +142,7 @@ class LLMRepository:
 
             # iteramos sobre batches de documentos de tamaño batch_size    
             for i in range(0, len(pending_indices), batch_size):
+                print(f"Procesando batch {i // batch_size + 1} de {len(pending_indices) // batch_size + 1}")
                 batch_indices = pending_indices[i:i + batch_size]
                 #batch_prompts = List[List[Dict[str, str]]]
                 batch_prompts = [
@@ -160,7 +161,7 @@ class LLMRepository:
 
                 try:
                     
-                    outputs = await self.llm_service.generate_text(batch_prompts, max_new_tokens=40)
+                    outputs = await self.llm_service.generate_text(batch_prompts, max_new_tokens=40, batch_size=batch_size)
                 except Exception as batch_error:
                     logging.error(f"Error procesando el batch {i // batch_size + 1}: {batch_error}")
 
@@ -228,7 +229,7 @@ class LLMRepository:
         logging.error("Fallo en todos los intentos para generar texto.")
         return None
      
-    async def apply_prompt_categories_summary(self, aggs: dict, prompt_template: dict, summary_field: str) -> Dict[str, str]:
+    async def apply_prompt_categories_summary(self, aggs: dict, prompt_template: dict, summary_field: str, batch_size: int) -> Dict[str, str]:
         buckets = (
             aggs
             .get("top_categories_hits", {})

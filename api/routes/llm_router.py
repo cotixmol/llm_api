@@ -111,7 +111,8 @@ async def get_llm_summary(
             max_ndocs=parameters.max_ndocs,
             prompt=parameters.prompt,
             query=parameters.query,
-            summary_field=parameters.summary_field
+            summary_field=parameters.summary_field,
+            batch_size=parameters.batch_size
         )
         response = await llm_case()
         return response

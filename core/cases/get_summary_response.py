@@ -21,6 +21,7 @@ class GetSummaryResponseCase:
             extra_args: dict,
             prompt: dict, 
             max_ndocs: int,
+            batch_size: int,
             summary_field: str = None,
             query: str = None,            
     ):
@@ -39,6 +40,7 @@ class GetSummaryResponseCase:
         self.max_ndocs = max_ndocs
         self.query = query
         self.summary_field = summary_field
+        self.batch_size = batch_size
 
     async def __call__(self) -> LLMSummaryResponse:
         ### CREATE QUERY ###
@@ -121,7 +123,7 @@ class GetSummaryResponseCase:
             match (self.summary_field, self.query):
                 case (str() as summary_field, _):  #Entra si summary_field es un str, sin importar query
                     response_dict = await self.llm_repository.apply_prompt_categories_summary(
-                        aggs=response, prompt_template=self.prompt, summary_field=summary_field
+                        aggs=response, prompt_template=self.prompt, summary_field=summary_field, batch_size=self.batch_size
                     )
                 case (None, str() as query):  #Entra solo si summary_field es None y query es un str
                     response_dict = await self.llm_repository.apply_prompt_query_summary(
