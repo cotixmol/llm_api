@@ -295,6 +295,7 @@ class LLMRepository:
 
       
         output = await self.llm_service.generate_text(prompts, max_new_tokens=5000, batch_size=batch_size)
+        logger.debug(f"Output: {output}")
         # Validar la respuesta del modelo antes de guardarla
         for block in output:
             if isinstance(block, list) and block and 'generated_text' in block[-1]:
@@ -305,7 +306,7 @@ class LLMRepository:
                     summaries[key] = value
   
         for key in summaries.keys():
-            if key.lower() not in category_docs.keys().lower():
+            if key.lower() not in [cat.lower() for cat in category_docs.keys()]:
                 logging.warning(f"La categoría '{key}' no tiene un resumen válido.")
                 #VOLVER A HACER EL RESUMEN PARA ESO
 
