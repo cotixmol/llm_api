@@ -47,7 +47,8 @@ async def get_classification_ipcva(
             prompt=parameters.prompt,
             valid_labels=parameters.valid_labels,
             max_ndocs=parameters.max_ndocs,
-            batch_size=parameters.batch_size
+            batch_size=parameters.batch_size,
+            query=parameters.query
         )
         response = await llm_case()
         return response
@@ -110,10 +111,14 @@ async def get_llm_summary(
             max_ndocs=parameters.max_ndocs,
             prompt=parameters.prompt,
             query=parameters.query,
-            summary_field=parameters.summary_field
+            summary_field=parameters.summary_field,
+            batch_size=parameters.batch_size
         )
         response = await llm_case()
         return response
+    except ElasticsearchException as error:
+        logger.error(f"ElasticError: {error}")
+        raise HTTPException(status_code=404, detail=f"{error}")
     except Exception as error:
         logger.error(f"{type(error)}: {error}")
         raise HTTPException(status_code=500, detail="It seems that IA is not available right now. Please try again later.")

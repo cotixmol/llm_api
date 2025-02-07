@@ -56,17 +56,17 @@ class LLMRepository:
                 keywords_to_use = keywords[index:min(index+num_keywords, len(keywords))]
 
             prompt = f"""
-            Existe un tópico compuesto a partir de las siguientes palabras claves: {keywords_to_use}
-            Los siguientes documentos son un pequeño pero representativo subconjunto de todos los documentos pertenecientes al tópico:
-            {docs_to_use}
+                        There is a topic composed of the following keywords: {keywords_to_use}
+                        The following documents represent a small but representative subset of all the documents belonging to the topic:
+                        {docs_to_use}
 
-            Basado en la información anterior, genera un nombre corto o etiqueta para el tópico y una descripción breve (máximo 3 oraciones). Debes responder en formato JSON, según la siguiente estructura:
-            {{
-                "topic_name": "<nombre>",
-                "topic_description": "<descripción>"
-            }}
-            """
-
+                        Based on the above information, generate a short name or label for the topic and a brief description (maximum 3 sentences). You must respond in JSON format, following this structure:
+                        {{
+                            "topic_name": "<name>",
+                            "topic_description": "<description>"
+                        }}
+                        You MUST answer in spanish.
+                        """
             messages = [
             {"role": "user", "content": prompt},
             ]
@@ -105,15 +105,12 @@ class LLMRepository:
             logging.error("El template de prompt no puede ser None o vacío.")
             raise ValueError("No se encontró un template de prompt válido.")
         
-        es_index_list = [] #Se puede tener más de un índice?
+        es_index_list = [] 
         doc_id_list = []
         content = []
-        skiped_es_index_list = []#idem
+        skiped_es_index_list = []
         skiped_doc_id_list = []
         skiped_category = []
-
-        predictions = [None] * len(docs)
-        pending_indices = list(range(len(docs))) 
 
         for doc in docs:
             # check if content exits in "_source" dict
@@ -129,6 +126,9 @@ class LLMRepository:
             content.append(doc_content)
             es_index_list.append(doc.index)
             doc_id_list.append(doc.id)
+
+        pending_indices = list(range(len(content))) 
+        predictions = [None] * len(content)
         
         # check if content is None, an empty string, or the word "empty"
         if not content:
@@ -142,6 +142,7 @@ class LLMRepository:
 
             # iteramos sobre batches de documentos de tamaño batch_size    
             for i in range(0, len(pending_indices), batch_size):
+                print(f"Procesando batch {i // batch_size + 1} de {len(pending_indices) // batch_size + 1}")
                 batch_indices = pending_indices[i:i + batch_size]
                 #batch_prompts = List[List[Dict[str, str]]]
                 batch_prompts = [
@@ -159,7 +160,8 @@ class LLMRepository:
                 ]
 
                 try:
-                    outputs = await self.llm_service.generate_text(batch_prompts, max_new_tokens=40)
+                    
+                    outputs = await self.llm_service.generate_text(batch_prompts, max_new_tokens=40, batch_size=batch_size)
                 except Exception as batch_error:
                     logging.error(f"Error procesando el batch {i // batch_size + 1}: {batch_error}")
 
@@ -200,7 +202,7 @@ class LLMRepository:
                         logging.error(f"Error al procesar el documento {idx}. Detalles: {parse_error}", exc_info=True)
 
 
-            pending_indices = [idx for idx in pending_indices if predictions[idx] is None]
+            pending_indices = [idx for idx in pending_indices if not predictions[idx]]
 
         for idx in pending_indices:
             logging.error(f"Documento descartado tras 5 intentos: {content[idx]}")
@@ -226,10 +228,8 @@ class LLMRepository:
         
         logging.error("Fallo en todos los intentos para generar texto.")
         return None
-    
-
-    
-    async def apply_prompt_categories_summary(self, aggs: dict, prompt_template: dict, summary_field: str) -> Dict[str, str]:
+     
+    async def apply_prompt_categories_summary(self, aggs: dict, prompt_template: dict, summary_field: str, batch_size: int) -> Dict[str, str]:
         buckets = (
             aggs
             .get("top_categories_hits", {})
@@ -273,41 +273,46 @@ class LLMRepository:
         summaries = {}
         MAX_ATTEMPTS = 3  # Número máximo de intentos por categoría
 
-        for category, contents in category_docs.items():
-            attempt = 0
-            success = False
+        prompts = []
 
-            while attempt < MAX_ATTEMPTS and not success:
-                try:
-                    prompt = [
-                        {
-                            "role": "system",
-                            "content": prompt_template["system"],
-                        },
-                        {
-                            "role": "user",
-                            "content": prompt_template["user"].format(contents=contents, category=category)
-                        }
-                    ]
-                    output = await self.llm_service.generate_text(prompt, max_new_tokens=5000)
-                    # Validar la respuesta del modelo antes de guardarla
-                    if isinstance(output, list) and output and 'generated_text' in output[-1]:
-                        summaries[category] = output[-1]['generated_text']
-                        success = True  
-                    else:
-                        logging.warning(f"Formato inesperado en la respuesta del modelo para '{category}'. Output: {output}")
-                        attempt += 1
+        for category, contents in category_docs.items():            
+            try:
+                prompt = [
+                    {
+                        "role": "system",
+                        "content": prompt_template["system"],
+                    },
+                    {
+                        "role": "user",
+                        "content": prompt_template["user"].format(contents=contents, category=category, summary_field=summary_field)
+                    }
+                ]
+                prompts.append(prompt)
+            except Exception as e:
+                logging.error(f"Error al generar el prompt para '{category}': {e}")
+                continue
+        
 
-                except Exception as e:
-                    logging.error(f"Error generando resumen para '{category}' (Intento {attempt + 1}): {e}")
-                    attempt += 1  
-
-            # Si después de varios intentos sigue fallando, guardar un mensaje de error
-            if not success:
-                summaries[category] = "Error en la generación del resumen tras múltiples intentos."
+      
+        output = await self.llm_service.generate_text(prompts, max_new_tokens=5000, batch_size=batch_size)
+        logger.debug(f"Output: {output}")
+        # Validar la respuesta del modelo antes de guardarla
+        for block in output:
+            if isinstance(block, list) and block and 'generated_text' in block[-1]:
+                category_result = self.parse_model_response(block[-1]['generated_text'])
+                if not category_result:
+                    continue
+                for key, value in category_result.items():
+                    summaries[key] = value
+  
+        for key in summaries.keys():
+            if key.lower() not in [cat.lower() for cat in category_docs.keys()]:
+                logging.warning(f"La categoría '{key}' no tiene un resumen válido.")
+                #VOLVER A HACER EL RESUMEN PARA ESO
 
         return summaries
     
+
 
     async def apply_prompt_query_summary(self, docs: List[dict], prompt_template: dict, query: str) -> Dict[str, str]:
         if not docs:
@@ -351,7 +356,6 @@ class LLMRepository:
                 attempt += 1  
 
         return response
-    
     
     async def apply_prompt_summary(self, docs: List[dict], prompt_template: dict) -> Dict[str, str]:
         if not docs:

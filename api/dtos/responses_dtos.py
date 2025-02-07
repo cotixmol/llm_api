@@ -18,5 +18,5 @@ class LLMPromptResponse(BaseModel):
     response: str
 
 class LLMSummaryResponse(BaseModel): 
-    response: typing.Dict[str, str]
+    response: typing.Dict[str, typing.Any]
     

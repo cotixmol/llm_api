@@ -3,6 +3,7 @@ from api.dtos.responses_dtos import LLMSummaryResponse
 from core.repositories.elasticsearch_repository import ElasticsearchRepository
 from core.repositories.query_repository import Query
 from core.repositories.llm_repository import LLMRepository
+from services.elasticsearch_service import ElasticsearchException
 import iso8601
 
 import re
@@ -21,6 +22,7 @@ class GetSummaryResponseCase:
             extra_args: dict,
             prompt: dict, 
             max_ndocs: int,
+            batch_size: int,
             summary_field: str = None,
             query: str = None,            
     ):
@@ -39,6 +41,7 @@ class GetSummaryResponseCase:
         self.max_ndocs = max_ndocs
         self.query = query
         self.summary_field = summary_field
+        self.batch_size = batch_size
 
     async def __call__(self) -> LLMSummaryResponse:
         ### CREATE QUERY ###
@@ -117,18 +120,21 @@ class GetSummaryResponseCase:
                                                     query = self.query_repository, 
                                                     index_pattern=self.index_pattern, 
                                                     max_ndocs=self.max_ndocs)
+                if not response:
+                    raise ElasticsearchException(f"No documents found for index pattern: {self.index_pattern}")
+            
             ### MAKE PREDICTION ###
             match (self.summary_field, self.query):
                 case (str() as summary_field, _):  #Entra si summary_field es un str, sin importar query
                     response_dict = await self.llm_repository.apply_prompt_categories_summary(
-                        aggs=response, prompt_template=self.prompt, summary_field=summary_field
+                        aggs=response, prompt_template=self.prompt, summary_field=summary_field, batch_size=self.batch_size
                     )
                 case (None, str() as query):  #Entra solo si summary_field es None y query es un str
                     response_dict = await self.llm_repository.apply_prompt_query_summary(
                         docs=response, prompt_template=self.prompt, query=query
                     )
                 case (None, None):  #Entra solo si ambos son None
-                    response_dict = await self.llm_repository.apply_prompt_summary(
+                    response_dict = await self.llm_repository.apply_prompt_summary( 
                         docs=response, prompt_template=self.prompt
                     )
 

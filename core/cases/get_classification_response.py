@@ -4,11 +4,10 @@ from api.dtos.responses_dtos import LLMClassificationResponse
 from core.repositories.elasticsearch_repository import ElasticsearchRepository
 from core.repositories.query_repository import Query
 from core.repositories.llm_repository import LLMRepository
+from services.elasticsearch_service import ElasticsearchException
 import iso8601
 
 import re
-
-_N_DOCS = 0
 
 class GetClassificationResponseCase:
     def __init__(
@@ -25,7 +24,8 @@ class GetClassificationResponseCase:
             update_field:str,
             valid_labels: List[str],
             max_ndocs: int,
-            batch_size: int
+            batch_size: int,
+            query: str
     ):
         since_iso_time = iso8601.parse_date(since_date).isoformat()
         to_iso_time = iso8601.parse_date(to_date).isoformat()
@@ -42,6 +42,7 @@ class GetClassificationResponseCase:
         self.valid_labels = valid_labels
         self.max_ndocs = max_ndocs
         self.batch_size = batch_size
+        self.query = query
         
 
     async def __call__(self) -> LLMClassificationResponse:
@@ -64,9 +65,17 @@ class GetClassificationResponseCase:
         )
         self.query_repository.set_order(field="@timestamp", order="desc")
         self.query_repository.set_order(field="created_at", order="desc")
+
+        if self.query:
+            self.query_repository.set_query_string(query_string=self.query)
+
         try:
             ### SEARCH DOCUMENTS ###
             hits = await self.es_repository.get_paginated_data(query = self.query_repository, index_pattern=self.index_pattern, max_ndocs=self.max_ndocs)
+
+            if not hits:
+                raise ElasticsearchException(f"No documents found for index pattern: {self.index_pattern}")
+
             ### MAKE CLASSIFICATION ###
             predictions_dict = await self.llm_repository.apply_prompt_classification(prompt_template=self.prompt, 
                                                                                      task_key=self.task_key, 
