@@ -3,6 +3,7 @@ from api.dtos.responses_dtos import LLMSummaryResponse
 from core.repositories.elasticsearch_repository import ElasticsearchRepository
 from core.repositories.query_repository import Query
 from core.repositories.llm_repository import LLMRepository
+from services.elasticsearch_service import ElasticsearchException
 import iso8601
 
 import re
@@ -119,6 +120,9 @@ class GetSummaryResponseCase:
                                                     query = self.query_repository, 
                                                     index_pattern=self.index_pattern, 
                                                     max_ndocs=self.max_ndocs)
+                if not response:
+                    raise ElasticsearchException(f"No documents found for index pattern: {self.index_pattern}")
+            
             ### MAKE PREDICTION ###
             match (self.summary_field, self.query):
                 case (str() as summary_field, _):  #Entra si summary_field es un str, sin importar query
@@ -130,7 +134,7 @@ class GetSummaryResponseCase:
                         docs=response, prompt_template=self.prompt, query=query
                     )
                 case (None, None):  #Entra solo si ambos son None
-                    response_dict = await self.llm_repository.apply_prompt_summary(
+                    response_dict = await self.llm_repository.apply_prompt_summary( 
                         docs=response, prompt_template=self.prompt
                     )
 

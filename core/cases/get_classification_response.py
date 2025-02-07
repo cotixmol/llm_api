@@ -4,6 +4,7 @@ from api.dtos.responses_dtos import LLMClassificationResponse
 from core.repositories.elasticsearch_repository import ElasticsearchRepository
 from core.repositories.query_repository import Query
 from core.repositories.llm_repository import LLMRepository
+from services.elasticsearch_service import ElasticsearchException
 import iso8601
 
 import re
@@ -71,6 +72,10 @@ class GetClassificationResponseCase:
         try:
             ### SEARCH DOCUMENTS ###
             hits = await self.es_repository.get_paginated_data(query = self.query_repository, index_pattern=self.index_pattern, max_ndocs=self.max_ndocs)
+
+            if not hits:
+                raise ElasticsearchException(f"No documents found for index pattern: {self.index_pattern}")
+
             ### MAKE CLASSIFICATION ###
             predictions_dict = await self.llm_repository.apply_prompt_classification(prompt_template=self.prompt, 
                                                                                      task_key=self.task_key, 

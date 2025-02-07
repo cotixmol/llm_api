@@ -56,17 +56,17 @@ class LLMRepository:
                 keywords_to_use = keywords[index:min(index+num_keywords, len(keywords))]
 
             prompt = f"""
-            Existe un tópico compuesto a partir de las siguientes palabras claves: {keywords_to_use}
-            Los siguientes documentos son un pequeño pero representativo subconjunto de todos los documentos pertenecientes al tópico:
-            {docs_to_use}
+                        There is a topic composed of the following keywords: {keywords_to_use}
+                        The following documents represent a small but representative subset of all the documents belonging to the topic:
+                        {docs_to_use}
 
-            Basado en la información anterior, genera un nombre corto o etiqueta para el tópico y una descripción breve (máximo 3 oraciones). Debes responder en formato JSON, según la siguiente estructura:
-            {{
-                "topic_name": "<nombre>",
-                "topic_description": "<descripción>"
-            }}
-            """
-
+                        Based on the above information, generate a short name or label for the topic and a brief description (maximum 3 sentences). You must respond in JSON format, following this structure:
+                        {{
+                            "topic_name": "<name>",
+                            "topic_description": "<description>"
+                        }}
+                        You MUST answer in spanish.
+                        """
             messages = [
             {"role": "user", "content": prompt},
             ]
@@ -273,40 +273,44 @@ class LLMRepository:
         summaries = {}
         MAX_ATTEMPTS = 3  # Número máximo de intentos por categoría
 
-        for category, contents in category_docs.items():
-            attempt = 0
-            success = False
+        prompts = []
 
-            while attempt < MAX_ATTEMPTS and not success:
-                try:
-                    prompt = [
-                        {
-                            "role": "system",
-                            "content": prompt_template["system"],
-                        },
-                        {
-                            "role": "user",
-                            "content": prompt_template["user"].format(contents=contents, category=category)
-                        }
-                    ]
-                    output = await self.llm_service.generate_text(prompt, max_new_tokens=5000)
-                    # Validar la respuesta del modelo antes de guardarla
-                    if isinstance(output, list) and output and 'generated_text' in output[-1]:
-                        summaries[category] = output[-1]['generated_text']
-                        success = True  
-                    else:
-                        logging.warning(f"Formato inesperado en la respuesta del modelo para '{category}'. Output: {output}")
-                        attempt += 1
-
-                except Exception as e:
-                    logging.error(f"Error generando resumen para '{category}' (Intento {attempt + 1}): {e}")
-                    attempt += 1  
+        for category, contents in category_docs.items():            
+            try:
+                prompt = [
+                    {
+                        "role": "system",
+                        "content": prompt_template["system"],
+                    },
+                    {
+                        "role": "user",
+                        "content": prompt_template["user"].format(contents=contents, category=category, summary_field=summary_field)
+                    }
+                ]
+                prompts.append(prompt)
+            except Exception as e:
+                logging.error(f"Error al generar el prompt para '{category}': {e}")
+                continue
+        
+        attempt = 0
+        success = False
+        while attempt < MAX_ATTEMPTS and not success:        
+            output = await self.llm_service.generate_text(prompts, max_new_tokens=5000, batch_size=batch_size)
+            # Validar la respuesta del modelo antes de guardarla
+            if isinstance(output, list) and output and 'generated_text' in output[-1]:
+                summaries[category] = output[-1]['generated_text']
+                success = True  
+            else:
+                logging.warning(f"Formato inesperado en la respuesta del modelo en el intent {attempt + 1} para '{category}'. Output: {output}.")
+                attempt += 1
 
             # Si después de varios intentos sigue fallando, guardar un mensaje de error
-            if not success:
-                summaries[category] = "Error en la generación del resumen tras múltiples intentos."
+        if not success:
+            summaries[category] = "Error en la generación del resumen tras múltiples intentos."
 
         return summaries
+    
+
 
     async def apply_prompt_query_summary(self, docs: List[dict], prompt_template: dict, query: str) -> Dict[str, str]:
         if not docs:

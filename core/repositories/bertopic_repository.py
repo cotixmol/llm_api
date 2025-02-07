@@ -13,7 +13,7 @@ from sklearn.feature_extraction.text import CountVectorizer
 from bertopic.vectorizers import ClassTfidfTransformer
 from bertopic.dimensionality import BaseDimensionalityReduction
 from core.repositories.llm_repository import LLMRepository
-
+import asyncio
 from core.objects.barplot import Barplot, BarPlotUnit
 from core.objects.wordcloud import Word, Wordcloud
 from core.objects.stackedline import StackedLine, StackedSerie
@@ -115,6 +115,9 @@ class BertopicRepository:
             ]
         doc_info = self.model.get_document_info(content_list)
         topic_timeline_series = []
+        ###########
+        functions = []
+
         for topic in range(num_topics):
             topic_words = self.model.get_topic(topic) or []
             valid_words = [item for item in topic_words if isinstance(item, tuple) and len(item) == 2][:MAX_WORDS] 
@@ -122,16 +125,22 @@ class BertopicRepository:
             df_filtered = topics_over_time.loc[(topics_over_time["Topic"] == topic)].sort_values('Timestamp', ascending=False)
             
             topic_docs = doc_info[doc_info['Topic'] == topic].sort_values('Probability', ascending=False)
-
+            #armar array para todos los tópicos
             try:
-                name, description = await self.llm_repository.create_topic_name_and_summary(num_keywords= 8, 
+                functions.append(self.llm_repository.create_topic_name_and_summary(num_keywords= 8, 
                                                                             num_docs= 8, 
                                                                             keywords = valid_words, 
-                                                                            docs_list= topic_docs["Document"].tolist())
+                                                                            docs_list= topic_docs["Document"].tolist()))
+                # name, description = await self.llm_repository.create_topic_name_and_summary(num_keywords= 8, 
+                #                                                             num_docs= 8, 
+                #                                                             keywords = valid_words, 
+                #                                                             docs_list= topic_docs["Document"].tolist())
             except:
                 name = self.model.get_topic_info(topic)["Name"].iloc[0] 
                 description = f"Documento Representativo: {topic_docs['Document'].tolist()[0]}"
 
+        results = await asyncio.gather(*functions)
+        for name, description in results:
             topic_represetation = DocumentGroup(
                 group=f"topic_{topic}",
                 documents=[
@@ -143,7 +152,6 @@ class BertopicRepository:
                     ) for id, row in topic_docs.iterrows()
                 ]
             )
-
 
             topic_barplot = Barplot(
                 category=f"topic_{topic}",

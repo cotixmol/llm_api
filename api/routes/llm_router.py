@@ -116,6 +116,9 @@ async def get_llm_summary(
         )
         response = await llm_case()
         return response
+    except ElasticsearchException as error:
+        logger.error(f"ElasticError: {error}")
+        raise HTTPException(status_code=404, detail=f"{error}")
     except Exception as error:
         logger.error(f"{type(error)}: {error}")
         raise HTTPException(status_code=500, detail="It seems that IA is not available right now. Please try again later.")
