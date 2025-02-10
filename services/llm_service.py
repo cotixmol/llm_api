@@ -2,6 +2,7 @@ import torch
 from transformers import AutoModelForCausalLM, AutoTokenizer, pipeline
 from api.config.logger import logger
 from typing import Optional
+import gc
 
 class LLMException(Exception):
     pass
@@ -20,7 +21,10 @@ class LLMService:
     
     async def generate_text(self, prompt: str, max_new_tokens: Optional[int] = 10000, batch_size: int = 1 ) -> str:
         try:
-            response = self.pipe(prompt, max_new_tokens=max_new_tokens, batch_size=batch_size)
+            with torch.no_grad():
+                response = self.pipe(prompt, max_new_tokens=max_new_tokens, batch_size=batch_size)
+                torch.cuda.empty_cache()
+                gc.collect()
             return response
         except Exception as error:
             logger.error(f"Error generating text: {error}")
