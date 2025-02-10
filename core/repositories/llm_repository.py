@@ -33,18 +33,87 @@ class LLMRepository:
             return None
     
 
-    async def create_topic_name_and_summary(self,
-                                    num_keywords: int = 8, 
-                                    num_docs: int = 8, 
-                                    keywords: typing.List[str] = None, 
-                                    docs_list: typing.List[str] = None) -> typing.Tuple[str, str]:
-        if keywords is None or docs_list is None:
-            logging.error("Keywords y docs_list no pueden ser None")
-            return None, None
-
-
+    async def create_topics_name_and_summary(            
+        self,
+        inference_data: typing.Dict[int, dict],
+        num_keywords: int = 8,
+        num_docs: int = 8
+    ) -> typing.Dict[int, dict]: 
+        results = {}
+        pending_topics = list(inference_data.keys())
+        attempt = 0
         MAX_ATTEMPTS = 6 
         index = 0
+        while pending_topics and attempt < MAX_ATTEMPTS:
+            prompts = []
+            topics_batch = [] 
+            for topic, data in inference_data.items():
+                if topic not in pending_topics:
+                    continue
+                if attempt < 3:
+                    docs_to_use = data["docs"][:min(num_docs, len(data["docs"]))]
+                    keywords_to_use = data["keywords"][:min(num_keywords, len(data["keywords"]))]
+                else:
+                    index += 3
+                    docs_to_use = data["docs"][index:min(index+num_docs, len(data["docs"]))]  
+                    keywords_to_use = data["keywords"][index:min(index+num_keywords, len(data["keywords"]))]
+                try:
+                    prompt = [
+                        {
+                            "role": "system",
+                            "content": "You are an AI assistant specialized in summarizing large amounts of social media posts.",
+                        },
+                        {
+                            "role": "user",
+                            "content": f"""There is a topic composed of the following keywords: {keywords_to_use}
+                                        The following documents represent a small but representative subset of all the documents belonging to the topic:
+                                        {docs_to_use}
+
+                                        Based on the above information, generate a short name or label for the topic and a brief description (maximum 3 sentences). You must respond in JSON format, following this structure:
+                                        {{
+                                            "topic_name": "<name>",
+                                            "topic_description": "<description>"
+                                        }}
+                                        You MUST answer in spanish.
+                                        """
+                        }
+                    ]
+                    prompts.append(prompt)
+                    topics_batch.append(topic)
+                    
+                except Exception as e:
+                    logging.error(f"Error al generar el prompt para el tópico '{topic}': {e}")
+                    continue
+
+            output = await self.llm_service.generate_text(prompts, max_new_tokens=5000, batch_size=8)
+            logger.debug(f"Output: {output}")
+            # Validar la respuesta del modelo antes de guardarla
+            for topic, block in zip(topics_batch, output):
+                if isinstance(block, list) and block and 'generated_text' in block[-1]:
+                    try:
+                        response_data = self.parse_model_response(block[-1]['generated_text'])
+                        if response_data and "topic_name" in response_data and "topic_description" in response_data:
+                            results[topic] = {
+                            "name": response_data["topic_name"],
+                            "description": response_data["topic_description"]
+                        }
+                        else:
+                            logging.warning(f"Tópico {topic}: JSON sin las claves esperadas.")
+                    except Exception as e:
+                        logging.warning(f"Tópico {topic}: fallo al parsear la respuesta en el intento {attempt + 1}. Error: {e}")
+                else:
+                    logging.warning(f"Tópico {topic}: respuesta del modelo en formato inesperado en el intento {attempt + 1}.")
+            
+            # Actualizamos los tópicos pendientes
+            pending_topics = [t for t in pending_topics if t not in results]
+            attempt += 1
+
+        #Informamos los tópicos a los que no se les pudo generar el informe
+        for topic in pending_topics:
+            logging.warning(f"El tópico '{topic}' no obtuvo un resumen válido tras {MAX_ATTEMPTS} intentos.")
+        return results
+
+
 
         for attempt in range(MAX_ATTEMPTS):
             if attempt < 3:
@@ -269,46 +338,56 @@ class LLMRepository:
             else:
                 logging.warning(f"No se encontraron contenidos válidos para la categoría '{category}'.")
 
-        # Procesar cada categoría usando el LLM para generar un resumen
+        pending_categories = list(category_docs.keys())
         summaries = {}
-        MAX_ATTEMPTS = 3  # Número máximo de intentos por categoría
-
-        prompts = []
-
-        for category, contents in category_docs.items():            
-            try:
-                prompt = [
-                    {
-                        "role": "system",
-                        "content": prompt_template["system"],
-                    },
-                    {
-                        "role": "user",
-                        "content": prompt_template["user"].format(contents=contents, category=category, summary_field=summary_field)
-                    }
-                ]
-                prompts.append(prompt)
-            except Exception as e:
-                logging.error(f"Error al generar el prompt para '{category}': {e}")
-                continue
-        
-
-      
-        output = await self.llm_service.generate_text(prompts, max_new_tokens=5000, batch_size=batch_size)
-        logger.debug(f"Output: {output}")
-        # Validar la respuesta del modelo antes de guardarla
-        for block in output:
-            if isinstance(block, list) and block and 'generated_text' in block[-1]:
-                category_result = self.parse_model_response(block[-1]['generated_text'])
-                if not category_result:
+        MAX_ATTEMPTS = 5
+        attempt=0
+        while pending_categories and attempt < MAX_ATTEMPTS:
+            prompts = []
+            for category, contents in category_docs.items():
+                if category not in pending_categories:
                     continue
-                for key, value in category_result.items():
-                    summaries[key] = value
-  
-        for key in summaries.keys():
+                try:
+                    prompt = [
+                        {
+                            "role": "system",
+                            "content": prompt_template["system"],
+                        },
+                        {
+                            "role": "user",
+                            "content": prompt_template["user"].format(contents=contents, category=category, summary_field=summary_field)
+                        }
+                    ]
+                    prompts.append(prompt)
+                except Exception as e:
+                    logging.error(f"Error al generar el prompt para '{category}': {e}")
+                    continue        
+            output = await self.llm_service.generate_text(prompts, max_new_tokens=5000, batch_size=batch_size)
+            logger.debug(f"Output: {output}")
+            # Validar la respuesta del modelo antes de guardarla
+            for block in output:
+                if isinstance(block, list) and block and 'generated_text' in block[-1]:
+                    category_result = self.parse_model_response(block[-1]['generated_text'])
+                    if not category_result:
+                        continue
+                    for key, value in category_result.items():
+                        summaries[key] = value
+                        try:
+                            pending_categories.remove(key)
+                        except ValueError:
+                            logging.warning(f"La categoría '{key}' nunca estuvo pendiente.")
+            attempt += 1
+        #Validamos que no existan resúmenes para categorías inventadas
+        for key in list(summaries.keys()):
             if key.lower() not in [cat.lower() for cat in category_docs.keys()]:
-                logging.warning(f"La categoría '{key}' no tiene un resumen válido.")
-                #VOLVER A HACER EL RESUMEN PARA ESO
+                summaries.pop(key)
+                logging.warning(f"La categoría '{key}' se removió porque no es una categoría válida.")
+
+        #Informamos las categorías a las que no se les pudo generar el informe
+        for category in category_docs.keys():
+            if category.lower() not in [key.lower() for key in summaries.keys()]:
+                logging.warning(f"La categoría '{category}' no obtuvo un resumen válido tras {MAX_ATTEMPTS} intentos.")
+
 
         return summaries
     
@@ -399,3 +478,59 @@ class LLMRepository:
                 attempt += 1  
 
         return response
+
+
+    # async def create_topic_name_and_summary(self,
+    #                                     num_keywords: int = 8, 
+    #                                     num_docs: int = 8, 
+    #                                     keywords: typing.List[str] = None, 
+    #                                     docs_list: typing.List[str] = None) -> typing.Tuple[str, str]:
+    #         if keywords is None or docs_list is None:
+    #             logging.error("Keywords y docs_list no pueden ser None")
+    #             return None, None
+
+    #         prompts = []
+    #         MAX_ATTEMPTS = 6 
+    #         index = 0
+
+    #         for attempt in range(MAX_ATTEMPTS):
+    #             if attempt < 3:
+    #                 docs_to_use = docs_list[:min(num_docs, len(docs_list))]
+    #                 keywords_to_use = keywords[:min(num_keywords, len(keywords))]
+    #             else:
+    #                 index += 3
+    #                 docs_to_use = docs_list[index:min(index+num_docs, len(docs_list))]  
+    #                 keywords_to_use = keywords[index:min(index+num_keywords, len(keywords))]
+
+    #             prompt = f"""
+    #                         There is a topic composed of the following keywords: {keywords_to_use}
+    #                         The following documents represent a small but representative subset of all the documents belonging to the topic:
+    #                         {docs_to_use}
+
+    #                         Based on the above information, generate a short name or label for the topic and a brief description (maximum 3 sentences). You must respond in JSON format, following this structure:
+    #                         {{
+    #                             "topic_name": "<name>",
+    #                             "topic_description": "<description>"
+    #                         }}
+    #                         You MUST answer in spanish.
+    #                         """
+    #             messages = [
+    #             {"role": "user", "content": prompt},
+    #             ]
+
+    #             try:
+    #                 outputs = await self.llm_service.generate_text(messages, max_new_tokens=350)
+    #                 response_data = self.parse_model_response(outputs[-1]["generated_text"])
+
+    #                 try:
+    #                     topic_name = response_data["topic_name"]
+    #                     topic_description = response_data["topic_description"]
+    #                     return topic_name, topic_description
+    #                 except:
+    #                     logging.warning(f"Formato incorrecto en la respuesta del modelo, intento número {attempt + 1}. Response: {response_data}")
+                
+    #             except Exception as e:
+    #                 logging.warning(f"Error en la generación de Nombre y Tópico, intento número {attempt + 1}. Error: {e}")
+
+    #         logging.error(f"No se pudo generar una respuesta válida después de {MAX_ATTEMPTS} intentos")
+    #         return None, None

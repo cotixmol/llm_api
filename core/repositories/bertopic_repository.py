@@ -115,8 +115,7 @@ class BertopicRepository:
             ]
         doc_info = self.model.get_document_info(content_list)
         topic_timeline_series = []
-        ###########
-        functions = []
+        topics_data_for_inference = {}
 
         for topic in range(num_topics):
             topic_words = self.model.get_topic(topic) or []
@@ -126,21 +125,21 @@ class BertopicRepository:
             
             topic_docs = doc_info[doc_info['Topic'] == topic].sort_values('Probability', ascending=False)
             #armar array para todos los tópicos
-            try:
-                functions.append(self.llm_repository.create_topic_name_and_summary(num_keywords= 8, 
-                                                                            num_docs= 8, 
-                                                                            keywords = valid_words, 
-                                                                            docs_list= topic_docs["Document"].tolist()))
-                # name, description = await self.llm_repository.create_topic_name_and_summary(num_keywords= 8, 
-                #                                                             num_docs= 8, 
-                #                                                             keywords = valid_words, 
-                #                                                             docs_list= topic_docs["Document"].tolist())
-            except:
-                name = self.model.get_topic_info(topic)["Name"].iloc[0] 
-                description = f"Documento Representativo: {topic_docs['Document'].tolist()[0]}"
+            topics_data_for_inference[topic] = {
+                "keywords": valid_words,
+                "docs": topic_docs["Document"].tolist()
+            }
+            # try:
+            #     name, description = await (self.llm_repository.create_topic_name_and_summary(num_keywords= 8, 
+            #                                                                 num_docs= 8, 
+            #                                                                 keywords = valid_words, 
+            #                                                                 docs_list= topic_docs["Document"].tolist()))
+            
+            # except:
+            #     name = self.model.get_topic_info(topic)["Name"].iloc[0] 
+            #     description = f"Documento Representativo: {topic_docs['Document'].tolist()[0]}"
 
-        results = await asyncio.gather(*functions)
-        for name, description in results:
+
             topic_represetation = DocumentGroup(
                 group=f"topic_{topic}",
                 documents=[
@@ -179,11 +178,11 @@ class BertopicRepository:
             #     y=[row["Frequency"] for _, row in df_filtered.iterrows()]
             # )
 
-            topic_info = TopicInfo(
-                topic=f"topic_{topic}",
-                title=name,
-                summary=description
-            )
+            # topic_info = TopicInfo(
+            #     topic=f"topic_{topic}",
+            #     title=name,
+            #     summary=description
+            # )
 
             serie_data = [0 for _ in range(len(time_serie_data))]
             for _, row in df_filtered.iterrows():
@@ -199,6 +198,28 @@ class BertopicRepository:
             topic_plots.append(topic_barplot)
             topic_plots.append(topic_wordcloud)
             topic_plots.append(topic_represetation)
+            #topic_plots.append(topic_info)
+        
+        topics_inference_result = await self.llm_repository.create_topics_name_and_summary(
+            inference_data=topics_data_for_inference,
+            num_keywords=8,
+            num_docs=8
+            )
+        
+        for topic in range(num_topics):
+        # Si la inferencia falló para algún tópico, se usa un fallback
+            if topic in topics_inference_result:
+                    name = topics_inference_result[topic]["name"]
+                    description = topics_inference_result[topic]["description"]
+            else:
+                name = self.model.get_topic_info(topic)["Name"].iloc[0]
+                docs_list = topics_data_for_inference[topic]["docs"]  
+                description = f"Documento Representativo: {docs_list[0]}" if docs_list else ""  
+            topic_info = TopicInfo(
+                topic=f"topic_{topic}",
+                title=name,
+                summary=description
+            )
             topic_plots.append(topic_info)
 
         topic_stackline = StackedLine(
