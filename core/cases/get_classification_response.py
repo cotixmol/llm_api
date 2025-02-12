@@ -74,7 +74,12 @@ class GetClassificationResponseCase:
             hits = await self.es_repository.get_paginated_data(query = self.query_repository, index_pattern=self.index_pattern, max_ndocs=self.max_ndocs)
 
             if not hits:
-                raise ElasticsearchException(f"No documents found for index pattern: {self.index_pattern}")
+                response = LLMClassificationResponse(
+                    total_docs=0,
+                    updated_docs=0
+                )
+                logger.warning(f"No documents found for index pattern: {self.index_pattern} between {self.since_iso_time} and {self.to_iso_time}")
+                return response
 
             ### MAKE CLASSIFICATION ###
             predictions_dict = await self.llm_repository.apply_prompt_classification(prompt_template=self.prompt, 
