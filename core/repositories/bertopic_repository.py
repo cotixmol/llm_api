@@ -5,11 +5,11 @@ from bertopic import BERTopic
 from sklearn.feature_extraction.text import CountVectorizer
 from bertopic.representation import MaximalMarginalRelevance
 import numpy as np
-from cuml.manifold import UMAP
-from cuml.cluster import HDBSCAN
-from cuml.preprocessing import normalize
-#from umap import UMAP
-#from hdbscan import HDBSCAN
+#from cuml.manifold import UMAP
+#from cuml.cluster import HDBSCAN
+#from cuml.preprocessing import normalize
+from umap import UMAP
+from hdbscan import HDBSCAN
 from sklearn.feature_extraction.text import CountVectorizer
 from bertopic.vectorizers import ClassTfidfTransformer
 from bertopic.dimensionality import BaseDimensionalityReduction
@@ -66,7 +66,7 @@ class BertopicRepository:
     def __fit_model(self, content_list: typing.List[str], embeddings_list: typing.List[typing.List[float]]):
         embeddings_np = np.array(embeddings_list)
         logger.info(f"Embeddings shape: {embeddings_np.shape}")
-        embeddings_np = normalize(embeddings_np)
+        #embeddings_np = normalize(embeddings_np)
         reduced_embeddings = self.umap_model.fit_transform(embeddings_np)
         logger.info(f"Reduced embeddings shape: {reduced_embeddings.shape}")
         logger.info(f"reduce embeddings: {len(reduced_embeddings)}")
