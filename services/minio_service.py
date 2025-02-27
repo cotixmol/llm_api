@@ -24,7 +24,7 @@ class MinIOClient:
         # model folder path
         folder_path = os.path.join(f"{models_path}/",
                                    f"{model_name}")
-        if os.path.isdir(folder_path):
+        if os.path.isdir(folder_path) or os.path.isfile(folder_path):
             logging.info("Model already exist")
             return True
         try:

@@ -64,6 +64,8 @@ El método de generación general para un modelo instruct:
 Probar:
 https://huggingface.co/tensorblock/Llama-3.2-8B-Instruct-GGUF/blob/main/Llama-3.2-8B-Instruct-Q3_K_M.gguf
 https://huggingface.co/QuantFactory/Llama-3.2-3B-GGUF
+https://huggingface.co/bartowski/Llama-3.3-70B-Instruct-GGUF
+https://huggingface.co/meta-llama/Llama-3.2-11B-Vision-Instruct/tree/main (en skynet - en proceso de descarga 27/02)
 
 ## Recursos útiles
 - vllm classes
