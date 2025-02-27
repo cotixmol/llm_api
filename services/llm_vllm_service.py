@@ -10,7 +10,7 @@ class LLMException(Exception):
 class LLMService:
     def __init__(self, model_path: str) -> None:
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-        self.llm = LLM(model=model_path, device=self.device, enforce_eager=True, quantization="fp8")
+        self.llm = LLM(model=model_path, device=self.device, tensor_parallel_size=6)
     
     async def generate_text(
             self, 
