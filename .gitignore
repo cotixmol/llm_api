@@ -17,3 +17,4 @@ test_bertopic.py
 test_api
 # models
 models/*
+test_api/*

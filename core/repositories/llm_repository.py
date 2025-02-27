@@ -1,7 +1,7 @@
 import typing
 import json
 import logging
-from services.llm_service import LLMService
+from services.llm_vllm_service import LLMService
 from typing import List, Dict
 from collections import defaultdict
 from api.config.logger import logger
@@ -11,7 +11,7 @@ class LLMRepository:
         self.llm_service = llm_service
 
     @staticmethod
-    def parse_model_response(response_text: str, valid_labels: typing.Optional[List[str]] = None) -> typing.Optional[dict]:
+    def _parse_model_response(response_text: str, valid_labels: typing.Optional[List[str]] = None) -> typing.Optional[dict]:
         """
             checks if the response_text is a valid json and if the value of the key 'task_key' is in the valid_labels
         """
@@ -31,8 +31,25 @@ class LLMRepository:
         except (ValueError, json.JSONDecodeError):
             logging.warning(f"Formato incorrecto en la respuesta del modelo. Response: {response_text}")
             return None
+        
+    def _parse_summary_response(self, response_text: str) -> typing.Optional[dict]:
+        """
+            checks if the requested generation has the summary expected format: { category: "category", summary: "summary_text" }
+        """
+        # get the json text from the response_text
+        try:
+            start_index = response_text.find('{')
+            end_index = response_text.rfind('}') + 1
+            json_text = response_text[start_index:end_index]
+            response_data = json.loads(json_text)
+            response = {
+                response_data["category"]: response_data["summary"]
+            }
+            return response
+        except (ValueError, json.JSONDecodeError):
+            logging.warning(f"Formato incorrecto en la respuesta del modelo. Response: {response_text}")
+            return None
     
-
     async def create_topics_name_and_summary(            
         self,
         inference_data: typing.Dict[int, dict],
@@ -85,13 +102,14 @@ class LLMRepository:
                     logging.error(f"Error al generar el prompt para el tópico '{topic}': {e}")
                     continue
 
-            output = await self.llm_service.generate_text(prompts, max_new_tokens=5000, batch_size=8)
-            logger.debug(f"Output: {output}")
+            response = await self.llm_service.generate_text(prompts, max_new_tokens=5000, batch_size=8)
+            logger.debug(f"response: {response}")
             # Validar la respuesta del modelo antes de guardarla
-            for topic, block in zip(topics_batch, output):
-                if isinstance(block, list) and block and 'generated_text' in block[-1]:
+            for topic, block in zip(topics_batch, response["outputs"]):
+                topic_summary = block["text"]
+                if isinstance(topic_summary, str):
                     try:
-                        response_data = self.parse_model_response(block[-1]['generated_text'])
+                        response_data = self._parse_model_response(topic_summary)
                         if response_data and "topic_name" in response_data and "topic_description" in response_data:
                             results[topic] = {
                             "name": response_data["topic_name"],
@@ -142,7 +160,7 @@ class LLMRepository:
 
             try:
                 outputs = await self.llm_service.generate_text(messages, max_new_tokens=350)
-                response_data = self.parse_model_response(outputs[-1]["generated_text"])
+                response_data = self._parse_model_response(outputs[-1]["generated_text"])
 
                 try:
                     topic_name = response_data["topic_name"]
@@ -166,7 +184,6 @@ class LLMRepository:
         batch_size: int,
         docs: List[dict] = None,
     ) -> typing.List[typing.Dict[str, typing.Optional[str]]]:
-        
         if not docs:
             logging.error("docs_list no puede ser None o vacío.")
             raise ValueError("No se encontraron documentos.")
@@ -229,29 +246,20 @@ class LLMRepository:
                 ]
 
                 try:
-                    
-                    outputs = await self.llm_service.generate_text(batch_prompts, max_new_tokens=40, batch_size=batch_size)
+                    output = await self.llm_service.generate_text(batch_prompts, max_new_tokens=40)
+                    responses = output["outputs"]
                 except Exception as batch_error:
                     logging.error(f"Error procesando el batch {i // batch_size + 1}: {batch_error}")
 
 
-                for idx, output in zip(batch_indices, outputs):
+                for idx, response in zip(batch_indices, responses):
                     try:
-                        # Validar si el output es una lista y contiene al menos un elemento
-                        if not isinstance(output, list) or len(output) == 0:
-                            logging.warning(f"Output inesperado para el documento {idx}. Output: {output}")
-                            continue
-
-                        # Validar si el primer elemento contiene la clave 'generated_text'
-                        if 'generated_text' not in output[0]:
-                            logging.warning(f"El output no contiene 'generated_text' para el documento {idx}. Output: {output[0]}")
-                            continue
-
-                        generated_text = output[0]['generated_text']
+                        generated_text = response["text"]
+                        logging.info(f"tiempo para generar texto: {generated_text}  \n {response['other_info']['prompt_time']}")
                         logging.debug(f"Texto generado para el documento {idx}: {generated_text}")
 
                         # Parsear el texto generado
-                        response_data = self.parse_model_response(generated_text, valid_labels)
+                        response_data = self._parse_model_response(generated_text, valid_labels)
 
                         # Validar si el response_data es un diccionario y contiene la clave esperada
                         if not isinstance(response_data, dict):
@@ -290,7 +298,8 @@ class LLMRepository:
         while attempts < 5:
             try:
                 output = await self.llm_service.generate_text(prompt)
-                return output[-1]["generated_text"]
+                response = output["outputs"][0]["text"]
+                return response
             except Exception as e:
                 logging.error(f"Error generando texto en el intento {attempts + 1}: {e}")
                 attempts += 1
@@ -362,12 +371,15 @@ class LLMRepository:
                 except Exception as e:
                     logging.error(f"Error al generar el prompt para '{category}': {e}")
                     continue        
-            output = await self.llm_service.generate_text(prompts, max_new_tokens=5000, batch_size=batch_size)
-            logger.debug(f"Output: {output}")
+            response = await self.llm_service.generate_text(prompts, max_new_tokens=5000, batch_size=batch_size)
+            logger.debug(f"response: {response}")
             # Validar la respuesta del modelo antes de guardarla
-            for block in output:
-                if isinstance(block, list) and block and 'generated_text' in block[-1]:
-                    category_result = self.parse_model_response(block[-1]['generated_text'])
+            for output in response["outputs"]:
+                text = output["text"]
+                if isinstance(text, str):
+                    print(text)
+                    category_result = self._parse_summary_response(text)
+                    print(category_result)
                     if not category_result:
                         continue
                     for key, value in category_result.items():
@@ -391,8 +403,6 @@ class LLMRepository:
 
         return summaries
     
-
-
     async def apply_prompt_query_summary(self, docs: List[dict], prompt_template: dict, query: str) -> Dict[str, str]:
         if not docs:
             logging.error("La lista de documentos no puede estar vacía.")
@@ -421,10 +431,11 @@ class LLMRepository:
                     }
                 ]
                 
-                output = await self.llm_service.generate_text(prompt, max_new_tokens=5000)
-                
-                if isinstance(output, list) and output and 'generated_text' in output[-1]:
-                    response = {"summary": output[-1]['generated_text']}
+                response = await self.llm_service.generate_text(prompt, max_new_tokens=5000)
+                output = response["outputs"][0]
+                summary = output["text"]
+                if isinstance(summary, str):
+                    response = {"summary": summary}
                     success = True  
                 else:
                     logging.warning(f"Formato inesperado en la respuesta del modelo. Output: {output}")
@@ -464,10 +475,12 @@ class LLMRepository:
                     }
                 ]
                 
-                output = await self.llm_service.generate_text(prompt, max_new_tokens=5000)
+                response = await self.llm_service.generate_text(prompt, max_new_tokens=5000)
+                output = response["outputs"][0]
+                summary = output["text"]
                 
-                if isinstance(output, list) and output and 'generated_text' in output[-1]:
-                    response = {"summary": output[-1]['generated_text']}
+                if isinstance(summary, str):
+                    response = {"summary": summary}
                     success = True  
                 else:
                     logging.warning(f"Formato inesperado en la respuesta del modelo. Output: {output}")

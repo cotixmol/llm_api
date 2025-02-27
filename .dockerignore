@@ -6,3 +6,5 @@ docker-compose.yml
 dockerfile
 .venv
 __pycache__
+models
+venv
