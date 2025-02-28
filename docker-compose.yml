@@ -6,9 +6,12 @@ services:
     #   mode: replicated
     #   replicas: ${REPLICAS:-2}
     network_mode: "host"
+    ipc: "host"
     environment:
       LAN_IP: ${LAN_IP:-127.0.0.1}
       PYTHON_MULTIPROCESSING_START_METHOD: "spawn"
+      NCCL_DEBUG: "INFO"
+      NCCL_IB_DISABLE: 1
     restart: always
     volumes:
       - ./.env:/app/.env
