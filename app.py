@@ -1,3 +1,6 @@
+import multiprocessing
+multiprocessing.set_start_method('spawn', force=True)
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from api.routes.topic_router import topic_router
