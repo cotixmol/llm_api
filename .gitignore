@@ -18,3 +18,4 @@ test_api
 # models
 models/*
 test_api/*
+mp_test.py

@@ -8,6 +8,7 @@ services:
     network_mode: "host"
     environment:
       LAN_IP: ${LAN_IP:-127.0.0.1}
+      PYTHON_MULTIPROCESSING_START_METHOD: "spawn"
     restart: always
     volumes:
       - ./.env:/app/.env
@@ -24,7 +25,7 @@ services:
           devices:
             - driver: nvidia
               count: all
-              capabilities: [gpu]
+              capabilities: [ gpu ]
 
 #     labels:
 #       # Enable Traefik for reports service

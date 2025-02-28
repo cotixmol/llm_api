@@ -1,5 +1,26 @@
 import multiprocessing
 multiprocessing.set_start_method('spawn', force=True)
+import torch.multiprocessing as mp
+mp.set_start_method('spawn', force=True)
+import torch    
+import os
+
+# DEBUG PRINTS
+print(f"Default start method: {mp.get_start_method(allow_none=True)}")
+print(f"Available start methods: {mp.get_all_start_methods()}")
+
+# Check environment variables related to multiprocessing
+print(f"PYTHONPATH: {os.environ.get('PYTHONPATH', 'Not set')}")
+print(f"PYTHON_MULTIPROCESSING_START_METHOD: {os.environ.get('PYTHON_MULTIPROCESSING_START_METHOD', 'Not set')}")
+print(f"PYTORCH_CUDA_ALLOC_CONF: {os.environ.get('PYTORCH_CUDA_ALLOC_CONF', 'Not set')}")
+
+# Check CUDA status
+print(f"CUDA available: {torch.cuda.is_available()}")
+if torch.cuda.is_available():
+    print(f"CUDA device count: {torch.cuda.device_count()}")
+    print(f"Current CUDA device: {torch.cuda.current_device()}")
+
+
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
