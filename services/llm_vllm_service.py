@@ -5,6 +5,7 @@ from typing import Optional, Dict, List
 from api.config.secrets import settings as s
 import multiprocessing
 import torch.multiprocessing as mp
+import os
 
 
 class LLMException(Exception):
@@ -14,6 +15,8 @@ class LLMService:
     def __init__(self, model_path: str) -> None:
         print("Current start method:", multiprocessing.get_start_method())
         print("Current start method:", mp.get_start_method())
+        vllm_method = os.environ.get("VLLM_WORKER_MULTIPROC_METHOD", "Not Set")
+        print("VLLM_WORKER_MULTIPROC_METHOD:", vllm_method)
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.llm = LLM(
             model=model_path, 
