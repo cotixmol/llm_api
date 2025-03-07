@@ -28,6 +28,8 @@ class Settings(BaseSettings):
     VLLM_MAX_SEQ_LEN_TO_CAPTURE: int = 8192
     VLLM_DISABLE_CUSTOM_ALL_REDUCE: bool = False
     VLLM_MEMORY_UTILIZATION: float = 0.9
+    # VLLM variables
+    VLLM_WORKER_MULTIPROC_METHOD: str = "fork"
 
     model_config = SettingsConfigDict(env_file='.env', env_file_encoding='utf-8', extra='ignore')
 
