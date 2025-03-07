@@ -3,6 +3,7 @@ multiprocessing.set_start_method('spawn', force=True)
 import torch.multiprocessing as mp
 mp.set_start_method('spawn', force=True)
 import os
+import torch
 print("Module top-level code executed in process:", os.getpid())
 os.environ["VLLM_WORKER_MULTIPROC_METHOD"] = "spawn"
 
@@ -21,8 +22,6 @@ from api.config.settings import VERSION
 from api.config.settings import minio_client
 from factories.services.llm_client_initialization import initilialize_llm_client
 from contextlib import asynccontextmanager
-
-
 
 description = """# API overview
 > Reports and visualizations for RD APP.

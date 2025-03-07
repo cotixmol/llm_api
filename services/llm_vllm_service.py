@@ -21,7 +21,12 @@ class LLMService:
         self.llm = LLM(
             model=model_path, 
             device=self.device, 
-            tensor_parallel_size=s.VLLM_TENSOR_PARALLEL_SIZE, 
+            tensor_parallel_size=s.VLLM_TENSOR_PARALLEL_SIZE,
+            quantization=s.VLLM_QUANTIZATION, 
+            enforce_eager=s.VLLM_ENFORCE_EAGER, 
+            max_seq_len_to_capture=s.VLLM_MAX_SEQ_LEN_TO_CAPTURE, 
+            disable_custom_all_reduce=s.VLLM_DISABLE_CUSTOM_ALL_REDUCE, 
+            gpu_memory_utilization=s.VLLM_MEMORY_UTILIZATION 
         )
     
     async def generate_text(
