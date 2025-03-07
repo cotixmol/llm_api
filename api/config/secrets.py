@@ -1,5 +1,5 @@
 from pydantic_settings import BaseSettings, SettingsConfigDict
-from typing import List
+from typing import List, Optional
 
 
 class Settings(BaseSettings):
@@ -20,6 +20,14 @@ class Settings(BaseSettings):
     MINIO_ACCESS_KEY: str
     MINIO_SECRET_KEY: str
     MINIO_BUCKET: str
+
+    # LLM variables
+    VLLM_TENSOR_PARALLEL_SIZE: int = 1
+    VLLM_QUANTIZATION: Optional[str] = None
+    VLLM_ENFORCE_EAGER: Optional[bool] = None
+    VLLM_MAX_SEQ_LEN_TO_CAPTURE: int = 8192
+    VLLM_DISABLE_CUSTOM_ALL_REDUCE: bool = False
+    VLLM_MEMORY_UTILIZATION: float = 0.9
 
     model_config = SettingsConfigDict(env_file='.env', env_file_encoding='utf-8', extra='ignore')
 
