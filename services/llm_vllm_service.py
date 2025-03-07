@@ -19,7 +19,7 @@ class LLMService:
             enforce_eager=s.VLLM_ENFORCE_EAGER, 
             max_seq_len_to_capture=s.VLLM_MAX_SEQ_LEN_TO_CAPTURE, 
             disable_custom_all_reduce=s.VLLM_DISABLE_CUSTOM_ALL_REDUCE, 
-            memory_utilization=s.VLLM_MEMORY_UTILIZATION
+            gpu_memory_utilization=s.VLLM_MEMORY_UTILIZATION
         )
     
     async def generate_text(
