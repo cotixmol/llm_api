@@ -1,7 +1,11 @@
 import multiprocessing
 multiprocessing.set_start_method('spawn', force=True)
 import torch.multiprocessing as mp
+
 mp.set_start_method('spawn', force=True)
+
+print("Current start method:", multiprocessing.get_start_method())
+print("Current start method:", mp.get_start_method())
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -43,4 +47,9 @@ app.include_router(router=llm_router, prefix=('/llm'), tags=["LLM"])
 
 if __name__ == "__main__":
     import uvicorn
+    multiprocessing.set_start_method('spawn', force=True)
+    mp.set_start_method('spawn', force=True)
+    print("Current start method in init:", multiprocessing.get_start_method())
+    print("Current start method in init:", mp.get_start_method())
+
     uvicorn.run(app, host="0.0.0.0", port=8002, log_level="debug")
