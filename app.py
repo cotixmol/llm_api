@@ -5,6 +5,8 @@ mp.set_start_method('spawn', force=True)
 import os
 print("Module top-level code executed in process:", os.getpid())
 
+vllm_method = os.environ.get("VLLM_WORKER_MULTIPROC_METHOD", "Not Set")
+print("VLLM_WORKER_MULTIPROC_METHOD:", vllm_method)
 
 print("Current start method:", multiprocessing.get_start_method())
 print("Current start method:", mp.get_start_method())

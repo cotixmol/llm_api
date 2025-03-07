@@ -3,6 +3,8 @@ from vllm import LLM, SamplingParams
 from api.config.logger import logger
 from typing import Optional, Dict, List
 from api.config.secrets import settings as s
+import multiprocessing
+import torch.multiprocessing as mp
 
 
 class LLMException(Exception):
@@ -10,16 +12,13 @@ class LLMException(Exception):
 
 class LLMService:
     def __init__(self, model_path: str) -> None:
+        print("Current start method:", multiprocessing.get_start_method())
+        print("Current start method:", mp.get_start_method())
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.llm = LLM(
             model=model_path, 
             device=self.device, 
             tensor_parallel_size=s.VLLM_TENSOR_PARALLEL_SIZE, 
-            quantization=s.VLLM_QUANTIZATION, 
-            enforce_eager=s.VLLM_ENFORCE_EAGER, 
-            max_seq_len_to_capture=s.VLLM_MAX_SEQ_LEN_TO_CAPTURE, 
-            disable_custom_all_reduce=s.VLLM_DISABLE_CUSTOM_ALL_REDUCE, 
-            gpu_memory_utilization=s.VLLM_MEMORY_UTILIZATION
         )
     
     async def generate_text(
