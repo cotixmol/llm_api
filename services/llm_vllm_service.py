@@ -11,8 +11,6 @@ class LLMException(Exception):
 
 class LLMService:
     def __init__(self, model_path: str) -> None:
-        vllm_method = os.environ.get("VLLM_WORKER_MULTIPROC_METHOD", "Not Set")
-        print("VLLM_WORKER_MULTIPROC_METHOD:", vllm_method)
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.llm = LLM(
             model=model_path, 
@@ -23,7 +21,9 @@ class LLMService:
             max_seq_len_to_capture=s.VLLM_MAX_SEQ_LEN_TO_CAPTURE, 
             disable_custom_all_reduce=s.VLLM_DISABLE_CUSTOM_ALL_REDUCE, 
             gpu_memory_utilization=s.VLLM_MEMORY_UTILIZATION,
-            max_model_len=s.VLLM_MAX_MODEL_LEN 
+            max_model_len=s.VLLM_MAX_MODEL_LEN,
+            max_num_batched_tokens=s.VLLM_MAX_NUM_BATCHED_TOKENS,
+            max_num_seqs=s.VLLM_MAX_NUM_SEQS 
         )
     
     async def generate_text(

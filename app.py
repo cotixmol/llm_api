@@ -25,9 +25,6 @@ description = """# API overview
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Startup event
-    print("Worker PID:", os.getpid())
-    print("Current start method in init:", multiprocessing.get_start_method())
-    print("Current start method in init:", mp.get_start_method())
     minio_client.update_model_folder(model_name=s.MODEL_NAME, bucket=s.MINIO_BUCKET)
     MODEL_PATH = f"models/{s.MODEL_NAME}"
     app.state.llm_service = initilialize_llm_client(model_path=MODEL_PATH)
