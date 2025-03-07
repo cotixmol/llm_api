@@ -28,6 +28,7 @@ class Settings(BaseSettings):
     VLLM_MAX_SEQ_LEN_TO_CAPTURE: int = 8192
     VLLM_DISABLE_CUSTOM_ALL_REDUCE: bool = False
     VLLM_MEMORY_UTILIZATION: float = 0.9
+    VLLM_MAX_MODEL_LEN: int = 409
     # VLLM variables
     VLLM_WORKER_MULTIPROC_METHOD: str = "fork"
 
