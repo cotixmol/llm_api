@@ -34,6 +34,8 @@ async def lifespan(app: FastAPI):
     
 app = FastAPI(title="RD_APP_REPORTS", description=description, version=VERSION, lifespan=lifespan)
 
+print(f"main.py with :{app}")
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
