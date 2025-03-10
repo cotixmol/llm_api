@@ -3,6 +3,7 @@ from vllm import LLM, SamplingParams
 from api.config.logger import logger
 from typing import Optional, Dict, List
 from api.config.secrets import settings as s
+import os
 
 
 class LLMException(Exception):
@@ -14,12 +15,15 @@ class LLMService:
         self.llm = LLM(
             model=model_path, 
             device=self.device, 
-            tensor_parallel_size=s.VLLM_TENSOR_PARALLEL_SIZE, 
+            tensor_parallel_size=s.VLLM_TENSOR_PARALLEL_SIZE,
             quantization=s.VLLM_QUANTIZATION, 
             enforce_eager=s.VLLM_ENFORCE_EAGER, 
             max_seq_len_to_capture=s.VLLM_MAX_SEQ_LEN_TO_CAPTURE, 
             disable_custom_all_reduce=s.VLLM_DISABLE_CUSTOM_ALL_REDUCE, 
-            gpu_memory_utilization=s.VLLM_MEMORY_UTILIZATION
+            gpu_memory_utilization=s.VLLM_MEMORY_UTILIZATION,
+            max_model_len=s.VLLM_MAX_MODEL_LEN,
+            max_num_batched_tokens=s.VLLM_MAX_NUM_BATCHED_TOKENS,
+            max_num_seqs=s.VLLM_MAX_NUM_SEQS 
         )
     
     async def generate_text(
