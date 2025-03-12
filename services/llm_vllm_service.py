@@ -23,7 +23,7 @@ class LLMService:
             gpu_memory_utilization=s.VLLM_MEMORY_UTILIZATION,
             max_model_len=s.VLLM_MAX_MODEL_LEN,
             max_num_batched_tokens=s.VLLM_MAX_NUM_BATCHED_TOKENS,
-            max_num_seqs=s.VLLM_MAX_NUM_SEQS 
+            max_num_seqs=s.VLLM_MAX_NUM_SEQS
         )
         logger.info(f"[VLLM DEBUG] Modelo inicializado con vLLM en dispositivo: {self.device}. Clase: {type(self.llm)}")
 
@@ -43,6 +43,7 @@ class LLMService:
                 "outputs": [],
                 "general_info": {}
             }
+            logger.info(f"[VLLM DEBUG] Generaciones: {generations}")
             for generation in generations:
                 text = generation.outputs[0].text
                 total_prompt_time = generation.metrics.finished_time - generation.metrics.arrival_time
