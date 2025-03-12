@@ -25,6 +25,8 @@ class LLMService:
             max_num_batched_tokens=s.VLLM_MAX_NUM_BATCHED_TOKENS,
             max_num_seqs=s.VLLM_MAX_NUM_SEQS 
         )
+        logger.info(f"[VLLM DEBUG] Modelo inicializado con vLLM en dispositivo: {self.device}. Clase: {type(self.llm)}")
+
     
     async def generate_text(
             self, 
