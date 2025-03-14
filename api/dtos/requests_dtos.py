@@ -59,6 +59,9 @@ class LLMClassificationPreviewPayload(BaseModel):
 class LLMPromptPreviewPayload(BaseModel):
     prompt: str
 
+class LLMTestPreviewPayload(BaseModel):
+    prompt: typing.Any
+
 class LLMSummaryPreviewPayload(BaseModel):
     index_pattern: str
     since_date: str
