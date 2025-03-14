@@ -1,7 +1,7 @@
 import typing
 from fastapi import APIRouter, HTTPException, Depends
-from api.dtos.responses_dtos import LLMClassificationResponse, LLMSummaryResponse, LLMPromptResponse
-from api.dtos.requests_dtos import LLMClassificationPreviewPayload, LLMPromptPreviewPayload, LLMSummaryPreviewPayload
+from api.dtos.responses_dtos import LLMClassificationResponse, LLMSummaryResponse, LLMPromptResponse, LLMTestResponse
+from api.dtos.requests_dtos import LLMClassificationPreviewPayload, LLMPromptPreviewPayload, LLMSummaryPreviewPayload, LLMTestPreviewPayload
 from api.config.logger import logger
 from core.repositories.elasticsearch_repository import ElasticsearchRepository
 from core.repositories.query_repository import Query
@@ -9,11 +9,12 @@ from core.repositories.llm_repository import LLMRepository
 from factories.repositories.elasticsearch_repository_factory import get_elasticsearch_repository
 from factories.repositories.query_repository_factory import get_query_repository
 from factories.repositories.llm_repository_factory import get_llm_repository
+from factories.services.llm_client_factory import get_llm_service
 from services.elasticsearch_service import ElasticsearchException
 from core.cases.get_classification_response import GetClassificationResponseCase
 from core.cases.get_prompt_response import GetPromptResponseCase
 from core.cases.get_summary_response import GetSummaryResponseCase
-
+from api.utils.dict_from_vllm_response import convert_request_outputs_to_dict
 
 llm_router = APIRouter()
 
@@ -122,3 +123,25 @@ async def get_llm_summary(
     except Exception as error:
         logger.error(f"{type(error)}: {error}")
         raise HTTPException(status_code=500, detail="It seems that IA is not available right now. Please try again later.")
+    
+@llm_router.post(
+        '/test',
+        response_model=LLMTestResponse,
+        response_model_exclude_none=True
+    )
+async def get_llm_default_response(
+    parameters: LLMTestPreviewPayload,
+    llm_service: LLMRepository = Depends(
+        get_llm_service
+    )
+) -> LLMTestResponse:
+    try:
+        model_response = await llm_service.test_model(prompt=parameters.prompt)
+        dict_responses= convert_request_outputs_to_dict(model_response)   
+        response = LLMTestResponse(response=dict_responses)
+
+        return response
+    except Exception as error:
+        logger.error(f"{type(error)}: {error}")
+        raise HTTPException(status_code=500, detail="Something went wrong.")
+    

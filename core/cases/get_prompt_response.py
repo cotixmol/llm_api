@@ -11,8 +11,9 @@ class GetPromptResponseCase:
         self.prompt = prompt
 
     async def __call__(self) -> LLMPromptResponse:      
-        ### MAKE CLASSIFICATION ###
         prediction = await self.llm_repository.apply_prompt(prompt=self.prompt)
 
         return LLMPromptResponse(response=prediction)
+    
+
 
