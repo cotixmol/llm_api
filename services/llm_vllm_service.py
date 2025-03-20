@@ -43,7 +43,7 @@ class LLMService:
                 "outputs": [],
                 "general_info": {}
             }
-            logger.info(f"[VLLM DEBUG] Generaciones: {generations}")
+            #logger.info(f"[VLLM DEBUG] Generaciones: {generations}")
             for generation in generations:
                 text = generation.outputs[0].text
                 total_prompt_time = generation.metrics.finished_time - generation.metrics.arrival_time
