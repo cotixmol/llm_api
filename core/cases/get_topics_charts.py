@@ -53,7 +53,6 @@ class GetTopicChartsCase:
             fields.append("embedding")
         if "interactions" not in fields:
             fields.append("interactions")
-        print(f"#######Fields: {fields}")
         self.query_repository.set_fields(
             fields=fields
         )
@@ -65,7 +64,6 @@ class GetTopicChartsCase:
         self.query_repository.set_order(field="@timestamp", order="desc")
         self.query_repository.set_order(field="created_at", order="desc")
         
-        print(f"#######Query: {self.query_repository.get_query()}")
 
         try:
             ### SEARCH DOCUMENTS ###
@@ -74,7 +72,6 @@ class GetTopicChartsCase:
                 query = self.query_repository, 
                 index_pattern=self.index_pattern, 
                 max_ndocs=self.max_ndocs)
-            #print(f"#######Documents list: {documents_list}")
         finally:
             ### CLOSE CLIENT ###
             await self.es_repository.close_client()
