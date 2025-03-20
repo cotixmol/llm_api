@@ -71,7 +71,7 @@ class GetTopicChartsCase:
                 query = self.query_repository, 
                 index_pattern=self.index_pattern, 
                 max_ndocs=self.max_ndocs)
-            print(f"#######Documents list: {documents_list}")
+            #print(f"#######Documents list: {documents_list}")
         finally:
             ### CLOSE CLIENT ###
             await self.es_repository.close_client()
