@@ -53,6 +53,7 @@ class GetTopicChartsCase:
             fields.append("embedding")
         if "interactions" not in fields:
             fields.append("interactions")
+        print(f"#######Fields: {fields}")
         self.query_repository.set_fields(
             fields=fields
         )
