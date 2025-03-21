@@ -1,14 +1,14 @@
 from pydantic import BaseModel
-import typing
 
+from typing import List, Dict, Optional, Any, TypeVar, Generic
 
-Data = typing.TypeVar("Data")
-Chart = typing.TypeVar("Chart")
+Data = TypeVar("Data")
+Chart = TypeVar("Chart")
 
-class BaseResponse(BaseModel, typing.Generic[Data, Chart]):
+class BaseResponse(BaseModel, Generic[Data, Chart]):
     data: Data
     chart: Chart
-    n_docs: typing.Optional[int]
+    n_docs: Optional[int]
 
 class LLMClassificationResponse(BaseModel): 
     total_docs: int
@@ -18,5 +18,7 @@ class LLMPromptResponse(BaseModel):
     response: str
 
 class LLMSummaryResponse(BaseModel): 
-    response: typing.Dict[str, typing.Any]
-    
+    response: Dict[str, Any]
+
+class LLMTestResponse(BaseModel): 
+    response: List[dict]
