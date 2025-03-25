@@ -61,6 +61,9 @@ class LLMPromptPreviewPayload(BaseModel):
     batch_size: int
     fill_batches: bool
 
+class LLMTestPreviewPayload(BaseModel):
+    prompt: typing.Any
+
 class LLMSummaryPreviewPayload(BaseModel):
     index_pattern: str
     since_date: str

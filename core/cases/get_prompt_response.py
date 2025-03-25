@@ -21,4 +21,6 @@ class GetPromptResponseCase:
                                                              fill_batches=self.fill_batches)
 
         return LLMPromptResponse(response=prediction)
+    
+
 
