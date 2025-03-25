@@ -5,13 +5,20 @@ class GetPromptResponseCase:
     def __init__(
             self,
             llm_repository: LLMRepository,
-            prompt: str, 
+            prompts: list, 
+            batch_size: int,
+            fill_batches: bool
     ):
         self.llm_repository = llm_repository
-        self.prompt = prompt
+        self.prompts = prompts
+        self.batch_size = batch_size
+        self.fill_batches = fill_batches
 
     async def __call__(self) -> LLMPromptResponse:      
-        prediction = await self.llm_repository.apply_prompt(prompt=self.prompt)
+        ### MAKE CLASSIFICATION ###
+        prediction = await self.llm_repository.apply_prompts(prompts=self.prompts, 
+                                                             batch_size=self.batch_size, 
+                                                             fill_batches=self.fill_batches)
 
         return LLMPromptResponse(response=prediction)
     

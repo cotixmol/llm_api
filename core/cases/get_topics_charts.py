@@ -63,6 +63,7 @@ class GetTopicChartsCase:
         self.query_repository.set_order(field="interactions", order="desc", unmapped_type="long")
         self.query_repository.set_order(field="@timestamp", order="desc")
         self.query_repository.set_order(field="created_at", order="desc")
+        
 
         try:
             ### SEARCH DOCUMENTS ###

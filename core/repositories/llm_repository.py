@@ -2,9 +2,13 @@ import typing
 import json
 import logging
 from services.llm_vllm_service import LLMService
+from core.repositories.utils.monitor_llm import monitor
 from typing import List, Dict
 from collections import defaultdict
 from api.config.logger import logger
+import time
+import csv
+import os
 
 class LLMRepository:
     def __init__(self, llm_service: LLMService):
@@ -175,6 +179,7 @@ class LLMRepository:
         logging.error(f"No se pudo generar una respuesta válida después de {MAX_ATTEMPTS} intentos")
         return None, None   
     
+    @monitor(task_name='apply_prompt_classification')
     async def apply_prompt_classification(
         self,
         prompt_template: typing.Dict[str, str],
@@ -292,12 +297,13 @@ class LLMRepository:
         "classification_list": category_list + skiped_category
          }
     
-    async def apply_prompt(self, prompt: str) -> typing.Optional[str]:
+    @monitor(task_name='apply_prompt')
+    async def apply_prompts(self, prompts: list, batch_size: int, fill_batches: bool) -> typing.Optional[dict]:
         attempts = 0
-        prompt = [{"role": "user", "content": prompt}]
+        prompt = [{"role": "user", "content": prompts[0]}]
         while attempts < 5:
             try:
-                output = await self.llm_service.generate_text(prompt)
+                output = await self.llm_service.generate_text(prompt, temperature=0, top_p=1, max_new_tokens=10)
                 response = output["outputs"][0]["text"]
                 return response
             except Exception as e:
@@ -307,6 +313,7 @@ class LLMRepository:
         logging.error("Fallo en todos los intentos para generar texto.")
         return None
      
+    @monitor(task_name='apply_prompt_categories_summary')
     async def apply_prompt_categories_summary(self, aggs: dict, prompt_template: dict, summary_field: str, batch_size: int) -> Dict[str, str]:
         buckets = (
             aggs
@@ -403,6 +410,7 @@ class LLMRepository:
 
         return summaries
     
+    @monitor(task_name='apply_prompt_query_summary')
     async def apply_prompt_query_summary(self, docs: List[dict], prompt_template: dict, query: str) -> Dict[str, str]:
         if not docs:
             logging.error("La lista de documentos no puede estar vacía.")
@@ -447,6 +455,7 @@ class LLMRepository:
 
         return response
     
+    @monitor(task_name='apply_prompt_summary')
     async def apply_prompt_summary(self, docs: List[dict], prompt_template: dict) -> Dict[str, str]:
         if not docs:
             logging.error("La lista de documentos no puede estar vacía.")
@@ -476,8 +485,31 @@ class LLMRepository:
                 ]
                 
                 response = await self.llm_service.generate_text(prompt, max_new_tokens=5000)
+
+                # # ====== INICIO MODIFICACIÓN TEMPORAL: TRACKING VLLM ======
+                # start_time = time.time()
+                # response = await self.llm_service.generate_text(prompt, max_new_tokens=5000)
+                # end_time = time.time()
+                # total_latency = end_time - start_time
+                # logger.info(f"[VLLM METRICS] Tiempo total de generación en apply_prompt_summary: {total_latency:.3f} segundos")
+                # # ====== FIN MODIFICACIÓN TEMPORAL: TRACKING VLLM ======
+
                 output = response["outputs"][0]
                 summary = output["text"]
+
+                # # ====== INICIO MODIFICACIÓN TEMPORAL: GUARDAR MÉTRICAS CSV ======
+                # metrics_path = os.path.join("/ruta/a/experimentos_dev/", f"summary_metrics_{int(start_time)}.csv")
+                # with open(metrics_path, "w", newline="") as csvfile:
+                #     writer = csv.DictWriter(csvfile, fieldnames=["prompt_idx", "prompt_time", "generated_text"])
+                #     writer.writeheader()
+                #     for idx, output in enumerate(response["outputs"]):
+                #         writer.writerow({
+                #             "prompt_idx": idx,
+                #             "prompt_time": output["other_info"].get("prompt_time", None),
+                #             "generated_text": output["text"]
+                #         })
+                # logger.info(f"[VLLM METRICS] Métricas guardadas en: {metrics_path}")
+                # # ====== FIN MODIFICACIÓN TEMPORAL: GUARDAR MÉTRICAS CSV ======
                 
                 if isinstance(summary, str):
                     response = {"summary": summary}
