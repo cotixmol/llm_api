@@ -15,6 +15,7 @@ services:
     volumes:
       - ./.env:/app/.env
       - ./models:/app/models
+      - ./logs:/app/logs  
     ports:
       - 8002:8002
     logging:

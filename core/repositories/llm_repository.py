@@ -484,30 +484,30 @@ class LLMRepository:
                 
                 #response = await self.llm_service.generate_text(prompt, max_new_tokens=5000)
 
-                # ====== INICIO MODIFICACIÓN TEMPORAL: TRACKING VLLM ======
-                start_time = time.time()
-                response = await self.llm_service.generate_text(prompt, max_new_tokens=5000)
-                end_time = time.time()
-                total_latency = end_time - start_time
-                logger.info(f"[VLLM METRICS] Tiempo total de generación en apply_prompt_summary: {total_latency:.3f} segundos")
-                # ====== FIN MODIFICACIÓN TEMPORAL: TRACKING VLLM ======
+                # # ====== INICIO MODIFICACIÓN TEMPORAL: TRACKING VLLM ======
+                # start_time = time.time()
+                # response = await self.llm_service.generate_text(prompt, max_new_tokens=5000)
+                # end_time = time.time()
+                # total_latency = end_time - start_time
+                # logger.info(f"[VLLM METRICS] Tiempo total de generación en apply_prompt_summary: {total_latency:.3f} segundos")
+                # # ====== FIN MODIFICACIÓN TEMPORAL: TRACKING VLLM ======
 
                 output = response["outputs"][0]
                 summary = output["text"]
 
-                # ====== INICIO MODIFICACIÓN TEMPORAL: GUARDAR MÉTRICAS CSV ======
-                metrics_path = os.path.join("/ruta/a/experimentos_dev/", f"summary_metrics_{int(start_time)}.csv")
-                with open(metrics_path, "w", newline="") as csvfile:
-                    writer = csv.DictWriter(csvfile, fieldnames=["prompt_idx", "prompt_time", "generated_text"])
-                    writer.writeheader()
-                    for idx, output in enumerate(response["outputs"]):
-                        writer.writerow({
-                            "prompt_idx": idx,
-                            "prompt_time": output["other_info"].get("prompt_time", None),
-                            "generated_text": output["text"]
-                        })
-                logger.info(f"[VLLM METRICS] Métricas guardadas en: {metrics_path}")
-                # ====== FIN MODIFICACIÓN TEMPORAL: GUARDAR MÉTRICAS CSV ======
+                # # ====== INICIO MODIFICACIÓN TEMPORAL: GUARDAR MÉTRICAS CSV ======
+                # metrics_path = os.path.join("/ruta/a/experimentos_dev/", f"summary_metrics_{int(start_time)}.csv")
+                # with open(metrics_path, "w", newline="") as csvfile:
+                #     writer = csv.DictWriter(csvfile, fieldnames=["prompt_idx", "prompt_time", "generated_text"])
+                #     writer.writeheader()
+                #     for idx, output in enumerate(response["outputs"]):
+                #         writer.writerow({
+                #             "prompt_idx": idx,
+                #             "prompt_time": output["other_info"].get("prompt_time", None),
+                #             "generated_text": output["text"]
+                #         })
+                # logger.info(f"[VLLM METRICS] Métricas guardadas en: {metrics_path}")
+                # # ====== FIN MODIFICACIÓN TEMPORAL: GUARDAR MÉTRICAS CSV ======
                 
                 if isinstance(summary, str):
                     response = {"summary": summary}
