@@ -2,6 +2,7 @@ import typing
 import json
 import logging
 from services.llm_vllm_service import LLMService
+from utils import monitor
 from typing import List, Dict
 from collections import defaultdict
 from api.config.logger import logger
@@ -178,6 +179,7 @@ class LLMRepository:
         logging.error(f"No se pudo generar una respuesta válida después de {MAX_ATTEMPTS} intentos")
         return None, None   
     
+    @monitor(task_name='apply_prompt_classification')
     async def apply_prompt_classification(
         self,
         prompt_template: typing.Dict[str, str],
@@ -295,6 +297,7 @@ class LLMRepository:
         "classification_list": category_list + skiped_category
          }
     
+    @monitor(task_name='apply_prompt')
     async def apply_prompts(self, prompts: list, batch_size: int, fill_batches: bool) -> typing.Optional[dict]:
         attempts = 0
         prompt = [{"role": "user", "content": prompts[0]}]
@@ -310,6 +313,7 @@ class LLMRepository:
         logging.error("Fallo en todos los intentos para generar texto.")
         return None
      
+    @monitor(task_name='apply_prompt_categories_summary')
     async def apply_prompt_categories_summary(self, aggs: dict, prompt_template: dict, summary_field: str, batch_size: int) -> Dict[str, str]:
         buckets = (
             aggs
