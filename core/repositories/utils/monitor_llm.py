@@ -7,6 +7,8 @@ from functools import wraps
 from typing import Optional, Any
 import os
 from datetime import datetime
+from api.config.secrets import settings as s
+
 
 def count_tokens(text: str) -> int:
     return len(text.split())
@@ -17,7 +19,6 @@ def log_metrics(
     gpu_memory_delta: int, 
     tokens_count: Optional[int] = None, 
     tokens_per_second: Optional[float] = None,
-    model_name: Optional[str] = None,
     prompt: Optional[Any] = None,
     output: Optional[Any] = None
 ):
@@ -27,7 +28,7 @@ def log_metrics(
     
     metrics = {
         "task": task_name,
-        "model": model_name or os.getenv('LLM_MODEL', 'unknown'),
+        "model": s.MODEL_NAME,
         "elapsed_time_seconds": elapsed_time,
         "gpu_memory_delta_bytes": gpu_memory_delta,
         "gpu_memory_delta_mb": gpu_memory_delta / (1024 * 1024),

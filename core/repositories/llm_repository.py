@@ -410,6 +410,7 @@ class LLMRepository:
 
         return summaries
     
+    @monitor(task_name='apply_prompt_query_summary')
     async def apply_prompt_query_summary(self, docs: List[dict], prompt_template: dict, query: str) -> Dict[str, str]:
         if not docs:
             logging.error("La lista de documentos no puede estar vacía.")
@@ -454,6 +455,7 @@ class LLMRepository:
 
         return response
     
+    @monitor(task_name='apply_prompt_summary')
     async def apply_prompt_summary(self, docs: List[dict], prompt_template: dict) -> Dict[str, str]:
         if not docs:
             logging.error("La lista de documentos no puede estar vacía.")
@@ -482,7 +484,7 @@ class LLMRepository:
                     }
                 ]
                 
-                #response = await self.llm_service.generate_text(prompt, max_new_tokens=5000)
+                response = await self.llm_service.generate_text(prompt, max_new_tokens=5000)
 
                 # # ====== INICIO MODIFICACIÓN TEMPORAL: TRACKING VLLM ======
                 # start_time = time.time()
