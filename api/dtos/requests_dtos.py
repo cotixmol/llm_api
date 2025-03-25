@@ -57,7 +57,9 @@ class LLMClassificationPreviewPayload(BaseModel):
     query: typing.Optional[str] = None
 
 class LLMPromptPreviewPayload(BaseModel):
-    prompt: str
+    prompt: list
+    batch_size: int
+    fill_batches: bool
 
 class LLMTestPreviewPayload(BaseModel):
     prompt: typing.Any
