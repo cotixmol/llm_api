@@ -21,11 +21,9 @@ def log_metrics(
     prompt: Optional[Any] = None,
     output: Optional[Any] = None
 ):
-    """Registra las métricas en archivos CSV y JSON con nombres únicos."""
+    """Registra las métricas en archivos CSV y JSON, acumulando nuevos registros."""
     timestamp = time.time()
     human_ts = datetime.fromtimestamp(timestamp).isoformat()
-    # Genera un identificador único basado en fecha y microsegundos
-    unique_id = datetime.fromtimestamp(timestamp).strftime("%Y%m%d_%H%M%S_%f")
     
     metrics = {
         "task": task_name,
@@ -45,21 +43,23 @@ def log_metrics(
     if output is not None:
         metrics["output"] = output
 
-    # Asegurar directorio logs
+    # Asegurar que existe el directorio "logs"
     os.makedirs('logs', exist_ok=True)
     
-    # Definir rutas únicas para los archivos usando el unique_id
-    csv_path = f"logs/metrics_log_{unique_id}.csv"
-    json_path = f"logs/metrics_log_{unique_id}.json"
+    # Usar nombres de archivo fijos
+    csv_path = "logs/metrics_log.csv"
+    json_path = "logs/metrics_log.json"
     
-    # Guardar en CSV
-    with open(csv_path, "w", newline="") as f:
+    # Agregar registro al CSV: si no existe, se escriben encabezados; de lo contrario, se agrega una fila nueva.
+    csv_exists = os.path.exists(csv_path)
+    with open(csv_path, "a", newline="") as f:
         writer = csv.writer(f)
-        writer.writerow([
-            "timestamp", "human_readable_timestamp", "task", "model", 
-            "elapsed_time_seconds", "gpu_memory_delta_bytes", "gpu_memory_delta_mb",
-            "tokens_count", "tokens_per_second", "prompt", "output"
-        ])
+        if not csv_exists:
+            writer.writerow([
+                "timestamp", "human_readable_timestamp", "task", "model", 
+                "elapsed_time_seconds", "gpu_memory_delta_bytes", "gpu_memory_delta_mb",
+                "tokens_count", "tokens_per_second", "prompt", "output"
+            ])
         writer.writerow([
             metrics["timestamp"],
             metrics["human_readable_timestamp"],
@@ -74,14 +74,14 @@ def log_metrics(
             metrics.get("output", "")
         ])
     
-    # Guardar en JSON (una línea por registro)
-    with open(json_path, "w") as f:
+    # Agregar registro en el JSON (cada registro en una línea nueva)
+    with open(json_path, "a") as f:
         f.write(json.dumps(metrics, ensure_ascii=False, indent=2) + "\n")
 
 def monitor(task_name: Optional[str] = None):
     """
-    Decorador para medir el tiempo de ejecución, la variación en el uso de GPU y calcular
-    la cantidad de tokens generados y tokens por segundo. Además, registra el prompt y el output.
+    Decorador para medir el tiempo de ejecución, el uso de GPU y calcular la cantidad de tokens generados y tokens por segundo.
+    Además, registra el prompt (tomando el primer elemento de la lista "prompts") y el output.
     Permite especificar un nombre de tarea personalizado.
     """
     def decorator(func):
@@ -89,15 +89,23 @@ def monitor(task_name: Optional[str] = None):
         async def wrapper(*args, **kwargs):
             current_task_name = task_name or func.__name__
             
-            # Capturamos el prompt a partir de los argumentos: se asume que es el segundo argumento (después de self)
+            # Capturar el prompt: se asume que el método siempre recibe "prompts" (lista) como segundo argumento.
             prompt_value = None
             if len(args) > 1:
-                prompt_value = args[1]
+                if isinstance(args[1], list) and len(args[1]) > 0:
+                    prompt_value = args[1][0]
+                else:
+                    prompt_value = args[1]
+            elif "prompts" in kwargs:
+                if isinstance(kwargs["prompts"], list) and len(kwargs["prompts"]) > 0:
+                    prompt_value = kwargs["prompts"][0]
+                else:
+                    prompt_value = kwargs["prompts"]
             elif "prompt" in kwargs:
                 prompt_value = kwargs["prompt"]
             
             if torch.cuda.is_available():
-                torch.cuda.synchronize()  # Sincroniza para medición precisa
+                torch.cuda.synchronize()
                 mem_before = torch.cuda.memory_allocated(0)
             else:
                 mem_before = 0
@@ -118,7 +126,7 @@ def monitor(task_name: Optional[str] = None):
             elapsed_time = end_time - start_time
             gpu_memory_delta = mem_after - mem_before
             
-            # Procesar el output para contar tokens y obtener el texto relevante.
+            # Procesar el output para obtener el texto y contar tokens.
             tokens_count = None
             tokens_per_second = None
             output_text = None
@@ -135,7 +143,7 @@ def monitor(task_name: Optional[str] = None):
             if tokens_count is not None:
                 tokens_per_second = tokens_count / elapsed_time if elapsed_time > 0 else 0
             
-            # Registrar las métricas, incluyendo prompt y output
+            # Registrar las métricas, incluyendo prompt y output.
             log_metrics(
                 task_name=current_task_name, 
                 elapsed_time=elapsed_time, 
