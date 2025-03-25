@@ -2,7 +2,7 @@ import typing
 import json
 import logging
 from services.llm_vllm_service import LLMService
-from core.repositories.utils import monitor
+from core.repositories.utils.monitor_llm import monitor
 from typing import List, Dict
 from collections import defaultdict
 from api.config.logger import logger
