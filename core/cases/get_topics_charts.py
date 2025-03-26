@@ -51,8 +51,6 @@ class GetTopicChartsCase:
         fields = self.extra_args.fields
         if "embedding" not in fields:
             fields.append("embedding")
-        if "interactions" not in fields:
-            fields.append("interactions")
         self.query_repository.set_fields(
             fields=fields
         )
@@ -60,10 +58,9 @@ class GetTopicChartsCase:
         self.query_repository.set_filters(
             filters=self.extra_args.model_dump()
         )
-        self.query_repository.set_order(field="interactions", order="desc", unmapped_type="long")
-        self.query_repository.set_order(field="@timestamp", order="desc")
-        self.query_repository.set_order(field="created_at", order="desc")
-        
+        self.query_repository.set_sort("interactions", {"order": "desc"})
+        self.query_repository.set_sort("@timestamp", {"order": "desc"})
+        self.query_repository.set_sort("created_at", {"order": "desc"})
 
         try:
             ### SEARCH DOCUMENTS ###
