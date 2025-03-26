@@ -63,8 +63,8 @@ class GetClassificationResponseCase:
         self.query_repository.set_filters(
             filters=self.extra_args.model_dump()
         )
-        self.query_repository.set_order(field="@timestamp", order="desc")
-        self.query_repository.set_order(field="created_at", order="desc")
+        self.query_repository.set_sort("@timestamp", {"order": "desc"})
+        self.query_repository.set_sort("created_at", {"order": "desc"})
 
         if self.query:
             self.query_repository.set_query_string(query_string=self.query)

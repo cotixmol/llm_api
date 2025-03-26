@@ -70,26 +70,41 @@ class Query:
         self.body["size"] = size
         return
     
-    def set_order(self, field: str, order: typing.Literal["asc", "desc"], unmapped_type: str = "boolean") -> None:
-        """Define el orden de los documentos. Si el campo solicitado no está dentro 
-           de "_source" se ordena por "@timestamp"
-
-        Args:
-            field (str): Campo por el cual se desea ordenar
-            order (typing.Literal[&quot;asc&quot;, &quot;desc&quot;]): Define orden Ascendente o descendente
+    def set_sort(self, sort_field: str, sort_options: typing.Dict) -> None:
         """
-        if field not in self.body["_source"]:
-            field = "@timestamp"
-        
+        Parameters:
+        - sort_field: The field to sort by.
+        - sort_options: A dictionary containing the sort options (order, mode, type, etc).
+        """
         self.body["sort"].append(
             {
-                field: {
-                    "order": order,
-                    "unmapped_type": unmapped_type
-                }
+                sort_field: sort_options
             }
         )
         return
+    
+
+    #DEPRECATED
+    # def set_order(self, field: str, order: typing.Literal["asc", "desc"], unmapped_type: str = "boolean") -> None:
+    #     """Define el orden de los documentos. Si el campo solicitado no está dentro 
+    #        de "_source" se ordena por "@timestamp"
+
+    #     Args:
+    #         field (str): Campo por el cual se desea ordenar
+    #         order (typing.Literal[&quot;asc&quot;, &quot;desc&quot;]): Define orden Ascendente o descendente
+    #     """
+    #     if field not in self.body["_source"]:
+    #         field = "@timestamp"
+        
+    #     self.body["sort"].append(
+    #         {
+    #             field: {
+    #                 "order": order,
+    #                 "unmapped_type": unmapped_type
+    #             }
+    #         }
+    #     )
+    #     return
     
     def set_search_after(self, search_after: typing.List[str]) -> None:
         self.body["search_after"] = search_after
