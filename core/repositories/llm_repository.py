@@ -6,9 +6,9 @@ from core.repositories.utils.monitor_llm import monitor
 from typing import List, Dict
 from collections import defaultdict
 from api.config.logger import logger
-import time
-import csv
-import os
+import json
+import re
+import logging
 
 class LLMRepository:
     def __init__(self, llm_service: LLMService):
@@ -35,24 +35,91 @@ class LLMRepository:
         except (ValueError, json.JSONDecodeError):
             logging.warning(f"Formato incorrecto en la respuesta del modelo. Response: {response_text}")
             return None
-        
+
     def _parse_summary_response(self, response_text: str) -> typing.Optional[dict]:
         """
-            checks if the requested generation has the summary expected format: { category: "category", summary: "summary_text" }
+        Intenta extraer y parsear el bloque JSON esperado de la respuesta utilizando tres enfoques.
+        Se espera un formato: { "category": "...", "summary": [...] }
+        
+        En primer lugar, se usa el método original (buscar el primer '{' y el último '}').
+        Si falla, se utiliza un enfoque robusto que limpia delimitadores Markdown y usa regex.
+        Si aún falla, se aplica un tercer enfoque que intenta corregir comillas simples inconsistentes.
         """
-        # get the json text from the response_text
+        # Primer intento: método original
         try:
             start_index = response_text.find('{')
             end_index = response_text.rfind('}') + 1
             json_text = response_text[start_index:end_index]
             response_data = json.loads(json_text)
-            response = {
-                response_data["category"]: response_data["summary"]
-            }
-            return response
-        except (ValueError, json.JSONDecodeError):
-            logging.warning(f"Formato incorrecto en la respuesta del modelo. Response: {response_text}")
+            if "category" in response_data and "summary" in response_data:
+                return {response_data["category"]: response_data["summary"]}
+            else:
+                logging.warning(
+                    f"El JSON parseado no tiene el formato esperado. Claves encontradas: {list(response_data.keys())}. Response: {json_text}"
+                )
+        except (ValueError, json.JSONDecodeError) as e:
+            logging.warning(f"Fallo en el método original de parseo: {e}. Response: {response_text}")
+
+        # Segundo intento: enfoque robusto
+        # Eliminar delimitadores de código (por ejemplo, ```json y ```)
+        cleaned_text = re.sub(r"```(?:json)?", "", response_text, flags=re.IGNORECASE).strip()
+        cleaned_text = cleaned_text.strip("`").strip()
+
+        # Buscar un bloque JSON usando regex que capture todo el contenido entre llaves
+        match = re.search(r"({.*})", cleaned_text, re.DOTALL)
+        if not match:
+            logging.warning(f"No se encontró un bloque JSON en la respuesta del modelo. Response: {response_text}")
             return None
+
+        json_text = match.group(1)
+        try:
+            response_data = json.loads(json_text)
+            if "category" in response_data and "summary" in response_data:
+                return {response_data["category"]: response_data["summary"]}
+            else:
+                logging.warning(
+                    f"El JSON obtenido no tiene el formato esperado. Claves encontradas: {list(response_data.keys())}. Response: {json_text}"
+                )
+                # Continuamos con el tercer intento
+        except (ValueError, json.JSONDecodeError) as e:
+            logging.warning(f"Fallo al parsear JSON en el segundo intento: {e}. Intentando limpieza adicional. Texto: {json_text}")
+            # Fallback adicional: eliminar posibles comas sobrantes
+            json_text_clean = re.sub(r",\s*}", "}", json_text)
+            try:
+                response_data = json.loads(json_text_clean)
+                if "category" in response_data and "summary" in response_data:
+                    return {response_data["category"]: response_data["summary"]}
+                else:
+                    logging.warning(
+                        f"El JSON limpiado no tiene el formato esperado. Claves encontradas: {list(response_data.keys())}. Response: {json_text_clean}"
+                    )
+            except (ValueError, json.JSONDecodeError) as e2:
+                logging.warning(f"Fallo final en el segundo intento tras limpieza adicional: {e2}. Response: {json_text_clean}")
+                # Continuamos con el tercer intento
+
+        # Tercer intento: tratamiento de comillas simples
+        # Se intenta reemplazar de forma cuidadosa las comillas simples por dobles en el JSON extraído.
+        # Esta transformación se aplica solo en el bloque obtenido tras la limpieza adicional.
+        json_text_for_quotes = json_text if 'json_text_clean' not in locals() else json_text_clean
+        # Usamos una regex para reemplazar comillas simples que rodean claves o valores, asumiendo que no forman parte del contenido interno.
+        json_text_quotes = re.sub(
+            r"(?<=[:{,])\s*'([^']+?)'\s*(?=[,}])",
+            r' "\1" ',
+            json_text_for_quotes
+        )
+        try:
+            response_data = json.loads(json_text_quotes)
+            if "category" in response_data and "summary" in response_data:
+                return {response_data["category"]: response_data["summary"]}
+            else:
+                logging.warning(
+                    f"El JSON obtenido tras corrección de comillas no tiene el formato esperado. Claves encontradas: {list(response_data.keys())}. Response: {json_text_quotes}"
+                )
+                return None
+        except (ValueError, json.JSONDecodeError) as e3:
+            logging.warning(f"Fallo final al parsear JSON tras corrección de comillas: {e3}. Response: {json_text_quotes}")
+            return None
+
     
     async def create_topics_name_and_summary(            
         self,
