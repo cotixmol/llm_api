@@ -110,7 +110,10 @@ class GetSummaryResponseCase:
                 response = await self.es_repository.get_aggs(query = self.query_repository, index_pattern=self.index_pattern)
             else:
                 #if not summary field set order of documents by interactions
-                self.query_repository.set_sort("interactions", {"order": "desc"})
+                self.query_repository.set_sort("interactions", {
+                                                                    "order": "desc", 
+                                                                    "unmapped_type": "long"
+                                                                }) 
                 self.query_repository.set_sort("@timestamp", {"order": "desc"})
                 self.query_repository.set_sort("created_at", {"order": "desc"})
 
