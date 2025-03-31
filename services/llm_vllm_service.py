@@ -25,7 +25,8 @@ class LLMService:
             gpu_memory_utilization=s.VLLM_MEMORY_UTILIZATION,
             max_model_len=s.VLLM_MAX_MODEL_LEN,
             max_num_batched_tokens=s.VLLM_MAX_NUM_BATCHED_TOKENS,
-            max_num_seqs=s.VLLM_MAX_NUM_SEQS
+            max_num_seqs=s.VLLM_MAX_NUM_SEQS,
+            enable_chunked_prefill=s.VLLM_ENABLE_CHUNKED_PREFILL
         )
         logger.info(f"[VLLM DEBUG] Modelo inicializado con vLLM en dispositivo: {self.device}. Clase: {type(self.llm)}")
 
