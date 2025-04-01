@@ -22,3 +22,6 @@ class LLMSummaryResponse(BaseModel):
 
 class LLMTestResponse(BaseModel): 
     response: List[dict]
+
+class VectorizedSearchResponse(BaseModel): 
+    response: List[dict]

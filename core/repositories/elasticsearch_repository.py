@@ -14,6 +14,18 @@ class ElasticsearchRepository:
 
     ### SEARCH METHODS ###
 
+    async def get_vectorized_search_data(self, index_pattern: str, query: Query, max_ndocs: int) -> typing.Dict:
+        """
+        Ejecuta una consulta KNN usando el método run_knn_query del servicio.
+        """
+        # Aquí usamos query.body para enviar el cuerpo de la consulta.
+        response = await self.elasticsearch_service.run_knn_query(
+            index_pattern=index_pattern,
+            query=query.body,
+            size=max_ndocs,
+        )
+        return response
+
     async def get_aggs_data(self, index_pattern: str, query: Query) -> typing.Dict:
         """
             retrieve the aggregations keywords and number of documents for each keyword
