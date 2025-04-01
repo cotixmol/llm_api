@@ -45,7 +45,6 @@ app.add_middleware(
 
 app.include_router(router=topic_router, prefix=('/topics'), tags=["Topics"])
 app.include_router(router=llm_router, prefix=('/llm'), tags=["LLM"])
-app.include_router(router=topic_router, prefix=('/vectorsearch'), tags=["VectorSearch"])
 
 if __name__ == "__main__":
     import uvicorn
