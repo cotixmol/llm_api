@@ -370,7 +370,7 @@ class LLMRepository:
         prompt = [{"role": "user", "content": prompts[0]}]
         while attempts < 5:
             try:
-                output = await self.llm_service.generate_text(prompt, temperature=0, top_p=1, max_new_tokens=10)
+                output = await self.llm_service.generate_text(prompt, temperature=0, top_p=1, max_new_tokens=200)
                 response = output["outputs"][0]["text"]
                 return response
             except Exception as e:
