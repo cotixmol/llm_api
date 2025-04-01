@@ -131,3 +131,39 @@ class ElasticsearchService:
             logging.error(f"Error during bulk operation: {e}")
             return False
 
+
+    async def run_knn_query(
+        self,
+        index_pattern: str,
+        query: dict,
+        size: int 
+    ) -> SearchResponse:
+        try:
+            # Ejecutamos la consulta KNN pasando el cuerpo (query) directamente.
+            search_results = await self.client.options(request_timeout=10).knn_search(
+                index=index_pattern,
+                knn=query,
+                size=size,
+            )
+        except NotFoundError as not_found:
+            logging.error(f"ElasticService error: {not_found}")
+            raise ElasticsearchException(f"ElasticService error: {not_found}")
+        except BadRequestError as request_error:
+            logging.error(f"ElasticSearch request error: {request_error}")
+            raise ElasticsearchException(f"ElasticSearch request error: {request_error}")
+
+        # Validamos si hubo errores en la respuesta de shards
+        client_errors = search_results['_shards'].get('failures')
+        if client_errors:
+            logging.error(f"ERROR: {client_errors}")
+            raise ElasticsearchException(client_errors)
+        
+        total_hits = search_results['hits']['total']['value']
+        hits = [hit for hit in search_results['hits']['hits']]
+        aggs = {}
+        if query.get("aggs"):
+            if "aggregations" not in search_results.keys():
+                raise ElasticsearchException(f"ElasticService error: Bad query. Check that the index pattern is correct")
+            aggs = search_results['aggregations']
+        return SearchResponse(hits=hits, aggregations=aggs, total_hits=total_hits)
+
