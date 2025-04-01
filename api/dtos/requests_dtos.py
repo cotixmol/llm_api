@@ -74,3 +74,12 @@ class LLMSummaryPreviewPayload(BaseModel):
     query: typing.Optional[str] = None
     summary_field: typing.Optional[str] = None  # Hacemos summary_field opcional
     batch_size: typing.Optional[int] = 2
+
+
+class VectorizedSearchPreviewPayload(BaseModel):
+    index_pattern: str
+    since_date: str
+    to_date: str
+    input_question: str
+    query: typing.Optional[str] = None
+    max_ndocs: typing.Optional[int] = 10

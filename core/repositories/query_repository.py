@@ -83,28 +83,6 @@ class Query:
         )
         return
     
-
-    #DEPRECATED
-    # def set_order(self, field: str, order: typing.Literal["asc", "desc"], unmapped_type: str = "boolean") -> None:
-    #     """Define el orden de los documentos. Si el campo solicitado no está dentro 
-    #        de "_source" se ordena por "@timestamp"
-
-    #     Args:
-    #         field (str): Campo por el cual se desea ordenar
-    #         order (typing.Literal[&quot;asc&quot;, &quot;desc&quot;]): Define orden Ascendente o descendente
-    #     """
-    #     if field not in self.body["_source"]:
-    #         field = "@timestamp"
-        
-    #     self.body["sort"].append(
-    #         {
-    #             field: {
-    #                 "order": order,
-    #                 "unmapped_type": unmapped_type
-    #             }
-    #         }
-    #     )
-    #     return
     
     def set_search_after(self, search_after: typing.List[str]) -> None:
         self.body["search_after"] = search_after
@@ -315,6 +293,22 @@ class Query:
             text (str): valor a excluir
         """
         self.body["query"]["bool"]["must_not"].append(
+            {
+                "match_phrase": {
+                    f"{field}.keyword": text
+                }
+            }
+        )
+        return
+    
+    def set_match_by_field_and_content(self, field: str, text: str) -> None:
+        """Asegura que los documentos NO contengan campos con un valor
+
+        Args:
+            field (str): nombre del campo
+            text (str): valor a excluir
+        """
+        self.body["query"]["bool"]["must"].append(
             {
                 "match_phrase": {
                     f"{field}.keyword": text
@@ -553,3 +547,20 @@ class Query:
     def set_custom_agg(self, agg: dict, name: str) -> None:
         self.body["aggs"][name] = agg
         return
+    
+    def set_knn_query(self, query_vector: list, k: int, num_candidates: int) -> None:
+        filters = self.body.get("query", {}).get("bool", {}).get("filter", [])        
+        knn_query = {
+            "field": "embedding",
+            "query_vector": query_vector,
+            "k": k,
+            "num_candidates": num_candidates
+        }
+        if filters:
+            if len(filters) == 1:
+                knn_query["filter"] = filters[0]
+            else:
+                knn_query["filter"] = {"bool": {"must": filters}}
+
+        self.body["query"] = {"knn": knn_query}
+
