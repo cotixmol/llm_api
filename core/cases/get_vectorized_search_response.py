@@ -432,7 +432,6 @@ class GetVectorizedSearchResponseCase:
         if self.query:
             knn_query.set_query_string(query_string=self.query)
         knn_query.set_knn_query(
-            field="embedding",
             query_vector=question_embedding,
             k=1000,
             num_candidates=10000
