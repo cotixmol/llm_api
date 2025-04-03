@@ -1,31 +1,20 @@
-import typing
+from typing import List, Dict, Optional
+from V2.core.interfaces.document_search_interface import DocumentSearchServiceInterface
 
-# This is a minimal duplication of your old Elasticsearch logic.
 
-
-class ElasticsearchRepositoryV2:
+class ElasticsearchRepositoryV2(DocumentSearchServiceInterface):
     def __init__(self, page_size: int = 1000):
-        # Set up local ES connection or client
         self.page_size = page_size
+        # Initialize ES client, etc.
 
     async def get_documents(
-        self,
-        index_pattern: str,
-        query_body: dict,
-        max_docs: typing.Optional[int] = None,
-    ) -> typing.List[dict]:
-        # Stub method. Duplicate of older Elasticsearch retrieval logic.
-        # Example:
-        # results = ...
-        # return parsed documents
+        self, index_pattern: str, query_body: dict, max_docs: Optional[int] = None
+    ) -> List[Dict]:
+        # Your Elasticsearch logic here...
         return []
 
     async def update_documents(
-        self, docs: typing.List[dict], index_pattern: str, field: str
-    ):
-        # Stub method to mimic older bulk update logic
-        # Example:
-        # for doc in docs:
-        #    ...
-        # return some updated count
+        self, docs: List[Dict], index_pattern: str, field: str
+    ) -> None:
+        # Your update logic here...
         pass

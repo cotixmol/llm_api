@@ -3,21 +3,20 @@ from V2.api.dtos.classification_dto import LLMClassificationRequest
 from V2.core.interfaces.classification_repository_interface import (
     ClassificationRepositoryInterface,
 )
-from V2.core.services.elasticsearch_repository import ElasticsearchRepositoryV2
-from V2.core.services.llm_repository import LLMRepositoryV2
+from V2.core.interfaces.document_search_interface import DocumentSearchServiceInterface
+from V2.core.interfaces.llm_service_interface import LLMServiceInterface
 
 
 class ClassificationRepository(ClassificationRepositoryInterface):
     def __init__(
         self,
-        es_repository: ElasticsearchRepositoryV2,
-        llm_repository: LLMRepositoryV2,
+        search_service: DocumentSearchServiceInterface,
+        llm_service: LLMServiceInterface,
     ):
-        self.es_repository = es_repository
-        self.llm_repository = llm_repository
+        self.search_service = search_service
+        self.llm_service = llm_service
 
     async def fetch_documents(self, payload: LLMClassificationRequest) -> List[Dict]:
-        # Example of building an ES query from the request
         query_body = {
             "range": {
                 "timestamp": {
@@ -25,10 +24,9 @@ class ClassificationRepository(ClassificationRepositoryInterface):
                     "lte": payload.to_date,
                 }
             },
-            # Add filter logic to replicate older code
+            # Additional filter logic can go here.
         }
-        # Then call the local ES stub
-        docs = await self.es_repository.get_documents(
+        docs = await self.search_service.get_documents(
             payload.index_pattern, query_body, payload.max_ndocs
         )
         return docs
@@ -36,12 +34,10 @@ class ClassificationRepository(ClassificationRepositoryInterface):
     async def classify_documents(
         self, payload: LLMClassificationRequest, docs: List[Dict]
     ) -> List[Dict]:
-        # Example classification using the local LLM stub
-        results = await self.llm_repository.apply_prompt_classification(
+        results = await self.llm_service.apply_prompt_classification(
             docs, payload.prompt
         )
-        # Possibly also update docs in ES
-        await self.es_repository.update_documents(
+        await self.search_service.update_documents(
             results, payload.index_pattern, payload.update_field
         )
         return results
