@@ -25,7 +25,8 @@ python-json-logger==2.0.7
 pydantic-settings
 
 #vllm
-bitsandbytes==0.45.3
+bitsandbytes==0.45.3; sys_platform == "linux"
+bitsandbytes==0.42.0; sys_platform == "darwin"
 
 # langchain and phoenix
 arize-phoenix-otel==0.7.1
