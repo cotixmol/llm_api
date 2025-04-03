@@ -140,7 +140,7 @@ class ElasticsearchService:
     ) -> SearchResponse:
         try:
             # Ejecutamos la consulta KNN pasando el cuerpo (query) directamente.
-            search_results = await self.client.options(request_timeout=10).knn_search(
+            search_results = await self.client.options(request_timeout=10).search( #knn_search
                 index=index_pattern,
                 knn=query,
                 size=size,
