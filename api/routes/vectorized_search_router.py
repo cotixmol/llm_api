@@ -29,7 +29,7 @@ async def vectorized_search(
             index_pattern=parameters.index_pattern,
             since_date=parameters.since_date,
             to_date=parameters.to_date,
-            extra_args=parameters.extra_args,
+            #extra_args=parameters.extra_args,
             max_ndocs=parameters.max_ndocs,
             input_question=parameters.input_question
         )
