@@ -436,7 +436,6 @@ class GetVectorizedSearchResponseCase:
             k=1000,
             num_candidates=10000
         )
-        logger.debug(f"Query construida: {knn_query.body}")
         try:
             ### SEARCH DOCUMENTS ###           
             response_dict = await self.es_repository.get_vectorized_search_data(
