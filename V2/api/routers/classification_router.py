@@ -4,7 +4,9 @@ from V2.api.dtos.classification_dto import (
     LLMClassificationResponse,
 )
 from V2.core.use_cases.classification_use_case import ClassificationUseCase
-from V2.core.factories.classification_repository_factory import get_classification_repo
+from V2.core.factories.classification_repository_factory import (
+    build_classification_repository,
+)
 from V2.core.interfaces.classification_repository_interface import (
     ClassificationRepositoryInterface,
 )
@@ -16,7 +18,7 @@ router = APIRouter()
 async def classification_endpoint(
     request: LLMClassificationRequest,
     classification_repo: ClassificationRepositoryInterface = Depends(
-        get_classification_repo
+        build_classification_repository
     ),
 ) -> LLMClassificationResponse:
     try:
