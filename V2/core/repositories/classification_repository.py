@@ -1,10 +1,12 @@
 from typing import List, Dict
 from V2.api.dtos.classification_dto import LLMClassificationRequest
-from V2.core.interfaces.classification_repository_interface import (
+from V2.core.interfaces.repositories.classification_repository_interface import (
     ClassificationRepositoryInterface,
 )
-from V2.core.interfaces.document_search_interface import DocumentSearchServiceInterface
-from V2.core.interfaces.llm_service_interface import LLMServiceInterface
+from V2.core.interfaces.services.document_search_service_interface import (
+    DocumentSearchServiceInterface,
+)
+from V2.core.interfaces.services.llm_service_interface import LLMServiceInterface
 
 
 class ClassificationRepository(ClassificationRepositoryInterface):

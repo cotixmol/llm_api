@@ -1,5 +1,7 @@
 from typing import List, Dict, Optional
-from V2.core.interfaces.document_search_interface import DocumentSearchServiceInterface
+from V2.core.interfaces.services.document_search_service_interface import (
+    DocumentSearchServiceInterface,
+)
 
 
 class ElasticsearchRepositoryV2(DocumentSearchServiceInterface):

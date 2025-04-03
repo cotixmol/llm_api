@@ -1,5 +1,5 @@
 from typing import List, Dict
-from V2.core.interfaces.llm_service_interface import LLMServiceInterface
+from V2.core.interfaces.services.llm_service_interface import LLMServiceInterface
 
 
 class LLMRepositoryV2(LLMServiceInterface):

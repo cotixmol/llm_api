@@ -7,7 +7,7 @@ from V2.core.use_cases.classification_use_case import ClassificationUseCase
 from V2.core.factories.classification_repository_factory import (
     build_classification_repository,
 )
-from V2.core.interfaces.classification_repository_interface import (
+from V2.core.interfaces.repositories.classification_repository_interface import (
     ClassificationRepositoryInterface,
 )
 

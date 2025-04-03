@@ -2,7 +2,7 @@ from V2.api.dtos.classification_dto import (
     LLMClassificationRequest,
     LLMClassificationResponse,
 )
-from V2.core.interfaces.classification_repository_interface import (
+from V2.core.interfaces.repositories.classification_repository_interface import (
     ClassificationRepositoryInterface,
 )
 
