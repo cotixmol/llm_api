@@ -3,8 +3,8 @@ from V2.api.dtos.classification_dto import LLMClassificationRequest
 from V2.core.interfaces.classification_repository_interface import (
     ClassificationRepositoryInterface,
 )
-from V2.core.repositories.elasticsearch_repository import ElasticsearchRepositoryV2
-from V2.core.repositories.llm_repository import LLMRepositoryV2
+from V2.core.services.elasticsearch_repository import ElasticsearchRepositoryV2
+from V2.core.services.llm_repository import LLMRepositoryV2
 
 
 class ClassificationRepository(ClassificationRepositoryInterface):

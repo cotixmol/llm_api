@@ -12,11 +12,11 @@ class ClassificationUseCase:
         self.repository = repository
 
     async def execute(
-        self, payload: LLMClassificationRequest
+        self, request: LLMClassificationRequest
     ) -> LLMClassificationResponse:
-        documents = await self.repository.fetch_documents(payload)
+        documents = await self.repository.fetch_documents(request)
         classification_results = await self.repository.classify_documents(
-            payload, documents
+            request, documents
         )
         return LLMClassificationResponse(
             total_docs=len(classification_results),
