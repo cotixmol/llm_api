@@ -2,7 +2,7 @@ from abc import ABC, abstractmethod
 from typing import List, Dict
 
 
-class LLMServiceInterface(ABC):
+class LLMServiceRepositoryInterface(ABC):
     @abstractmethod
     async def apply_prompt_classification(
         self, docs: List[Dict], prompt_args: dict

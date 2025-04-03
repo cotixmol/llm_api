@@ -20,7 +20,7 @@ class Filters(BaseModel):
     emotion: typing.Optional[typing.List[str]] = None
 
 
-class LLMClassificationRequest(BaseModel):
+class ClassificationRequest(BaseModel):
     index_pattern: str
     since_date: str
     to_date: str
@@ -34,6 +34,6 @@ class LLMClassificationRequest(BaseModel):
     query: typing.Optional[str] = None
 
 
-class LLMClassificationResponse(BaseModel):
+class ClassificationResponse(BaseModel):
     total_docs: int
     updated_docs: int

@@ -1,8 +1,10 @@
 from typing import List, Dict
-from V2.core.interfaces.services.llm_service_interface import LLMServiceInterface
+from V2.core.interfaces.services.llm_service_repository_interface import (
+    LLMServiceRepositoryInterface,
+)
 
 
-class LLMRepositoryV2(LLMServiceInterface):
+class LLMServiceRepositoryV2(LLMServiceRepositoryInterface):
     def __init__(self):
         # Initialize any required LLM client or configuration here.
         pass

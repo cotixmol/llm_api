@@ -1,10 +1,10 @@
 from typing import List, Dict, Optional
-from V2.core.interfaces.services.document_search_service_interface import (
+from V2.core.interfaces.services.document_search_service_repository_interface import (
     DocumentSearchServiceInterface,
 )
 
 
-class ElasticsearchRepositoryV2(DocumentSearchServiceInterface):
+class ElasticSearchServiceRepositoryV2(DocumentSearchServiceInterface):
     def __init__(self, page_size: int = 1000):
         self.page_size = page_size
         # Initialize ES client, etc.

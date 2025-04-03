@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException
 from V2.api.dtos.classification_dto import (
-    LLMClassificationRequest,
-    LLMClassificationResponse,
+    ClassificationRequest,
+    ClassificationResponse,
 )
 from V2.core.use_cases.classification_use_case import ClassificationUseCase
 from V2.core.factories.classification_repository_factory import (
@@ -11,18 +11,20 @@ from V2.core.interfaces.repositories.classification_repository_interface import 
     ClassificationRepositoryInterface,
 )
 
-router = APIRouter()
+classification_router_V2 = APIRouter()
 
 
-@router.post("/classification", response_model=LLMClassificationResponse)
+@classification_router_V2.post(
+    "V2/classification", response_model=ClassificationResponse
+)
 async def classification_endpoint(
-    request: LLMClassificationRequest,
-    classification_repo: ClassificationRepositoryInterface = Depends(
+    request: ClassificationRequest,
+    classification_repository: ClassificationRepositoryInterface = Depends(
         build_classification_repository
     ),
-) -> LLMClassificationResponse:
+) -> ClassificationResponse:
     try:
-        use_case = ClassificationUseCase(classification_repo)
+        use_case = ClassificationUseCase(classification_repository)
         return await use_case.execute(request)
     except Exception as error:
         raise HTTPException(status_code=500, detail=str(error))
