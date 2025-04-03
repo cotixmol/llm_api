@@ -402,7 +402,7 @@ class GetVectorizedSearchResponseCase:
             index_pattern: str,
             since_date: str,
             to_date: str,
-            extra_args: dict,
+            #extra_args: dict,
             max_ndocs: int,
             input_question: str = None,
             query: str = None,            
@@ -416,7 +416,7 @@ class GetVectorizedSearchResponseCase:
         self.index_pattern = index_pattern
         self.since_iso_time = since_iso_time
         self.to_iso_time = to_iso_time
-        self.extra_args = extra_args
+        #self.extra_args = extra_args
         self.max_ndocs = max_ndocs
         self.query = query
         self.input_question = input_question
