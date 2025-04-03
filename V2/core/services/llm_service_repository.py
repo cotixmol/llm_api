@@ -13,5 +13,4 @@ class LLMServiceRepositoryV2(LLMServiceRepositoryInterface):
         self, docs: List[Dict], prompt_args: dict
     ) -> List[Dict]:
         # Implement your LLM logic here.
-        # For example, call out to a prompt-based API to classify the docs.
-        return [{"_id": d.get("_id"), "updated": True} for d in docs]
+        pass
