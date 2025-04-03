@@ -562,5 +562,5 @@ class Query:
             else:
                 knn_query["filter"] = {"bool": {"must": filters}}
 
-        self.body["query"] = {"knn": knn_query}
+        self.body = {"query": {"knn": knn_query}}
 
