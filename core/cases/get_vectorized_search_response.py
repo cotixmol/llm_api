@@ -424,7 +424,8 @@ class GetVectorizedSearchResponseCase:
     async def __call__(self) -> VectorizedSearchResponse:
         ### CREATE EMBEDDING QUESTION ###
         question_embedding = embedding_example #################
-
+        logger.debug(f"Embedding generado: {question_embedding[:5]}...") 
+        
         ### CREATE QUERY ###
         knn_query = Query()
         knn_query.set_date_range(self.since_iso_time, self.to_iso_time)
@@ -436,7 +437,7 @@ class GetVectorizedSearchResponseCase:
             k=1000,
             num_candidates=10000
         )
-
+        logger.debug(f"Query construida: {knn_query.body}")
         try:
             ### SEARCH DOCUMENTS ###           
             response_dict = await self.es_repository.get_vectorized_search_data(
@@ -444,7 +445,12 @@ class GetVectorizedSearchResponseCase:
                 query=knn_query,
                 max_ndocs=self.max_ndocs
             )
-            
+        except ElasticsearchException as ese:
+            logger.error(f"Error en Elasticsearch: {ese}")
+            raise
+        except Exception as e:
+            logger.error(f"Error inesperado durante la búsqueda vectorizada: {e}")
+            raise
         finally:
             ### CLOSE CLIENT ###
             await self.es_repository.close_client()

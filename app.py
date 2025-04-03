@@ -13,6 +13,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from api.routes.topic_router import topic_router
 from api.routes.llm_router import llm_router
+from api.routes.vectorized_search_router import vectorized_search_router
 from api.config.settings import VERSION
 from api.config.settings import minio_client
 from factories.services.llm_client_initialization import initilialize_llm_client
@@ -45,7 +46,7 @@ app.add_middleware(
 
 app.include_router(router=topic_router, prefix=('/topics'), tags=["Topics"])
 app.include_router(router=llm_router, prefix=('/llm'), tags=["LLM"])
-app.include_router(router=topic_router, prefix=('/vectorsearch'), tags=["VectorSearch"])
+app.include_router(router=vectorized_search_router, prefix=('/vectorsearch'), tags=["VectorSearch"])
 
 if __name__ == "__main__":
     import uvicorn
