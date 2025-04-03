@@ -443,6 +443,7 @@ class GetVectorizedSearchResponseCase:
                 query=knn_query,
                 max_ndocs=self.max_ndocs
             )
+            logger.debug(f"Response: {response_dict}")
         except ElasticsearchException as ese:
             logger.error(f"Error en Elasticsearch: {ese}")
             raise
@@ -454,4 +455,4 @@ class GetVectorizedSearchResponseCase:
             await self.es_repository.close_client()
             logger.info(f"Client closed")
 
-        return VectorizedSearchResponse(response=response_dict)
+        return VectorizedSearchResponse(response=response_dict.dict())
