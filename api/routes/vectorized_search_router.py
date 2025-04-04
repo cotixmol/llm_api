@@ -9,6 +9,8 @@ from factories.repositories.elasticsearch_repository_factory import get_elastics
 from factories.repositories.query_repository_factory import get_query_repository
 from services.elasticsearch_service import ElasticsearchException
 from core.cases.get_vectorized_search_response import GetVectorizedSearchResponseCase
+from factories.repositories.embedding_repository_factory import get_embedding_repository
+from core.repositories.embedding_repository import EmbeddingRepository
 
 vectorized_search_router = APIRouter()
 
@@ -20,12 +22,14 @@ vectorized_search_router = APIRouter()
 async def vectorized_search(
     parameters: VectorizedSearchPreviewPayload,
     es_repository: ElasticsearchRepository = Depends(get_elasticsearch_repository),
-    query_repository: Query = Depends(get_query_repository)
+    query_repository: Query = Depends(get_query_repository),
+    embedding_repository: EmbeddingRepository = Depends(get_embedding_repository)
 ) -> VectorizedSearchResponse:
     try:
         vectorized_search_case = GetVectorizedSearchResponseCase(
             es_repository=es_repository,
             query_repository=query_repository,
+            embedding_repository=embedding_repository,
             index_pattern=parameters.index_pattern,
             since_date=parameters.since_date,
             to_date=parameters.to_date,
