@@ -68,7 +68,7 @@ class GetVectorizedSearchResponseCase:
 
             #PROCESS RESPONSE
             processed_response = []
-            for hit in response['hits']:
+            for hit in response.hits:
                 source = hit['_source']
                 processed_response.append(source.get("content"))
 
