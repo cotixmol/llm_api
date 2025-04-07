@@ -3,6 +3,7 @@ from api.dtos.responses_dtos import VectorizedSearchResponse
 from core.repositories.elasticsearch_repository import ElasticsearchRepository
 from core.repositories.query_repository import Query
 from services.elasticsearch_service import ElasticsearchException
+from core.repositories.embedding_repository import EmbeddingRepository
 import iso8601
 
 import re
@@ -399,6 +400,7 @@ class GetVectorizedSearchResponseCase:
             self,
             es_repository: ElasticsearchRepository,
             query_repository: Query,
+            embedding_repository: EmbeddingRepository,
             index_pattern: str,
             since_date: str,
             to_date: str,
@@ -413,6 +415,7 @@ class GetVectorizedSearchResponseCase:
         to_iso_time = iso8601.parse_date(to_date).isoformat()
         self.query_repository = query_repository      
         self.es_repository = es_repository
+        self.embedding_repository = embedding_repository
         self.index_pattern = index_pattern
         self.since_iso_time = since_iso_time
         self.to_iso_time = to_iso_time
@@ -423,8 +426,12 @@ class GetVectorizedSearchResponseCase:
 
     async def __call__(self) -> VectorizedSearchResponse:
         ### CREATE EMBEDDING QUESTION ###
-        question_embedding = embedding_example #################
-        logger.debug(f"Embedding generado: {question_embedding[:5]}...") 
+        if not self.input_question:
+            raise ValueError("Input question is required for vectorized search")
+
+        question_embedding = await self.embedding_repository.get_embedding(self.input_question)
+        logger.debug(f"Embedding generado: {question_embedding[:5]}...")
+      
         
         ### CREATE QUERY ###
         knn_query = Query()

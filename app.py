@@ -18,6 +18,7 @@ from api.config.settings import VERSION
 from api.config.settings import minio_client
 from factories.services.llm_client_initialization import initilialize_llm_client
 from contextlib import asynccontextmanager
+from factories.services.embedding_client_factory import initialize_embedding_client
 
 description = """# API overview
 > Reports and visualizations for RD APP.
@@ -29,6 +30,12 @@ async def lifespan(app: FastAPI):
     minio_client.update_model_folder(model_name=s.MODEL_NAME, bucket=s.MINIO_BUCKET)
     MODEL_PATH = f"models/{s.MODEL_NAME}"
     app.state.llm_service = initilialize_llm_client(model_path=MODEL_PATH)
+
+    #REVISAR LA CARGA DEL MODELO. OBJETIVO: QUE SE CARGUE Y SE DESCARGUE
+    minio_client.update_model_folder(model_name=s.EMBEDDING_MODEL_NAME, bucket=s.MINIO_BUCKET)
+    #MODEL_PATH_EMBEDDINGS = f"models/{s.EMBEDDING_MODEL_NAME}"
+    #app.state.embedding_service = initialize_embedding_client(model_path=MODEL_PATH_EMBEDDINGS)
+
     yield
     # Shutdown event
     
