@@ -24,4 +24,4 @@ class LLMTestResponse(BaseModel):
     response: List[dict]
 
 class VectorizedSearchResponse(BaseModel): 
-    response: dict
+    response: List[str]
