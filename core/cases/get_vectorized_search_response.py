@@ -68,8 +68,8 @@ class GetVectorizedSearchResponseCase:
 
             #PROCESS RESPONSE
             processed_response = []
-            for hit in response.hits.hits:
-                source = hit['_source']  # Accedemos al _source de cada hit
+            for hit in response['hits']:
+                source = hit['_source']
                 processed_response.append(source.get("content"))
 
         except ElasticsearchException as ese:
