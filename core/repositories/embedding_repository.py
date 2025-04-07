@@ -11,5 +11,4 @@ class EmbeddingRepository:
         """
         Genera un embedding para el texto dado usando el servicio de embeddings.
         """
-        logger.info(f"EMBEDDING REPOSITORY OK. Input text: {text}")
         return await self.embedding_service.get_embedding(text)

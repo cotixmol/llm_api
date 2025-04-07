@@ -30,7 +30,6 @@ class EmbeddingService:
         :param text: Input text to generate embedding for.
         :return: Embedding vector.
         """
-        logger.info(f"EMBEDDING SERVICE OK")
 
         if not text:
             raise ValueError("Input text cannot be empty.")
