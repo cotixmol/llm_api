@@ -65,6 +65,14 @@ class GetVectorizedSearchResponseCase:
                 max_ndocs=self.max_ndocs
             )
             logger.debug(f"Response: {response_dict}")
+
+            #PROCESS RESPONSE
+            processed_response = []
+            for hit in response_dict.get("hits", []):
+                source = hit.get("_source", {})
+                if "content" in source:
+                    processed_response.append(source["content"])
+
         except ElasticsearchException as ese:
             logger.error(f"Error en Elasticsearch: {ese}")
             raise
@@ -76,4 +84,4 @@ class GetVectorizedSearchResponseCase:
             await self.es_repository.close_client()
             logger.info(f"Client closed")
 
-        return VectorizedSearchResponse(response=response_dict.dict())
+        return VectorizedSearchResponse(response=processed_response)
