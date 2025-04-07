@@ -8,10 +8,17 @@ from V2.core.interfaces.repositories.classification_repository_interface import 
 
 
 class ClassificationUseCase:
+    """
+    Use case for handling classification requests.
+    This class is responsible for orchestrating the classification process,
+    including fetching documents and classifying them.
+    """
+
     def __init__(self, classification_repository: ClassificationRepositoryInterface):
         self.classification_repository = classification_repository
 
     async def execute(self, request: ClassificationRequest) -> ClassificationResponse:
+
         documents = await self.classification_repository.fetch_documents(request)
         classification_results = (
             await self.classification_repository.classify_documents(request, documents)

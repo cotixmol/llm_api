@@ -4,7 +4,7 @@ from typing import List, Dict
 
 class LLMServiceRepositoryInterface(ABC):
     @abstractmethod
-    async def apply_prompt_classification(
+    async def classify_document(
         self, docs: List[Dict], prompt_args: dict
     ) -> List[Dict]:
         """

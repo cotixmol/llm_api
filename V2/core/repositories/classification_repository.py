@@ -20,10 +20,21 @@ class ClassificationRepository(ClassificationRepositoryInterface):
         self.document_search_service_repository = document_search_service_repository
         self.llm_service_repository = llm_service_repository
 
-    async def fetch_documents(self, payload: ClassificationRequest) -> List[Dict]:
-        pass
+    async def fetch_documents(self, request: ClassificationRequest) -> List[Dict]:
+        """
+        Simply calls the document search repository's get_documents method,
+        which internally handles building the Elasticsearch query.
+        """
+        documents = await self.document_search_service_repository.get_documents(request)
+        return documents
 
     async def classify_documents(
-        self, payload: ClassificationRequest, docs: List[Dict]
+        self, request: ClassificationRequest, docs: List[Dict]
     ) -> List[Dict]:
-        pass
+        classification_results = []
+        for doc in docs:
+            classification_result = await self.llm_service_repository.classify_document(
+                request, doc, prompt_args=request.prompt_args
+            )
+            classification_results.append(classification_result)
+        return classification_results

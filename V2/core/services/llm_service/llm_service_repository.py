@@ -9,7 +9,7 @@ class LLMServiceRepositoryV2(LLMServiceRepositoryInterface):
         # Initialize any required LLM client or configuration here.
         pass
 
-    async def apply_prompt_classification(
+    async def classify_document(
         self, docs: List[Dict], prompt_args: dict
     ) -> List[Dict]:
         # Implement your LLM logic here.
