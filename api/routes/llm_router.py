@@ -75,9 +75,7 @@ async def get_llm_prompt(
     try:
         llm_case = GetPromptResponseCase(
             llm_repository=llm_repository,
-            prompts=parameters.prompt,
-            batch_size=parameters.batch_size,
-            fill_batches=parameters.fill_batches
+            prompt=parameters.prompt,
         )
         response = await llm_case()
         return response

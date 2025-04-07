@@ -38,6 +38,10 @@ class Settings(BaseSettings):
     # VLLM variables
     VLLM_WORKER_MULTIPROC_METHOD: str = "fork"
 
+    # Monitoring
+    TRACING_PROJECT_NAME: str
+    TRACING_ENDPOINT: str
+
     model_config = SettingsConfigDict(env_file='.env', env_file_encoding='utf-8', extra='ignore')
 
 
