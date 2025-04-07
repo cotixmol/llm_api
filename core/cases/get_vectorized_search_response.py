@@ -59,20 +59,19 @@ class GetVectorizedSearchResponseCase:
         )
         try:
             ### SEARCH DOCUMENTS ###           
-            response_dict = await self.es_repository.get_vectorized_search_data(
+            response = await self.es_repository.get_vectorized_search_data(
                 index_pattern=self.index_pattern,
                 query=knn_query,
                 max_ndocs=self.max_ndocs
             )
-            logger.debug(f"Response: {response_dict}")
+            logger.debug(f"Response: {response}")
 
             #PROCESS RESPONSE
-            response_dict = response_dict.to_dict()
             processed_response = []
-            for doc in response_dict["hits"]["hits"]:
-                processed_response.append({
-                    "content": doc["_source"]["content"]
-                })
+            for hit in response.hits.hits:
+                source = hit['_source']  # Accedemos al _source de cada hit
+                processed_response.append(source.get("content"))
+
         except ElasticsearchException as ese:
             logger.error(f"Error en Elasticsearch: {ese}")
             raise
@@ -84,4 +83,4 @@ class GetVectorizedSearchResponseCase:
             await self.es_repository.close_client()
             logger.info(f"Client closed")
 
-        return VectorizedSearchResponse(response=response_dict.dict())
+        return VectorizedSearchResponse(response=processed_response)
