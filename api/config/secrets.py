@@ -7,6 +7,7 @@ class Settings(BaseSettings):
     # Worker configuration
     LOG_LEVEL: str
     MODEL_NAME: str
+    EMBEDDING_MODEL_NAME: str
 
     # ElasticSerch variables used by elsticsearch service
     ELASTIC_CLUSTER: List[str]
