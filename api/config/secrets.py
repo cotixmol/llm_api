@@ -40,7 +40,9 @@ class Settings(BaseSettings):
 
     # Monitoring
     TRACING_PROJECT_NAME: str
-    TRACING_ENDPOINT: str
+    TRACING_URL: str
+    TRACING_PORT: str
+    TRACING_PROTOCOL: str
 
     model_config = SettingsConfigDict(env_file='.env', env_file_encoding='utf-8', extra='ignore')
 

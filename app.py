@@ -2,7 +2,8 @@ import os
 from api.config.secrets import settings as s
 
 #os.environ["VLLM_WORKER_MULTIPROC_METHOD"] = s.VLLM_WORKER_MULTIPROC_METHOD
-os.environ["PHOENIX_COLLECTOR_ENDPOINT"] = s.TRACING_ENDPOINT
+tracing_endpoint = f"http://{s.TRACING_URL}:{s.TRACING_PORT}"
+os.environ["PHOENIX_COLLECTOR_ENDPOINT"] = tracing_endpoint
 from opentelemetry import trace
 from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
 from phoenix.otel import register
@@ -10,7 +11,7 @@ from phoenix.otel import register
 # If the provider it is not registered before imports, the @tracer.chain decorator gives an error
 # because its checks for the default tracer from opentelemetry
 # is this the correct way of doing this?
-tracer_provider = register(protocol="grpc", project_name="GPU_REPORTS")
+tracer_provider = register(protocol=s.TRACING_PROTOCOL, project_name=s.TRACING_PROJECT_NAME)
 trace.set_tracer_provider(tracer_provider)
 
 from fastapi import FastAPI
