@@ -24,7 +24,16 @@ class QueryBuilder:
         return self
 
     def set_fields(self, fields: List[str]) -> "QueryBuilder":
-        self._fields.extend(fields)
+        """
+        Replaces the current _source fields. Ensures that the 'content'
+        field is included, to mirror the V1 logic.
+        """
+
+        fields_copy = list(fields)
+        if "content" not in fields_copy:
+            fields_copy.append("content")
+
+        self._fields = fields_copy
         return self
 
     def set_match_by_field(self, field: str) -> "QueryBuilder":

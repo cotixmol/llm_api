@@ -18,12 +18,7 @@ class ElasticSearchServiceRepositoryV2(DocumentSearchServiceRepositoryInterface)
         # Build the query DSL
         query_builder = QueryBuilder()
 
-        # Example logic mapping the request fields to the builder
         query_builder.set_date_range(request.since_date, request.to_date)
-
-        # Ensure "content" is in the fields
-        if "content" not in request.fields:
-            request.fields.append("content")
         query_builder.set_fields(request.fields)
 
         if request.exclude_field:
