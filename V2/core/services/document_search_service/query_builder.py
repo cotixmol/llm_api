@@ -36,7 +36,7 @@ class QueryBuilder:
         self._fields = fields_copy
         return self
 
-    def set_match_by_field(self, field: str) -> "QueryBuilder":
+    def set_match_by_field(self, field: str = "content") -> "QueryBuilder":
         self._match_by_field = field
         return self
 

@@ -20,6 +20,7 @@ class ElasticSearchServiceRepositoryV2(DocumentSearchServiceRepositoryInterface)
 
         query_builder.set_date_range(request.since_date, request.to_date)
         query_builder.set_fields(request.fields)
+        query_builder.set_match_by_field(request.match_field)
 
         if request.exclude_field:
             query_builder.set_not_match_by_field(request.exclude_field)
