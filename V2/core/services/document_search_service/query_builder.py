@@ -71,7 +71,7 @@ class QueryBuilder:
         return self
 
     # -------------------------------------------------------------------------
-    #                         PRIVATE FILTER BUILDERS
+    #                         PRIVATE SET_FILTER BUILDERS
     # -------------------------------------------------------------------------
 
     def _build_category_filter(self, categories: List[str]) -> Dict[str, Any]:
