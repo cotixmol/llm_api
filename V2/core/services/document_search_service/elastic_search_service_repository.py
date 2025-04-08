@@ -17,16 +17,18 @@ class ElasticSearchServiceRepositoryV2(DocumentSearchServiceRepositoryInterface)
         """
         query_builder = QueryBuilder()
 
-        query_builder.set_date_range(request.since_date, request.to_date)
-        query_builder.set_fields(request.filters.fields)
-        query_builder.set_match_by_field(request.match_field)
-        query_builder.set_not_match_by_field(request.update_field)
-        query_builder.set_filters(request.filters.model_dump())
+        query_builder.set_date_range(
+            since_iso_time=request.since_date, to_iso_time=request.to_date
+        )
+        query_builder.set_fields(fields=request.filters.fields)
+        query_builder.set_match_by_field(field=request.match_field)
+        query_builder.set_not_match_by_field(field=request.update_field)
+        query_builder.set_filters(filters=request.filters.model_dump())
         if request.query:
-            query_builder.set_query_string(request.query)
-        query_builder.set_sort("@timestamp", {"order": "desc"})
-        query_builder.set_sort("created_at", {"order": "desc"})
-        query_builder.set_size(min(self.page_size, request.max_ndocs or 1000))
+            query_builder.set_query_string(query_string=request.query)
+        query_builder.set_sort(field="@timestamp", order={"order": "desc"})
+        query_builder.set_sort(field="created_at", order={"order": "desc"})
+        query_builder.set_size(size=min(self.page_size, request.max_ndocs or 1000))
 
         query_body = query_builder.build()
 

@@ -1,5 +1,6 @@
-from typing import Dict, List, Any, Optional
+from typing import Dict, List, Any, Optional, Callable
 import iso8601
+from api.config.logger import logger
 
 
 class QueryBuilder:
@@ -11,6 +12,15 @@ class QueryBuilder:
         self._not_match_by_field: Optional[str] = None
         self._query_string: Optional[str] = None
         self._date_range: Dict[str, str] = {}
+
+        self._filter_registry: Dict[str, Callable[[Any], Dict[str, Any]]] = {
+            "category": self._build_category_filter,
+            "sentiment": self._build_sentiment_filter,
+            "emotion": self._build_emotion_filter,
+            "lang": self._build_lang_filter,
+            "words": self._build_words_filter,
+            "not_words": self._build_not_words_filter,
+        }
 
     def set_date_range(self, since_iso_time: str, to_iso_time: str) -> "QueryBuilder":
         """
@@ -44,7 +54,7 @@ class QueryBuilder:
         self._not_match_by_field = field
         return self
 
-    def set_filters(self, filters: Dict[str, Any]) -> "QueryBuilder":
+    def set_filters(self, filters: Dict) -> "QueryBuilder":
         self._filters.update(filters)
         return self
 
@@ -59,6 +69,102 @@ class QueryBuilder:
     def set_size(self, size: int) -> "QueryBuilder":
         self._size = size
         return self
+
+    # -------------------------------------------------------------------------
+    #                         PRIVATE FILTER BUILDERS
+    # -------------------------------------------------------------------------
+
+    def _build_category_filter(self, categories: List[str]) -> Dict[str, Any]:
+        return {
+            "bool": {
+                "minimum_should_match": 1,
+                "should": [{"match_phrase": {"category": cat}} for cat in categories],
+            }
+        }
+
+    def _build_sentiment_filter(self, sentiments: List[str]) -> Dict[str, Any]:
+        return {
+            "bool": {
+                "minimum_should_match": 1,
+                "should": [{"match_phrase": {"sentiment_name": s}} for s in sentiments],
+            }
+        }
+
+    def _build_emotion_filter(self, emotions: List[str]) -> Dict[str, Any]:
+        return {
+            "bool": {
+                "minimum_should_match": 1,
+                "should": [{"match_phrase": {"emotion": e}} for e in emotions],
+            }
+        }
+
+    def _build_lang_filter(self, langs: List[str]) -> Dict[str, Any]:
+        return {
+            "bool": {
+                "minimum_should_match": 1,
+                "should": [{"match_phrase": {"lang": lng}} for lng in langs],
+            }
+        }
+
+    def _build_words_filter(self, words: List[str]) -> Dict[str, Any]:
+        should_clauses = []
+        for w in words:
+            if "*" in w:
+                should_clauses.append(
+                    {
+                        "bool": {
+                            "should": [
+                                {"query_string": {"fields": ["content"], "query": w}}
+                            ],
+                            "minimum_should_match": 1,
+                        }
+                    }
+                )
+            else:
+                should_clauses.append(
+                    {
+                        "bool": {
+                            "should": [{"match_phrase": {"content": w}}],
+                            "minimum_should_match": 1,
+                        }
+                    }
+                )
+        return {"bool": {"minimum_should_match": 1, "should": should_clauses}}
+
+    def _build_not_words_filter(self, not_words: List[str]) -> Dict[str, Any]:
+        must_not_clause = []
+        for w in not_words:
+            if "*" in w:
+                must_not_clause.append(
+                    {
+                        "bool": {
+                            "should": [
+                                {"query_string": {"fields": ["content"], "query": w}}
+                            ],
+                            "minimum_should_match": 1,
+                        }
+                    }
+                )
+            else:
+                must_not_clause.append(
+                    {
+                        "bool": {
+                            "should": [{"match_phrase": {"content": w}}],
+                            "minimum_should_match": 1,
+                        }
+                    }
+                )
+        return {
+            "bool": {
+                "must_not": {
+                    "bool": {"should": must_not_clause, "minimum_should_match": 1}
+                }
+            }
+        }
+
+    # -------------------------------------------------------------------------
+    #                          BUILD METHOD
+    # -------------------------------------------------------------------------
 
     def build(self) -> Dict[str, Any]:
         """
@@ -111,10 +217,18 @@ class QueryBuilder:
                 {"exists": {"field": self._not_match_by_field}}
             )
 
-        # 5) Filters (simple direct approach to replicate V1 usage)
-        #    In V1, there's more intricate logic; for now, we add a basic "term" for each filter key.
+        # 5) Filters using registry or fallback
         for key, value in self._filters.items():
-            query_template["query"]["bool"]["filter"].append({"term": {key: value}})
+            if key in self._filter_registry:
+                snippet = self._filter_registry[key](
+                    value
+                )  # Execute the correct build function in the registry
+                query_template["query"]["bool"]["filter"].append(snippet)
+            else:
+                logger.warning(
+                    f"Unrecognized filter key '{key}', using simple term query."
+                )
+                query_template["query"]["bool"]["filter"].append({"term": {key: value}})
 
         # 6) Query string
         if self._query_string:
