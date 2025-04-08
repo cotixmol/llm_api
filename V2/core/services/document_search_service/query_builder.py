@@ -1,4 +1,5 @@
 from typing import Dict, List, Any, Optional
+import iso8601
 
 
 class QueryBuilder:
@@ -12,8 +13,14 @@ class QueryBuilder:
         self._date_range: Dict[str, str] = {}
 
     def set_date_range(self, since_iso_time: str, to_iso_time: str) -> "QueryBuilder":
-        self._date_range["since"] = since_iso_time
-        self._date_range["to"] = to_iso_time
+        """
+        Sets the date range for the query.
+        V2 avoids range duplication that ocurred in V1 by mutating the internal class state before building the query.
+        """
+        since_iso_time_parsed = iso8601.parse_date(since_iso_time).isoformat()
+        to_iso_time_parsed = iso8601.parse_date(to_iso_time).isoformat()
+        self._date_range["since"] = since_iso_time_parsed
+        self._date_range["to"] = to_iso_time_parsed
         return self
 
     def set_fields(self, fields: List[str]) -> "QueryBuilder":
