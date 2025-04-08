@@ -26,6 +26,7 @@ pydantic-settings
 
 #vllm
 bitsandbytes==0.45.3
+sentence-transformers==3.4.1
 
 # phoenix
 arize-phoenix-otel==0.9.0
