@@ -9,27 +9,28 @@ import iso8601
 
 import re
 
+
 class GetClassificationResponseCase:
     def __init__(
-            self,
-            es_repository: ElasticsearchRepository,
-            query_repository: Query,
-            llm_repository: LLMRepository,
-            index_pattern: str,
-            since_date: str,
-            to_date: str,
-            extra_args: dict,
-            prompt: str, 
-            task_key: str,
-            update_field:str,
-            valid_labels: List[str],
-            max_ndocs: int,
-            batch_size: int,
-            query: str
+        self,
+        es_repository: ElasticsearchRepository,
+        query_repository: Query,
+        llm_repository: LLMRepository,
+        index_pattern: str,
+        since_date: str,
+        to_date: str,
+        extra_args: dict,
+        prompt: str,
+        task_key: str,
+        update_field: str,
+        valid_labels: List[str],
+        max_ndocs: int,
+        batch_size: int,
+        query: str,
     ):
         since_iso_time = iso8601.parse_date(since_date).isoformat()
         to_iso_time = iso8601.parse_date(to_date).isoformat()
-        self.query_repository = query_repository      
+        self.query_repository = query_repository
         self.es_repository = es_repository
         self.llm_repository = llm_repository
         self.index_pattern = index_pattern
@@ -43,26 +44,21 @@ class GetClassificationResponseCase:
         self.max_ndocs = max_ndocs
         self.batch_size = batch_size
         self.query = query
-        
 
     async def __call__(self) -> LLMClassificationResponse:
         ### CREATE QUERY ###
         self.query_repository.set_date_range(
-            since_iso_time=self.since_iso_time, 
-            to_iso_time=self.to_iso_time
+            since_iso_time=self.since_iso_time, to_iso_time=self.to_iso_time
         )
-        
+
         fields = self.extra_args.fields
         if "content" not in fields:
             fields.append("content")
-        self.query_repository.set_fields(
-            fields=fields
-        )
+        self.query_repository.set_fields(fields=fields)
+
         self.query_repository.set_match_by_field(field="content")
         self.query_repository.set_not_match_by_field(field=self.update_field)
-        self.query_repository.set_filters(
-            filters=self.extra_args.model_dump()
-        )
+        self.query_repository.set_filters(filters=self.extra_args.model_dump())
         self.query_repository.set_sort("@timestamp", {"order": "desc"})
         self.query_repository.set_sort("created_at", {"order": "desc"})
 
@@ -71,30 +67,35 @@ class GetClassificationResponseCase:
 
         try:
             ### SEARCH DOCUMENTS ###
-            hits = await self.es_repository.get_paginated_data(query = self.query_repository, index_pattern=self.index_pattern, max_ndocs=self.max_ndocs)
+            hits = await self.es_repository.get_paginated_data(
+                query=self.query_repository,
+                index_pattern=self.index_pattern,
+                max_ndocs=self.max_ndocs,
+            )
 
             if not hits:
-                response = LLMClassificationResponse(
-                    total_docs=0,
-                    updated_docs=0
+                response = LLMClassificationResponse(total_docs=0, updated_docs=0)
+                logger.warning(
+                    f"No documents found for index pattern: {self.index_pattern} between {self.since_iso_time} and {self.to_iso_time}"
                 )
-                logger.warning(f"No documents found for index pattern: {self.index_pattern} between {self.since_iso_time} and {self.to_iso_time}")
                 return response
 
             ### MAKE CLASSIFICATION ###
-            predictions_dict = await self.llm_repository.apply_prompt_classification(prompt_template=self.prompt, 
-                                                                                     task_key=self.task_key, 
-                                                                                     docs=hits, 
-                                                                                     valid_labels=self.valid_labels, 
-                                                                                     update_field=self.update_field,
-                                                                                     batch_size=self.batch_size)
-            
+            predictions_dict = await self.llm_repository.apply_prompt_classification(
+                prompt_template=self.prompt,
+                task_key=self.task_key,
+                docs=hits,
+                valid_labels=self.valid_labels,
+                update_field=self.update_field,
+                batch_size=self.batch_size,
+            )
+
             ### UPDATE DOCUMENTS ###
             await self.es_repository.update_documents_bulk(
-                es_index_list=predictions_dict["es_index_list"], 
+                es_index_list=predictions_dict["es_index_list"],
                 data_to_update=predictions_dict["classification_list"],
-                doc_id_list=predictions_dict["doc_id_list"]
-                )
+                doc_id_list=predictions_dict["doc_id_list"],
+            )
         except Exception as e:
             logger.error(f"Error: {e}")
             raise e
@@ -102,11 +103,17 @@ class GetClassificationResponseCase:
             ### CLOSE CLIENT ###
             await self.es_repository.close_client()
             logger.info(f"Client closed")
-        
+
         ### REPORT TO WORKER ###
         response = LLMClassificationResponse(
             total_docs=len(predictions_dict["classification_list"]),
-            updated_docs=len([doc for doc in predictions_dict["classification_list"] if doc[self.update_field] is not None])
+            updated_docs=len(
+                [
+                    doc
+                    for doc in predictions_dict["classification_list"]
+                    if doc[self.update_field] is not None
+                ]
+            ),
         )
 
         return response

@@ -15,29 +15,20 @@ class ElasticSearchServiceRepositoryV2(DocumentSearchServiceRepositoryInterface)
         """
         Directly build an ES-specific query from ClassificationRequest and retrieve documents.
         """
-        # Build the query DSL
         query_builder = QueryBuilder()
 
         query_builder.set_date_range(request.since_date, request.to_date)
-        query_builder.set_fields(request.fields)
+        query_builder.set_fields(request.filters.fields)
         query_builder.set_match_by_field(request.match_field)
-
-        if request.exclude_field:
-            query_builder.set_not_match_by_field(request.exclude_field)
-
-        if request.filters:
-            query_builder.set_filters(request.filters)
-
-        if request.query_string:
-            query_builder.set_query_string(request.query_string)
-
-        # Sort if needed
+        query_builder.set_not_match_by_field(request.update_field)
+        query_builder.set_filters(request.filters.model_dump())
+        if request.query:
+            query_builder.set_query_string(request.query)
         query_builder.set_sort("@timestamp", {"order": "desc"})
         query_builder.set_sort("created_at", {"order": "desc"})
+        query_builder.set_size(min(self.page_size, request.max_ndocs or 1000))
 
-        # Build the final body
         query_body = query_builder.build()
-        query_body["size"] = min(self.page_size, request.max_ndocs or 1000)
 
         # Now make the actual Elasticsearch request (stubbed out):
         # response = await self.es_client.search(index=request.index_pattern, body=query_body)
@@ -56,7 +47,4 @@ class ElasticSearchServiceRepositoryV2(DocumentSearchServiceRepositoryInterface)
         """
         Bulk updates documents in Elasticsearch.
         """
-        # Example stub: loop or use bulk operations
-        # for index, body, doc_id in zip(es_index_list, data_to_update, doc_id_list):
-        #     await self.es_client.update(index=index, id=doc_id, body={"doc": body})
         pass

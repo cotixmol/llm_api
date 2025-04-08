@@ -49,14 +49,15 @@ class QueryBuilder:
         return self
 
     def set_sort(self, field: str, order: Dict[str, str]) -> "QueryBuilder":
-        """
-        Example: set_sort("@timestamp", {"order": "desc"})
-        """
         self._sort.append({field: order})
         return self
 
     def set_query_string(self, query_string: str) -> "QueryBuilder":
         self._query_string = query_string
+        return self
+
+    def set_size(self, size: int) -> "QueryBuilder":
+        self._size = size
         return self
 
     def build(self) -> Dict[str, Any]:
@@ -123,6 +124,10 @@ class QueryBuilder:
 
         # 7) Sorting
         query_template["sort"].extend(self._sort)
+
+        # 8) Size
+        if self._size is not None:
+            query_template["size"] = self._size
 
         # Return final DSL
         return query_template

@@ -28,6 +28,9 @@ class ClassificationRequest(BaseModel):
     prompt: dict
     update_field: str
     task_key: str
+    # Discuss the origin of these in V1, as a possible request field
+    match_field: str
+    #####
     valid_labels: typing.List[str]
     max_ndocs: typing.Optional[int] = 10000
     batch_size: typing.Optional[int] = 50
