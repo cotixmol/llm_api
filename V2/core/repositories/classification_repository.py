@@ -22,7 +22,7 @@ class ClassificationRepository(ClassificationRepositoryInterface):
 
     async def fetch_documents(self, request: ClassificationRequest) -> List[Dict]:
         """
-        Simply calls the document search repository's get_documents method,
+        Calls the document search repository's get_documents method,
         which internally handles building the Elasticsearch query.
         """
         documents = await self.document_search_service_repository.get_documents(request)

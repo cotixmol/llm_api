@@ -45,16 +45,31 @@ class QueryBuilder:
 
     def build(self) -> Dict[str, Any]:
         """
-        Builds an Elasticsearch DSL query from the stored parameters.
+        Builds an Elasticsearch DSL query replicating the shape of the original Query (V1).
         """
-        bool_query = {"must": [], "must_not": [], "filter": []}
+        # This mirrors the structure in the old Query class:
+        query_template = {
+            "track_total_hits": "true",
+            "sort": [],
+            "aggs": {},
+            "size": 0,
+            "runtime_mappings": {},
+            "_source": [],
+            "query": {"bool": {"must": [], "filter": [], "should": [], "must_not": []}},
+        }
 
-        # Date range
+        # 1) Set the fields
+        query_template["_source"] = list(
+            set(self._fields)
+        )  # Remove duplicates, just in case
+
+        # 2) Date range (use "created_at" to match V1’s default date field)
         if "since" in self._date_range and "to" in self._date_range:
-            bool_query["filter"].append(
+            query_template["query"]["bool"]["must"].append(
                 {
                     "range": {
-                        "@timestamp": {
+                        "created_at": {
+                            "format": "strict_date_optional_time",
                             "gte": self._date_range["since"],
                             "lte": self._date_range["to"],
                         }
@@ -62,30 +77,36 @@ class QueryBuilder:
                 }
             )
 
-        # Match by field
+        # 3) Match by field (as a filter)
         if self._match_by_field:
-            # Example approach: just ensure the field exists; adapt to your needs
-            bool_query["must"].append({"exists": {"field": self._match_by_field}})
+            query_template["query"]["bool"]["filter"].append(
+                {
+                    "bool": {
+                        "should": [{"exists": {"field": self._match_by_field}}],
+                        "minimum_should_match": 1,
+                    }
+                }
+            )
 
-        # Not match by field
+        # 4) Not match by field (must_not)
         if self._not_match_by_field:
-            bool_query["must_not"].append(
+            query_template["query"]["bool"]["must_not"].append(
                 {"exists": {"field": self._not_match_by_field}}
             )
 
-        # Additional filters
+        # 5) Filters (simple direct approach to replicate V1 usage)
+        #    In V1, there's more intricate logic; for now, we add a basic "term" for each filter key.
         for key, value in self._filters.items():
-            bool_query["filter"].append({"term": {key: value}})
+            query_template["query"]["bool"]["filter"].append({"term": {key: value}})
 
-        # Query string
+        # 6) Query string
         if self._query_string:
-            bool_query["must"].append(
-                {"query_string": {"query": self._query_string, "fields": self._fields}}
+            query_template["query"]["bool"]["filter"].append(
+                {"query_string": {"query": self._query_string}}
             )
 
-        # Final DSL
-        return {
-            "_source": self._fields,
-            "query": {"bool": bool_query},
-            "sort": self._sort,
-        }
+        # 7) Sorting
+        query_template["sort"].extend(self._sort)
+
+        # Return final DSL
+        return query_template
