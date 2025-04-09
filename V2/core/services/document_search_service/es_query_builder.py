@@ -3,7 +3,7 @@ import iso8601
 from api.config.logger import logger
 
 
-class QueryBuilder:
+class ESQueryBuilder:
     def __init__(self):
         self._fields: List[str] = []
         self._filters: Dict[str, Any] = {}
@@ -22,7 +22,7 @@ class QueryBuilder:
             "not_words": self._build_not_words_filter,
         }
 
-    def set_date_range(self, since_iso_time: str, to_iso_time: str) -> "QueryBuilder":
+    def set_date_range(self, since_iso_time: str, to_iso_time: str) -> "ESQueryBuilder":
         """
         Sets the date range for the query.
         V2 avoids range duplication that ocurred in V1 by mutating the internal class state before building the query.
@@ -33,7 +33,7 @@ class QueryBuilder:
         self._date_range["to"] = to_iso_time_parsed
         return self
 
-    def set_fields(self, fields: List[str]) -> "QueryBuilder":
+    def set_fields(self, fields: List[str]) -> "ESQueryBuilder":
         """
         Replaces the current _source fields. Ensures that the 'content'
         field is included, to mirror the V1 logic.
@@ -46,27 +46,27 @@ class QueryBuilder:
         self._fields = fields_copy
         return self
 
-    def set_match_by_field(self, field: str = "content") -> "QueryBuilder":
+    def set_match_by_field(self, field: str = "content") -> "ESQueryBuilder":
         self._match_by_field = field
         return self
 
-    def set_not_match_by_field(self, field: str) -> "QueryBuilder":
+    def set_not_match_by_field(self, field: str) -> "ESQueryBuilder":
         self._not_match_by_field = field
         return self
 
-    def set_filters(self, filters: Dict) -> "QueryBuilder":
+    def set_filters(self, filters: Dict) -> "ESQueryBuilder":
         self._filters.update(filters)
         return self
 
-    def set_sort(self, field: str, order: Dict[str, str]) -> "QueryBuilder":
+    def set_sort(self, field: str, order: Dict[str, str]) -> "ESQueryBuilder":
         self._sort.append({field: order})
         return self
 
-    def set_query_string(self, query_string: str) -> "QueryBuilder":
+    def set_query_string(self, query_string: str) -> "ESQueryBuilder":
         self._query_string = query_string
         return self
 
-    def set_size(self, size: int) -> "QueryBuilder":
+    def set_size(self, size: int) -> "ESQueryBuilder":
         self._size = size
         return self
 
