@@ -35,3 +35,6 @@ langchain==0.3.18
 langchain-huggingface==0.1.2
 openinference-instrumentation-langchain>=0.1.4
 
+#embedding
+accelerate==0.34.2
+

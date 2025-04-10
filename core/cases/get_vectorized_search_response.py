@@ -44,8 +44,6 @@ class GetVectorizedSearchResponseCase:
 
         question_embedding = await self.embedding_repository.get_embedding(self.input_question)
         question_embedding = question_embedding.cpu().tolist()
-        logger.debug(f"Embedding generado: {question_embedding[:5]}...")
-      
         
         ### CREATE QUERY ###
         knn_query = Query()
@@ -64,7 +62,6 @@ class GetVectorizedSearchResponseCase:
                 query=knn_query,
                 max_ndocs=self.max_ndocs
             )
-            logger.debug(f"Response: {response}")
 
             #PROCESS RESPONSE
             processed_response = []

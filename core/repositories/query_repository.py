@@ -549,6 +549,7 @@ class Query:
         return
     
     ##Función provisoria para poder crear knn queries sin refactorizar toda la clase query
+    ##TO DO
     def set_knn_query(self, query_vector: list, k: int, num_candidates: int) -> None:
         filters = self.body.get("query", {}).get("bool", {}).get("filter", [])        
         knn_query = {
