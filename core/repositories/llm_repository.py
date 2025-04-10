@@ -2,9 +2,8 @@ import typing
 import json
 import logging
 from services.llm_vllm_service import LLMService
-from core.repositories.utils.monitor_llm import monitor
+from core.objects.document import Document
 from typing import List, Dict
-from collections import defaultdict
 from api.config.logger import logger
 import json
 import re
@@ -119,7 +118,6 @@ class LLMRepository:
         except (ValueError, json.JSONDecodeError) as e3:
             logging.warning(f"Fallo final al parsear JSON tras corrección de comillas: {e3}. Response: {json_text_quotes}")
             return None
-
     
     async def create_topics_name_and_summary(            
         self,
@@ -246,7 +244,6 @@ class LLMRepository:
         logging.error(f"No se pudo generar una respuesta válida después de {MAX_ATTEMPTS} intentos")
         return None, None   
     
-    @monitor(task_name='apply_prompt_classification')
     async def apply_prompt_classification(
         self,
         prompt_template: typing.Dict[str, str],
@@ -285,6 +282,7 @@ class LLMRepository:
             es_index_list.append(doc.index)
             doc_id_list.append(doc.id)
 
+        # create a list of indices to process
         pending_indices = list(range(len(content))) 
         predictions = [None] * len(content)
         
@@ -302,7 +300,6 @@ class LLMRepository:
             for i in range(0, len(pending_indices), batch_size):
                 print(f"Procesando batch {i // batch_size + 1} de {len(pending_indices) // batch_size + 1}")
                 batch_indices = pending_indices[i:i + batch_size]
-                #batch_prompts = List[List[Dict[str, str]]]
                 batch_prompts = [
                     [
                         {
@@ -319,16 +316,14 @@ class LLMRepository:
 
                 try:
                     output = await self.llm_service.generate_text(batch_prompts, max_new_tokens=40)
-                    responses = output["outputs"]
+                    responses = output
                 except Exception as batch_error:
                     logging.error(f"Error procesando el batch {i // batch_size + 1}: {batch_error}")
 
 
                 for idx, response in zip(batch_indices, responses):
                     try:
-                        generated_text = response["text"]
-                        logging.info(f"tiempo para generar texto: {generated_text}  \n {response['other_info']['prompt_time']}")
-                        logging.debug(f"Texto generado para el documento {idx}: {generated_text}")
+                        generated_text = response
 
                         # Parsear el texto generado
                         response_data = self._parse_model_response(generated_text, valid_labels)
@@ -363,16 +358,14 @@ class LLMRepository:
         "doc_id_list": doc_id_list + skiped_doc_id_list,
         "classification_list": category_list + skiped_category
          }
-    
-    @monitor(task_name='apply_prompt')
-    async def apply_prompts(self, prompts: list, batch_size: int, fill_batches: bool) -> typing.Optional[dict]:
+
+    async def apply_prompt(self, prompt: list) -> str:
         attempts = 0
-        prompt = [{"role": "user", "content": prompts[0]}]
+        prompt_message = [{"role": "user", "content": prompt}]
         while attempts < 5:
             try:
-                output = await self.llm_service.generate_text(prompt, temperature=0, top_p=1, max_new_tokens=10)
-                response = output["outputs"][0]["text"]
-                return response
+                output = await self.llm_service.generate_text([prompt_message], temperature=0, top_p=1, max_new_tokens=10)
+                return output[0]
             except Exception as e:
                 logging.error(f"Error generando texto en el intento {attempts + 1}: {e}")
                 attempts += 1
@@ -380,7 +373,6 @@ class LLMRepository:
         logging.error("Fallo en todos los intentos para generar texto.")
         return None
      
-    @monitor(task_name='apply_prompt_categories_summary')
     async def apply_prompt_categories_summary(self, aggs: dict, prompt_template: dict, summary_field: str, batch_size: int) -> Dict[str, str]:
         buckets = (
             aggs
@@ -445,11 +437,10 @@ class LLMRepository:
                 except Exception as e:
                     logging.error(f"Error al generar el prompt para '{category}': {e}")
                     continue        
-            response = await self.llm_service.generate_text(prompts, max_new_tokens=5000, batch_size=batch_size)
-            logger.debug(f"response: {response}")
+            output = await self.llm_service.generate_text(prompts, max_new_tokens=5000)
+            logger.debug(f"response: {output}")
             # Validar la respuesta del modelo antes de guardarla
-            for output in response["outputs"]:
-                text = output["text"]
+            for text in output:
                 if isinstance(text, str):
                     print(text)
                     category_result = self._parse_summary_response(text)
@@ -477,7 +468,6 @@ class LLMRepository:
 
         return summaries
     
-    @monitor(task_name='apply_prompt_query_summary')
     async def apply_prompt_query_summary(self, docs: List[dict], prompt_template: dict, query: str) -> Dict[str, str]:
         if not docs:
             logging.error("La lista de documentos no puede estar vacía.")
@@ -506,9 +496,8 @@ class LLMRepository:
                     }
                 ]
                 
-                response = await self.llm_service.generate_text(prompt, max_new_tokens=5000)
-                output = response["outputs"][0]
-                summary = output["text"]
+                output = await self.llm_service.generate_text([prompt], max_new_tokens=5000)
+                summary = output[0]
                 if isinstance(summary, str):
                     response = {"summary": summary}
                     success = True  
@@ -522,7 +511,6 @@ class LLMRepository:
 
         return response
     
-    @monitor(task_name='apply_prompt_summary')
     async def apply_prompt_summary(self, docs: List[dict], prompt_template: dict) -> Dict[str, str]:
         if not docs:
             logging.error("La lista de documentos no puede estar vacía.")
@@ -551,32 +539,8 @@ class LLMRepository:
                     }
                 ]
                 
-                response = await self.llm_service.generate_text(prompt, max_new_tokens=5000)
-
-                # # ====== INICIO MODIFICACIÓN TEMPORAL: TRACKING VLLM ======
-                # start_time = time.time()
-                # response = await self.llm_service.generate_text(prompt, max_new_tokens=5000)
-                # end_time = time.time()
-                # total_latency = end_time - start_time
-                # logger.info(f"[VLLM METRICS] Tiempo total de generación en apply_prompt_summary: {total_latency:.3f} segundos")
-                # # ====== FIN MODIFICACIÓN TEMPORAL: TRACKING VLLM ======
-
-                output = response["outputs"][0]
-                summary = output["text"]
-
-                # # ====== INICIO MODIFICACIÓN TEMPORAL: GUARDAR MÉTRICAS CSV ======
-                # metrics_path = os.path.join("/ruta/a/experimentos_dev/", f"summary_metrics_{int(start_time)}.csv")
-                # with open(metrics_path, "w", newline="") as csvfile:
-                #     writer = csv.DictWriter(csvfile, fieldnames=["prompt_idx", "prompt_time", "generated_text"])
-                #     writer.writeheader()
-                #     for idx, output in enumerate(response["outputs"]):
-                #         writer.writerow({
-                #             "prompt_idx": idx,
-                #             "prompt_time": output["other_info"].get("prompt_time", None),
-                #             "generated_text": output["text"]
-                #         })
-                # logger.info(f"[VLLM METRICS] Métricas guardadas en: {metrics_path}")
-                # # ====== FIN MODIFICACIÓN TEMPORAL: GUARDAR MÉTRICAS CSV ======
+                output = await self.llm_service.generate_text([prompt], max_new_tokens=5000)
+                summary = output[0]
                 
                 if isinstance(summary, str):
                     response = {"summary": summary}
@@ -590,59 +554,3 @@ class LLMRepository:
                 attempt += 1  
 
         return response
-
-
-    # async def create_topic_name_and_summary(self,
-    #                                     num_keywords: int = 8, 
-    #                                     num_docs: int = 8, 
-    #                                     keywords: typing.List[str] = None, 
-    #                                     docs_list: typing.List[str] = None) -> typing.Tuple[str, str]:
-    #         if keywords is None or docs_list is None:
-    #             logging.error("Keywords y docs_list no pueden ser None")
-    #             return None, None
-
-    #         prompts = []
-    #         MAX_ATTEMPTS = 6 
-    #         index = 0
-
-    #         for attempt in range(MAX_ATTEMPTS):
-    #             if attempt < 3:
-    #                 docs_to_use = docs_list[:min(num_docs, len(docs_list))]
-    #                 keywords_to_use = keywords[:min(num_keywords, len(keywords))]
-    #             else:
-    #                 index += 3
-    #                 docs_to_use = docs_list[index:min(index+num_docs, len(docs_list))]  
-    #                 keywords_to_use = keywords[index:min(index+num_keywords, len(keywords))]
-
-    #             prompt = f"""
-    #                         There is a topic composed of the following keywords: {keywords_to_use}
-    #                         The following documents represent a small but representative subset of all the documents belonging to the topic:
-    #                         {docs_to_use}
-
-    #                         Based on the above information, generate a short name or label for the topic and a brief description (maximum 3 sentences). You must respond in JSON format, following this structure:
-    #                         {{
-    #                             "topic_name": "<name>",
-    #                             "topic_description": "<description>"
-    #                         }}
-    #                         You MUST answer in spanish.
-    #                         """
-    #             messages = [
-    #             {"role": "user", "content": prompt},
-    #             ]
-
-    #             try:
-    #                 outputs = await self.llm_service.generate_text(messages, max_new_tokens=350)
-    #                 response_data = self.parse_model_response(outputs[-1]["generated_text"])
-
-    #                 try:
-    #                     topic_name = response_data["topic_name"]
-    #                     topic_description = response_data["topic_description"]
-    #                     return topic_name, topic_description
-    #                 except:
-    #                     logging.warning(f"Formato incorrecto en la respuesta del modelo, intento número {attempt + 1}. Response: {response_data}")
-                
-    #             except Exception as e:
-    #                 logging.warning(f"Error en la generación de Nombre y Tópico, intento número {attempt + 1}. Error: {e}")
-
-    #         logging.error(f"No se pudo generar una respuesta válida después de {MAX_ATTEMPTS} intentos")
-    #         return None, None

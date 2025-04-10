@@ -6,7 +6,7 @@ FROM python:3.11.4-slim-bullseye AS base
 
 RUN python -m pip install --upgrade pip
 
-RUN pip install vllm==0.7.2
+RUN pip install vllm==0.8.2
 RUN pip install --no-deps bertopic==0.16.2
 
 WORKDIR /app

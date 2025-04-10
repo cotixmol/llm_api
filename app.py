@@ -1,13 +1,18 @@
-import multiprocessing
-import torch.multiprocessing as mp
 import os
 from api.config.secrets import settings as s
 
-multiprocessing.set_start_method('spawn', force=True)
-mp.set_start_method('spawn', force=True)
-os.environ["VLLM_WORKER_MULTIPROC_METHOD"] = s.VLLM_WORKER_MULTIPROC_METHOD
+#os.environ["VLLM_WORKER_MULTIPROC_METHOD"] = s.VLLM_WORKER_MULTIPROC_METHOD
+tracing_endpoint = f"http://{s.TRACING_URL}:{s.TRACING_PORT}"
+os.environ["PHOENIX_COLLECTOR_ENDPOINT"] = tracing_endpoint
+from opentelemetry import trace
+from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
+from phoenix.otel import register
 
-
+# If the provider it is not registered before imports, the @tracer.chain decorator gives an error
+# because its checks for the default tracer from opentelemetry
+# is this the correct way of doing this?
+tracer_provider = register(protocol=s.TRACING_PROTOCOL, project_name=s.TRACING_PROJECT_NAME)
+trace.set_tracer_provider(tracer_provider)
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -24,10 +29,13 @@ description = """# API overview
 > Reports and visualizations for RD APP.
 """
 
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Startup event
+    # check if model exists and download it
     minio_client.update_model_folder(model_name=s.MODEL_NAME, bucket=s.MINIO_BUCKET)
+    # initialize llm client
     MODEL_PATH = f"models/{s.MODEL_NAME}"
     app.state.llm_service = initilialize_llm_client(model_path=MODEL_PATH)
 
@@ -37,11 +45,9 @@ async def lifespan(app: FastAPI):
     #app.state.embedding_service = initialize_embedding_client(model_path=MODEL_PATH_EMBEDDINGS)
 
     yield
-    # Shutdown event
     
 app = FastAPI(title="RD_APP_REPORTS", description=description, version=VERSION, lifespan=lifespan)
-
-print(f"main.py with :{app}")
+# instrument fastapi routes
 
 app.add_middleware(
     CORSMiddleware,
@@ -54,6 +60,8 @@ app.add_middleware(
 app.include_router(router=topic_router, prefix=('/topics'), tags=["Topics"])
 app.include_router(router=llm_router, prefix=('/llm'), tags=["LLM"])
 app.include_router(router=vectorized_search_router, prefix=('/vectorsearch'), tags=["VectorSearch"])
+
+FastAPIInstrumentor().instrument_app(app)
 
 if __name__ == "__main__":
     import uvicorn
