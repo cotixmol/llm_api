@@ -12,6 +12,8 @@ class ESQueryBuilder:
         self._not_match_by_field: Optional[str] = None
         self._query_string: Optional[str] = None
         self._date_range: Dict[str, str] = {}
+        self._size: int | None = None
+        self._search_after: Optional[List] = None
 
         self._filter_registry: Dict[str, Callable[[Any], Dict[str, Any]]] = {
             "category": self._build_category_filter,
@@ -69,6 +71,103 @@ class ESQueryBuilder:
     def set_size(self, size: int) -> "ESQueryBuilder":
         self._size = size
         return self
+
+    def set_search_after(self, sort_id: List[Any]) -> "ESQueryBuilder":
+        self._search_after = sort_id
+        return self
+
+    def clear_search_after(self) -> "ESQueryBuilder":
+        self._search_after = None
+        return self
+
+    # -------------------------------------------------------------------------
+    #                          BUILD METHOD
+    # -------------------------------------------------------------------------
+
+    def build(self) -> Dict[str, Any]:
+        """
+        Builds an Elasticsearch DSL query replicating the shape of the original Query (V1).
+        """
+        # This mirrors the structure in the old Query class:
+        query_template = {
+            "track_total_hits": "true",
+            "sort": [],
+            "aggs": {},
+            "size": 0,
+            "runtime_mappings": {},
+            "_source": [],
+            "query": {"bool": {"must": [], "filter": [], "should": [], "must_not": []}},
+        }
+
+        # 1) Set the fields
+        query_template["_source"] = list(
+            set(self._fields)
+        )  # Remove duplicates, just in case
+
+        # 2) Date range (use "created_at" to match V1’s default date field)
+        if "since" in self._date_range and "to" in self._date_range:
+            query_template["query"]["bool"]["must"].append(
+                {
+                    "range": {
+                        "created_at": {
+                            "format": "strict_date_optional_time",
+                            "gte": self._date_range["since"],
+                            "lte": self._date_range["to"],
+                        }
+                    }
+                }
+            )
+
+        # 3) Match by field (as a filter)
+        if self._match_by_field:
+            query_template["query"]["bool"]["filter"].append(
+                {
+                    "bool": {
+                        "should": [{"exists": {"field": self._match_by_field}}],
+                        "minimum_should_match": 1,
+                    }
+                }
+            )
+
+        # 4) Not match by field (must_not)
+        if self._not_match_by_field:
+            query_template["query"]["bool"]["must_not"].append(
+                {"exists": {"field": self._not_match_by_field}}
+            )
+
+        # 5) Filters using registry or fallback
+        for key, value in self._filters.items():
+            if key in self._filter_registry:
+                snippet = self._filter_registry[key](
+                    value
+                )  # Execute the correct build function in the registry
+                query_template["query"]["bool"]["filter"].append(snippet)
+            else:
+                logger.warning(
+                    f"Unrecognized filter key '{key}', using simple term query."
+                )
+                query_template["query"]["bool"]["filter"].append({"term": {key: value}})
+
+        # 6) Query string
+        if self._query_string:
+            query_template["query"]["bool"]["filter"].append(
+                {"query_string": {"query": self._query_string}}
+            )
+
+        # 7) Sorting
+        if self._sort:
+            query_template["sort"].extend(self._sort)
+
+        # 8) Size
+        if self._size is not None:
+            query_template["size"] = self._size
+
+        # 9) Search after (for pagination)
+        if self._search_after:  # NEW
+            query_template["search_after"] = self._search_after
+
+        # Return final DSL
+        return query_template
 
     # -------------------------------------------------------------------------
     #                         PRIVATE SET_FILTER BUILDERS
@@ -161,87 +260,3 @@ class ESQueryBuilder:
                 }
             }
         }
-
-    # -------------------------------------------------------------------------
-    #                          BUILD METHOD
-    # -------------------------------------------------------------------------
-
-    def build(self) -> Dict[str, Any]:
-        """
-        Builds an Elasticsearch DSL query replicating the shape of the original Query (V1).
-        """
-        # This mirrors the structure in the old Query class:
-        query_template = {
-            "track_total_hits": "true",
-            "sort": [],
-            "aggs": {},
-            "size": 0,
-            "runtime_mappings": {},
-            "_source": [],
-            "query": {"bool": {"must": [], "filter": [], "should": [], "must_not": []}},
-        }
-
-        # 1) Set the fields
-        query_template["_source"] = list(
-            set(self._fields)
-        )  # Remove duplicates, just in case
-
-        # 2) Date range (use "created_at" to match V1’s default date field)
-        if "since" in self._date_range and "to" in self._date_range:
-            query_template["query"]["bool"]["must"].append(
-                {
-                    "range": {
-                        "created_at": {
-                            "format": "strict_date_optional_time",
-                            "gte": self._date_range["since"],
-                            "lte": self._date_range["to"],
-                        }
-                    }
-                }
-            )
-
-        # 3) Match by field (as a filter)
-        if self._match_by_field:
-            query_template["query"]["bool"]["filter"].append(
-                {
-                    "bool": {
-                        "should": [{"exists": {"field": self._match_by_field}}],
-                        "minimum_should_match": 1,
-                    }
-                }
-            )
-
-        # 4) Not match by field (must_not)
-        if self._not_match_by_field:
-            query_template["query"]["bool"]["must_not"].append(
-                {"exists": {"field": self._not_match_by_field}}
-            )
-
-        # 5) Filters using registry or fallback
-        for key, value in self._filters.items():
-            if key in self._filter_registry:
-                snippet = self._filter_registry[key](
-                    value
-                )  # Execute the correct build function in the registry
-                query_template["query"]["bool"]["filter"].append(snippet)
-            else:
-                logger.warning(
-                    f"Unrecognized filter key '{key}', using simple term query."
-                )
-                query_template["query"]["bool"]["filter"].append({"term": {key: value}})
-
-        # 6) Query string
-        if self._query_string:
-            query_template["query"]["bool"]["filter"].append(
-                {"query_string": {"query": self._query_string}}
-            )
-
-        # 7) Sorting
-        query_template["sort"].extend(self._sort)
-
-        # 8) Size
-        if self._size is not None:
-            query_template["size"] = self._size
-
-        # Return final DSL
-        return query_template
