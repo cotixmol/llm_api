@@ -9,4 +9,7 @@ def build_es_service() -> ElasticsearchService:
         elasticsearch_usr=settings.ES_USER,
         elasticsearch_psw=settings.ES_PASS,
         elasticsearch_cluster=settings.ES_CLUSTER_NODES,
+        verify_certs=settings.ES_VERIFY_CERTS,
+        max_retries=settings.ES_MAX_RETRIES,
+        timeout=settings.ES_TIMEOUT,
     )
