@@ -1,6 +1,7 @@
 from V2.core.services.document_search_service.elastic_search_service import (
     ElasticsearchService,
 )
+from api.config.secrets import settings
 
 
 def build_es_service() -> ElasticsearchService:

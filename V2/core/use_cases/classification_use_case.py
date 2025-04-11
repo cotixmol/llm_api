@@ -23,6 +23,7 @@ class ClassificationUseCase:
         classification_results = (
             await self.classification_repository.classify_documents(request, documents)
         )
+
         return ClassificationResponse(
             total_docs=len(classification_results),
             updated_docs=sum(1 for doc in classification_results if doc.get("updated")),

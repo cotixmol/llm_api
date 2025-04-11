@@ -31,6 +31,10 @@ class ClassificationRepository(ClassificationRepositoryInterface):
     async def classify_documents(
         self, request: ClassificationRequest, docs: List[Dict]
     ) -> List[Dict]:
+        """
+        Calls the LLM service repository's classify_document method
+        for each document.
+        """
         classification_results = []
         for doc in docs:
             classification_result = await self.llm_service_repository.classify_document(
