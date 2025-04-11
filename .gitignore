@@ -16,6 +16,7 @@ test.py
 test_bertopic.py
 test_api
 .env
+logs
 # models
 models/*
 test_api/*

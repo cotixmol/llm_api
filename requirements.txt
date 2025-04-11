@@ -26,12 +26,15 @@ pydantic-settings
 
 #vllm
 bitsandbytes==0.45.3
+sentence-transformers==3.4.1
 
-# langchain and phoenix
-arize-phoenix-otel==0.7.1
-langchain-community==0.3.17
-langchain-core==0.3.35
-langchain==0.3.18
-langchain-huggingface==0.1.2
-openinference-instrumentation-langchain>=0.1.4
+
+#embedding
+accelerate==0.34.2
+
+# phoenix
+arize-phoenix-otel==0.9.0
+openinference-semantic-conventions==0.1.16
+openinference-instrumentation==0.1.26
+opentelemetry-instrumentation-fastapi==0.52b1
 

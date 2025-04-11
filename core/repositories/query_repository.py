@@ -553,3 +553,25 @@ class Query:
     def set_custom_agg(self, agg: dict, name: str) -> None:
         self.body["aggs"][name] = agg
         return
+<<<<<<< HEAD
+=======
+    
+    ##Función provisoria para poder crear knn queries sin refactorizar toda la clase query
+    ##TO DO
+    def set_knn_query(self, query_vector: list, k: int, num_candidates: int) -> None:
+        filters = self.body.get("query", {}).get("bool", {}).get("filter", [])        
+        knn_query = {
+            "field": "embedding",
+            "query_vector": query_vector,
+            "k": k,
+            "num_candidates": num_candidates
+        }
+        if filters:
+            if len(filters) == 1:
+                knn_query["filter"] = filters[0]
+            else:
+                knn_query["filter"] = {"bool": {"must": filters}}
+
+        self.body = knn_query
+
+>>>>>>> devops

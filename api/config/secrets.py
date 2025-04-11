@@ -7,6 +7,7 @@ class Settings(BaseSettings):
     # Worker configuration
     LOG_LEVEL: str
     MODEL_NAME: str
+    EMBEDDING_MODEL_NAME: str
 
     # ElasticSerch variables used by elsticsearch service
     ELASTIC_CLUSTER: List[str]
@@ -36,6 +37,12 @@ class Settings(BaseSettings):
     
     # VLLM variables
     VLLM_WORKER_MULTIPROC_METHOD: str = "fork"
+
+    # Monitoring
+    TRACING_PROJECT_NAME: str
+    TRACING_URL: str
+    TRACING_PORT: str
+    TRACING_PROTOCOL: str
 
     model_config = SettingsConfigDict(env_file='.env', env_file_encoding='utf-8', extra='ignore')
 
