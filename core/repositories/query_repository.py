@@ -553,8 +553,6 @@ class Query:
     def set_custom_agg(self, agg: dict, name: str) -> None:
         self.body["aggs"][name] = agg
         return
-<<<<<<< HEAD
-=======
     
     ##Función provisoria para poder crear knn queries sin refactorizar toda la clase query
     ##TO DO
@@ -574,4 +572,3 @@ class Query:
 
         self.body = knn_query
 
->>>>>>> devops
