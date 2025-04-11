@@ -7,6 +7,8 @@ from V2.api.dtos.classification_dto import ClassificationRequest
 from V2.core.services.document_search_service.elastic_search_service import (
     ElasticsearchService,
 )
+from V2.core.objects.elastic_search_object import ElasticSearchDocument
+from api.config import logger
 
 
 class ElasticSearchServiceRepositoryV2(DocumentSearchServiceRepositoryInterface):
@@ -44,6 +46,7 @@ class ElasticSearchServiceRepositoryV2(DocumentSearchServiceRepositoryInterface)
 
         total_hits: List[Dict] = []
         last_sort: Optional[List] = None
+        page_number = 1
 
         while True:
             # Compute how many documents remain to be fetched
@@ -63,8 +66,16 @@ class ElasticSearchServiceRepositoryV2(DocumentSearchServiceRepositoryInterface)
             resp = await self._elastic_search_service.run_search_query(
                 index_pattern=request.index_pattern, body=qb.build()
             )
-            hits = resp["hits"]["hits"]
+            hits = resp.hits
+            logger.info(
+                f"{len(hits)} documents fetched on page {page_number} from index: {request.index_pattern}"
+            )
+
             if not hits:
+                logger.info(
+                    f"No documents found for index {request.index_pattern}. Ending pagination."
+                )
+
                 break
 
             # Store the last sort value for pagination
@@ -78,6 +89,7 @@ class ElasticSearchServiceRepositoryV2(DocumentSearchServiceRepositoryInterface)
             # If we got fewer hits than page_size, we've exhausted the index
             if len(hits) < self._page_size:
                 break
+            page_number += 1
 
         return total_hits
 
@@ -85,7 +97,9 @@ class ElasticSearchServiceRepositoryV2(DocumentSearchServiceRepositoryInterface)
         """Public entry point: build query, paginate, and return flat hits."""
 
         qb = await self._prepare_query_builder(request)
-        return await self._execute_search(request, qb)
+        raw_results = self._execute_search(request, qb)
+        documents = [ElasticSearchDocument(**doc) for doc in raw_results]
+        return documents
 
     async def update_documents(
         self,

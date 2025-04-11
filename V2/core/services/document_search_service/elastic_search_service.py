@@ -3,7 +3,7 @@ import logging
 
 from elasticsearch import AsyncElasticsearch, NotFoundError, BadRequestError
 from elasticsearch.helpers import async_streaming_bulk
-from V2.api.dtos.elastic_search_dto import SearchResponse
+from V2.core.objects.elastic_search_object import ElasticSearchResponse
 
 
 class ElasticsearchException(RuntimeError):
@@ -50,7 +50,7 @@ class ElasticsearchService:
     # -------------------- SEARCH -------------------- #
     async def run_search_query(
         self, *, index_pattern: str, body: Dict[str, Any]
-    ) -> SearchResponse:
+    ) -> ElasticSearchResponse:
         try:
             response = await self._client.options(request_timeout=self._timeout).search(
                 index=index_pattern, body=body
@@ -74,7 +74,7 @@ class ElasticsearchService:
                     f"ElasticService error: Bad query. Check that the index pattern is correct"
                 )
             aggregations = response["aggregations"]
-        return SearchResponse(
+        return ElasticSearchResponse(
             hits=hits, aggregations=aggregations, total_hits=total_hits
         )
 
