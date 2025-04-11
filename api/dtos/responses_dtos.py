@@ -22,9 +22,6 @@ class LLMSummaryResponse(BaseModel):
 
 class LLMTestResponse(BaseModel): 
     response: List[dict]
-<<<<<<< HEAD
-=======
 
 class VectorizedSearchResponse(BaseModel): 
     response: List[str]
->>>>>>> devops
