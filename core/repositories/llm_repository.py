@@ -554,3 +554,18 @@ class LLMRepository:
                 attempt += 1  
 
         return response
+
+    async def apply_function_calling(self, input: str) -> str:
+        """
+        Arma la consulta al LLM integrando las tools predefinidas y realiza el llamado al método generate_function_call.
+        """
+        messages = [{"role": "user", "content": input}]
+        
+        tools = ["get_summary"]  ##########################
+        
+        raw_response = await self.llm_service.generate_function_call(messages, tools)
+        
+        #parsed_response = self._parse_function_call_response(raw_response)
+        
+        # 5. Retornar la respuesta final.
+        return json.dumps(raw_response) 

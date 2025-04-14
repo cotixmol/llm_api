@@ -110,3 +110,18 @@ class LLMService:
         sampling_params = SamplingParams(temperature=0.0, top_p=1.0, max_tokens=1000000)
         generations = self.llm.chat(prompt, sampling_params=sampling_params)
         return generations
+    
+    
+    async def generate_function_call(self, messages: List[Dict], tools: List[str]) -> Dict:
+        """
+        Generate a structured response indicating the function to call and its parameters.
+        """
+        #####################################
+        return {
+            "function_name": "get_summary",
+            "parameters": {
+                "index": "CDMX",
+                "since_date": "2025-03-10",
+                "to_date": "2025-03-17"
+            }
+        }

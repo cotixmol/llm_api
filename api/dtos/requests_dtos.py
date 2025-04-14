@@ -81,3 +81,7 @@ class VectorizedSearchPreviewPayload(BaseModel):
     input_question: str
     query: typing.Optional[str] = None
     max_ndocs: typing.Optional[int] = 10
+
+
+class FunctionCallingPayload(BaseModel):
+    user_input: str
