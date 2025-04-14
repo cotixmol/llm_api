@@ -35,25 +35,44 @@ class LLMService:
     async def generate_text(
         self,
         prompts: List[List[Dict[str, str]]],
-        max_new_tokens: Optional[int] = 1000,
-        temperature: Optional[float] = 0.0,
-        top_p: Optional[float] = 1.0,
         **kwargs,
     ) -> dict:
         try:
+            MAX_TOKENS = 40
+            TEMPERATURE = 0.0
+            TOP_P = 1.0
             sampling_params = SamplingParams(
-                temperature=temperature, top_p=top_p, max_tokens=max_new_tokens
+                temperature=TEMPERATURE, top_p=TOP_P, max_tokens=MAX_TOKENS
+            )
+            logger.info(
+                f"Generating text for {len(prompts)} prompts with sampling parameters: "
+                f"temperature={TEMPERATURE}, top_p={TOP_P}, max_tokens={MAX_TOKENS}"
             )
             generations = self.llm.chat(prompts, sampling_params=sampling_params)
             response = {"outputs": [], "general_info": {}}
-            for generation in generations:
-                text = generation.outputs[0].text
-                total_prompt_time = (
-                    generation.metrics.finished_time - generation.metrics.arrival_time
-                )
-                response["outputs"].append(
-                    {"text": text, "other_info": {"prompt_time": total_prompt_time}}
-                )
+
+            for idx, generation in enumerate(generations):
+                try:
+                    text = generation.outputs[0].text
+                    total_prompt_time = (
+                        generation.metrics.finished_time
+                        - generation.metrics.arrival_time
+                    )
+                    response["outputs"].append(
+                        {"text": text, "other_info": {"prompt_time": total_prompt_time}}
+                    )
+                    logger.debug(
+                        f"Generation {idx + 1}: produced text (prompt_time={total_prompt_time:.3f}s)."
+                    )
+                except Exception as inner_error:
+                    logger.error(
+                        f"Error processing generation {idx + 1}: {inner_error}",
+                        exc_info=True,
+                    )
+                    # Append an empty result so the response list maintains the same size as prompts.
+                    response["outputs"].append(
+                        {"text": "", "other_info": {"prompt_time": None}}
+                    )
             return response
         except Exception as error:
             logger.error(f"Error generating text: {error}")

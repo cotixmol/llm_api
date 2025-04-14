@@ -1,4 +1,5 @@
 from typing import List, Dict, Optional, Tuple
+import json
 from api.config.logger import logger
 from V2.core.services.llm_service.llm_service import LLMService, LLMException
 from V2.core.objects.elastic_search_object import ElasticSearchDocument
@@ -30,24 +31,24 @@ class LLMServiceRepositoryV2:
             raise ValueError("No valid documents found for classification.")
 
         predictions = [None] * len(valid_data["content"])
-        pending_indices = list(range(len(valid_data["content"])))
-        max_attempts = 3  # Could be made configurable
+        pending_indexes = list(range(len(valid_data["content"])))
+        MAX_ATTEMPT = 3
 
-        for attempt in range(max_attempts):
-            if not pending_indices:
+        for attempt in range(MAX_ATTEMPT):
+            if not pending_indexes:
                 break
 
             logger.info(
-                f"Attempt {attempt + 1}: Processing {len(pending_indices)} pending documents."
+                f"Attempt {attempt + 1}/{MAX_ATTEMPT}: Processing {len(pending_indexes)} pending documents."
             )
-            pending_indices = await self._process_batches(
-                pending_indices, valid_data, request, predictions
+            pending_indexes = await self._process_batches(
+                pending_indexes, valid_data, request, predictions
             )
 
-        self._log_remaining(pending_indices, valid_data["content"])
-        classification_list = self._build_classification_list(
-            predictions, request.update_field
-        )
+        for idx in pending_indexes:
+            logger.error(f"Document discarded after 3 attempts: {valid_data["content"][idx]}")
+
+        classification_list = [{request.update_field: prediction} for prediction in predictions]
 
         return {
             "index_list": valid_data["index_list"] + skipped_data["index_list"],
@@ -92,7 +93,7 @@ class LLMServiceRepositoryV2:
 
     async def _process_batches(
         self,
-        pending_indices: List[int],
+        pending_indexes: List[int],
         valid_data: Dict[str, List],
         request: ClassificationRequest,
         predictions: List[Optional[str]],
@@ -105,27 +106,26 @@ class LLMServiceRepositoryV2:
          Returns an updated list of pending document indices.
         """
         batch_size = request.batch_size
-        for i in range(0, len(pending_indices), batch_size):
-            batch_indices = pending_indices[i : i + batch_size]
+        for i in range(0, len(pending_indexes), batch_size):
+            batch_indexes = pending_indexes[i : i + batch_size]
             batch_prompts = self._build_batch_prompts(
-                request.prompt, valid_data["content"], batch_indices
+                request.prompt, valid_data["content"], batch_indexes
             )
             try:
-                output = await self.llm_service.generate_text(
-                    batch_prompts, max_new_tokens=40
-                )
+                output = await self.llm_service.generate_text(batch_prompts)
                 responses = output.get("outputs", [])
             except Exception as batch_error:
                 logger.error(
-                    f"Error processing batch {(i // batch_size) + 1}: {batch_error}"
+                    f"Error processing batch {i // batch_size + 1}: {batch_error}",
+                    exc_info=True,
                 )
                 responses = []
 
-            for idx, response in zip(batch_indices, responses):
+            for idx, response in zip(batch_indexes, responses):
                 try:
                     generated_text = response.get("text", "")
                     logger.info(
-                        f"Doc index {idx} (id: {valid_data['doc_id_list'][idx]}) generated text: {generated_text}"
+                        f"Doc index {idx} (id: {valid_data['doc_id_list'][idx]}): generated text: {generated_text} | Prompt time: {response['other_info']['prompt_time']}"
                     )
                     parsed = self._parse_model_response(
                         generated_text, request.valid_labels, request.task_key
@@ -135,7 +135,9 @@ class LLMServiceRepositoryV2:
                             f"Unexpected response format for doc index {idx}: {parsed}"
                         )
                         continue
-                    predictions[idx] = parsed[request.task_key]
+                    predictions[idx] = parsed[
+                        request.task_key
+                    ]  # Update the mutable predictions list
                 except Exception as parse_error:
                     logger.error(
                         f"Error processing document index {idx}: {parse_error}",
@@ -143,22 +145,17 @@ class LLMServiceRepositoryV2:
                     )
 
         # Update pending indices: keep those where no prediction was made
-        return [idx for idx in pending_indices if predictions[idx] is None]
+        return [idx for idx in pending_indexes if predictions[idx] is None]
 
-    def _log_remaining(self, pending_indices: List[int], contents: List[str]):
-        for idx in pending_indices:
-            logger.error(f"Document discarded after 3 attempts: {contents[idx]}")
 
-    def _build_classification_list(
-        self, predictions: List[Optional[str]], update_field: str
-    ) -> List[Dict[str, Optional[str]]]:
-        return [{update_field: prediction} for prediction in predictions]
+
+
 
     def _build_batch_prompts(
         self,
         prompt_template: Dict[str, str],
         content: List[str],
-        batch_indices: List[int],
+        batch_indexes: List[int],
     ) -> List[List[Dict[str, str]]]:
         """
         Build a list of prompt messages (each message is a list of dicts) for the given batch indices.
@@ -171,17 +168,32 @@ class LLMServiceRepositoryV2:
                     "content": prompt_template["user"].format(doc=content[idx]),
                 },
             ]
-            for idx in batch_indices
+            for idx in batch_indexes
         ]
 
     def _parse_model_response(
         self, response_text: str, valid_labels: List[str], task_key: str
     ) -> Dict:
         """
-        Checks whether the generated text contains one of the valid labels.
-        Returns a dictionary with the task_key mapped to the found label (or an empty dict if none match).
+        Hybrid approach to extract a valid label from the response.
+        First, it tries to parse a JSON block and check for an exact match.
+        If that fails, it searches for a valid label as a substring.
         """
+        try:
+            start = response_text.find("{")
+            end = response_text.rfind("}") + 1
+            if start != -1 and end != -1 and start < end:
+                data = json.loads(response_text[start:end])
+                for value in data.values():
+                    if isinstance(value, str):
+                        for label in valid_labels:
+                            if value.lower() == label.lower():
+                                return {task_key: label}
+        except Exception as e:
+            logger.warning(f"JSON parsing failed: {e}. Using substring matching.")
+
         for label in valid_labels:
             if label.lower() in response_text.lower():
                 return {task_key: label}
+
         return {}
