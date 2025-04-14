@@ -1,72 +1,37 @@
-from typing import List, Dict, Optional
+from typing import List, Dict, Optional, Tuple
 from api.config.logger import logger
-from V2.core.services.llm_service.llm_service import (
-    LLMService,
-    LLMException,
-)
-
-# Assuming your Document type is defined somewhere appropriate
+from V2.core.services.llm_service.llm_service import LLMService, LLMException
 from V2.core.objects.elastic_search_object import ElasticSearchDocument
+from V2.api.dtos.classification_dto import BaseDocument
+from V2.api.dtos.classification_dto import ClassificationRequest
 
 
 class LLMServiceRepositoryV2:
     def __init__(self, llm_service: LLMService):
-        """
-        :param llm_service: An instance of LLMService.
-        """
         self.llm_service = llm_service
 
+    #
     async def classify_documents(
         self,
-        prompt_template: Dict[str, str],
-        task_key: str,
-        update_field: str,
-        valid_labels: List[str],
-        batch_size: int,
-        docs: List[ElasticSearchDocument],
+        docs: List[BaseDocument],
+        request: ClassificationRequest,
     ) -> Dict[str, List]:
         """
-        This method mimics the V1 `apply_prompt_classification` but in V2 style.
-        It pre-processes documents, sends them in batches to the LLM service,
-        and parses the responses.
+        Refactored version of the classification method:
+         1. Validate inputs.
+         2. Pre-process documents: separate valid and skipped documents.
+         3. Process valid documents in batches with retry logic.
+         4. Assemble classification output preserving skipped entries.
         """
-        if not docs:
-            logger.error("Document list cannot be None or empty.")
-            raise ValueError("No documents provided for classification.")
-        if (
-            not prompt_template
-            or "system" not in prompt_template
-            or "user" not in prompt_template
-        ):
-            logger.error("Prompt template is missing required fields.")
-            raise ValueError("Invalid prompt template provided.")
+        self._validate_inputs(docs, request)
+        valid_data, skipped_data = self._preprocess_documents(docs, request)
 
-        # Preprocess: extract content and track skipped documents.
-        es_index_list = []
-        doc_id_list = []
-        content = []
-        skipped_es_index_list = []
-        skipped_doc_id_list = []
-        skipped_category = []
-
-        for doc in docs:
-            # Using document content if available, otherwise default to "empty"
-            doc_content = doc.content if doc.content else "empty"
-            if not doc_content or doc_content.strip() == "" or doc_content == "empty":
-                skipped_es_index_list.append(doc.index)
-                skipped_doc_id_list.append(doc.id)
-                skipped_category.append({task_key: None})
-                continue
-            content.append(doc_content)
-            es_index_list.append(doc.index)
-            doc_id_list.append(doc.id)
-
-        if not content:
+        if not valid_data["content"]:
             raise ValueError("No valid documents found for classification.")
 
-        pending_indices = list(range(len(content)))
-        predictions = [None] * len(content)
-        max_attempts = 3
+        predictions = [None] * len(valid_data["content"])
+        pending_indices = list(range(len(valid_data["content"])))
+        max_attempts = 3  # Could be made configurable
 
         for attempt in range(max_attempts):
             if not pending_indices:
@@ -75,64 +40,119 @@ class LLMServiceRepositoryV2:
             logger.info(
                 f"Attempt {attempt + 1}: Processing {len(pending_indices)} pending documents."
             )
-            for i in range(0, len(pending_indices), batch_size):
-                batch_indices = pending_indices[i : i + batch_size]
-                batch_prompts = self._build_batch_prompts(
-                    prompt_template, content, batch_indices
-                )
-                try:
-                    output = await self.llm_service.generate_text(
-                        batch_prompts, max_new_tokens=40
-                    )
-                    responses = output.get("outputs", [])
-                except Exception as batch_error:
-                    logger.error(
-                        f"Error processing batch {(i // batch_size) + 1}: {batch_error}"
-                    )
-                    responses = []
-
-                for idx, response in zip(batch_indices, responses):
-                    try:
-                        generated_text = response.get("text", "")
-                        logger.info(
-                            f"Doc index {idx} (id: {doc_id_list[idx]}) generated text: {generated_text}"
-                        )
-                        parsed = self._parse_model_response(
-                            generated_text, valid_labels, task_key
-                        )
-                        if not isinstance(parsed, dict):
-                            logger.warning(
-                                f"Unexpected response format for doc index {idx}: {parsed}"
-                            )
-                            continue
-                        if task_key not in parsed:
-                            logger.warning(
-                                f"Missing key '{task_key}' in response for doc index {idx}"
-                            )
-                            continue
-                        predictions[idx] = parsed[task_key]
-                    except Exception as parse_error:
-                        logger.error(
-                            f"Error processing document index {idx}: {parse_error}",
-                            exc_info=True,
-                        )
-
-            pending_indices = [
-                idx for idx in pending_indices if predictions[idx] is None
-            ]
-
-        for idx in pending_indices:
-            logger.error(
-                f"Document discarded after {max_attempts} attempts: {content[idx]}"
+            pending_indices = await self._process_batches(
+                pending_indices, valid_data, request, predictions
             )
 
-        category_list = [{update_field: prediction} for prediction in predictions]
+        self._log_remaining(pending_indices, valid_data["content"])
+        classification_list = self._build_classification_list(
+            predictions, request.update_field
+        )
 
         return {
-            "es_index_list": es_index_list + skipped_es_index_list,
-            "doc_id_list": doc_id_list + skipped_doc_id_list,
-            "classification_list": category_list + skipped_category,
+            "index_list": valid_data["index_list"] + skipped_data["index_list"],
+            "doc_id_list": valid_data["doc_id_list"] + skipped_data["doc_id_list"],
+            "classification_list": classification_list + skipped_data["classification"],
         }
+
+    def _validate_inputs(
+        self, docs: List[BaseDocument], request: ClassificationRequest
+    ):
+        if not docs:
+            logger.error("Document list cannot be None or empty.")
+            raise ValueError("No documents provided for classification.")
+        if (
+            not request.prompt
+            or "system" not in request.prompt
+            or "user" not in request.prompt
+        ):
+            logger.error("Prompt template is missing required fields.")
+            raise ValueError("Invalid prompt template provided.")
+
+    def _preprocess_documents(
+        self, docs: List[BaseDocument], request: ClassificationRequest
+    ) -> Tuple[Dict[str, List], Dict[str, List]]:
+        """
+        Separates documents with valid content from those that should be skipped.
+        """
+        valid_data = {"index_list": [], "doc_id_list": [], "content": []}
+        skipped_data = {"index_list": [], "doc_id_list": [], "classification": []}
+
+        for doc in docs:
+            if (doc.content or "empty").strip() in ("", "empty"):
+                skipped_data["index_list"].append(doc.index)
+                skipped_data["doc_id_list"].append(doc.id)
+                skipped_data["classification"].append({request.task_key: None})
+            else:
+                valid_data["index_list"].append(doc.index)
+                valid_data["content"].append(doc.content or "empty")
+                valid_data["doc_id_list"].append(doc.id)
+
+        return valid_data, skipped_data
+
+    async def _process_batches(
+        self,
+        pending_indices: List[int],
+        valid_data: Dict[str, List],
+        request: ClassificationRequest,
+        predictions: List[Optional[str]],
+    ) -> List[int]:
+        """
+        Process the valid documents in batches:
+         - Builds prompts for each batch.
+         - Calls the LLM service and parses responses.
+         - Updates the predictions list.
+         Returns an updated list of pending document indices.
+        """
+        batch_size = request.batch_size
+        for i in range(0, len(pending_indices), batch_size):
+            batch_indices = pending_indices[i : i + batch_size]
+            batch_prompts = self._build_batch_prompts(
+                request.prompt, valid_data["content"], batch_indices
+            )
+            try:
+                output = await self.llm_service.generate_text(
+                    batch_prompts, max_new_tokens=40
+                )
+                responses = output.get("outputs", [])
+            except Exception as batch_error:
+                logger.error(
+                    f"Error processing batch {(i // batch_size) + 1}: {batch_error}"
+                )
+                responses = []
+
+            for idx, response in zip(batch_indices, responses):
+                try:
+                    generated_text = response.get("text", "")
+                    logger.info(
+                        f"Doc index {idx} (id: {valid_data['doc_id_list'][idx]}) generated text: {generated_text}"
+                    )
+                    parsed = self._parse_model_response(
+                        generated_text, request.valid_labels, request.task_key
+                    )
+                    if not isinstance(parsed, dict) or request.task_key not in parsed:
+                        logger.warning(
+                            f"Unexpected response format for doc index {idx}: {parsed}"
+                        )
+                        continue
+                    predictions[idx] = parsed[request.task_key]
+                except Exception as parse_error:
+                    logger.error(
+                        f"Error processing document index {idx}: {parse_error}",
+                        exc_info=True,
+                    )
+
+        # Update pending indices: keep those where no prediction was made
+        return [idx for idx in pending_indices if predictions[idx] is None]
+
+    def _log_remaining(self, pending_indices: List[int], contents: List[str]):
+        for idx in pending_indices:
+            logger.error(f"Document discarded after 3 attempts: {contents[idx]}")
+
+    def _build_classification_list(
+        self, predictions: List[Optional[str]], update_field: str
+    ) -> List[Dict[str, Optional[str]]]:
+        return [{update_field: prediction} for prediction in predictions]
 
     def _build_batch_prompts(
         self,
@@ -141,7 +161,7 @@ class LLMServiceRepositoryV2:
         batch_indices: List[int],
     ) -> List[List[Dict[str, str]]]:
         """
-        Build prompts for a given batch using the provided template.
+        Build a list of prompt messages (each message is a list of dicts) for the given batch indices.
         """
         return [
             [
@@ -158,7 +178,8 @@ class LLMServiceRepositoryV2:
         self, response_text: str, valid_labels: List[str], task_key: str
     ) -> Dict:
         """
-        Parse the generated text and match it against valid labels.
+        Checks whether the generated text contains one of the valid labels.
+        Returns a dictionary with the task_key mapped to the found label (or an empty dict if none match).
         """
         for label in valid_labels:
             if label.lower() in response_text.lower():

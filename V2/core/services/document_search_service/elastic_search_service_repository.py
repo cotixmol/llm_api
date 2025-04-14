@@ -9,6 +9,7 @@ from V2.core.services.document_search_service.elastic_search_service import (
 )
 from V2.core.objects.elastic_search_object import ElasticSearchDocument
 from api.config import logger
+from V2.api.dtos.classification_dto import BaseDocument
 
 
 class ElasticSearchServiceRepositoryV2(DocumentSearchServiceRepositoryInterface):
@@ -93,12 +94,11 @@ class ElasticSearchServiceRepositoryV2(DocumentSearchServiceRepositoryInterface)
 
         return total_hits
 
-    async def get_documents(self, request: ClassificationRequest) -> List[Dict]:
-        """Public entry point: build query, paginate, and return flat hits."""
-
+    async def get_documents(self, request: ClassificationRequest) -> List[BaseDocument]:
+        """Public entry point: build query, paginate, and return parsed BaseDocument objects."""
         qb = await self._prepare_query_builder(request)
-        raw_results = self._execute_search(request, qb)
-        documents = [ElasticSearchDocument(**doc) for doc in raw_results]
+        raw_results = await self._execute_search(request, qb)
+        documents = [BaseDocument.from_elasticsearch(doc) for doc in raw_results]
         return documents
 
     async def update_documents(
