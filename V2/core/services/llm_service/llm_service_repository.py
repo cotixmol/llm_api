@@ -147,10 +147,6 @@ class LLMServiceRepositoryV2:
         # Update pending indices: keep those where no prediction was made
         return [idx for idx in pending_indexes if predictions[idx] is None]
 
-
-
-
-
     def _build_batch_prompts(
         self,
         prompt_template: Dict[str, str],
