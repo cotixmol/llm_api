@@ -1,5 +1,4 @@
-import torch
-from vllm import LLM, SamplingParams
+from vllm import SamplingParams, LLM
 from api.config.logger import logger
 from typing import Optional, Dict, List
 from api.config.secrets import settings as s
@@ -9,46 +8,29 @@ class LLMException(Exception):
     pass
 
 
-class LLMService:
-    def __init__(self, model_path: str) -> None:
-        # Instanciate the LLM with device and configuration settings.
-        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-        self.llm = LLM(
-            model=model_path,
-            device=self.device,
-            tensor_parallel_size=s.VLLM_TENSOR_PARALLEL_SIZE,
-            pipeline_parallel_size=s.VLLM_PIPELINE_PARALLEL_SIZE,
-            quantization=s.VLLM_QUANTIZATION,
-            enforce_eager=s.VLLM_ENFORCE_EAGER,
-            max_seq_len_to_capture=s.VLLM_MAX_SEQ_LEN_TO_CAPTURE,
-            disable_custom_all_reduce=s.VLLM_DISABLE_CUSTOM_ALL_REDUCE,
-            gpu_memory_utilization=s.VLLM_MEMORY_UTILIZATION,
-            max_model_len=s.VLLM_MAX_MODEL_LEN,
-            max_num_batched_tokens=s.VLLM_MAX_NUM_BATCHED_TOKENS,
-            max_num_seqs=s.VLLM_MAX_NUM_SEQS,
-            enable_chunked_prefill=s.VLLM_ENABLE_CHUNKED_PREFILL,
-        )
-        logger.info(
-            f"[VLLM DEBUG] Model initialized on {self.device}. Instance type: {type(self.llm)}"
-        )
+class VLLMService:
+    def __init__(self, llm_instance: LLM) -> None:
+        self.llm_instance = llm_instance
+        logger.info(f"[VLLM DEBUG] Model initialized. Instance type: {type(self.llm)}")
 
     async def generate_text(
         self,
         prompts: List[List[Dict[str, str]]],
-        **kwargs,
+        temperature: float = 0.0,
+        top_p: float = 1.0,
+        max_new_tokens: int = 40,
     ) -> dict:
         try:
-            MAX_TOKENS = 40
-            TEMPERATURE = 0.0
-            TOP_P = 1.0
             sampling_params = SamplingParams(
-                temperature=TEMPERATURE, top_p=TOP_P, max_tokens=MAX_TOKENS
+                temperature=temperature, top_p=top_p, max_tokens=max_new_tokens
             )
             logger.info(
                 f"Generating text for {len(prompts)} prompts with sampling parameters: "
-                f"temperature={TEMPERATURE}, top_p={TOP_P}, max_tokens={MAX_TOKENS}"
+                f"temperature={temperature}, top_p={top_p}, max_tokens={max_new_tokens}"
             )
-            generations = self.llm.chat(prompts, sampling_params=sampling_params)
+            generations = self.llm_instance.chat(
+                prompts, sampling_params=sampling_params
+            )
             response = {"outputs": [], "general_info": {}}
 
             for idx, generation in enumerate(generations):
@@ -77,8 +59,3 @@ class LLMService:
         except Exception as error:
             logger.error(f"Error generating text: {error}")
             raise LLMException(f"Error generating text: {error}")
-
-    async def test_model(self, prompt: str) -> dict:
-        sampling_params = SamplingParams(temperature=0.0, top_p=1.0, max_tokens=1000000)
-        generations = self.llm.chat(prompt, sampling_params=sampling_params)
-        return generations

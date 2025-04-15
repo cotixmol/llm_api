@@ -1,14 +1,13 @@
 from typing import List, Dict, Optional, Tuple
 import json
 from api.config.logger import logger
-from V2.core.services.llm_service.llm_service import LLMService, LLMException
-from V2.core.objects.elastic_search_object import ElasticSearchDocument
+from V2.core.services.llm_service.vllm_service import VLLMService
 from V2.api.dtos.classification_dto import BaseDocument
 from V2.api.dtos.classification_dto import ClassificationRequest
 
 
-class LLMServiceRepositoryV2:
-    def __init__(self, llm_service: LLMService):
+class VLLMServiceRepositoryV2:
+    def __init__(self, llm_service: VLLMService):
         self.llm_service = llm_service
 
     #
