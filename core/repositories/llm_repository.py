@@ -171,11 +171,11 @@ class LLMRepository:
                     logging.error(f"Error al generar el prompt para el tópico '{topic}': {e}")
                     continue
 
-            response = await self.llm_service.generate_text(prompts, max_new_tokens=5000, batch_size=8)
-            logger.debug(f"response: {response}")
+            response = await self.llm_service.generate_text(prompts, max_new_tokens=5000)
+            logger.info(f"response: {response}")
             # Validar la respuesta del modelo antes de guardarla
-            for topic, block in zip(topics_batch, response["outputs"]):
-                topic_summary = block["text"]
+            for topic, text in zip(topics_batch, response):
+                topic_summary = text
                 if isinstance(topic_summary, str):
                     try:
                         response_data = self._parse_model_response(topic_summary)

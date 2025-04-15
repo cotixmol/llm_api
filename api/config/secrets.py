@@ -43,6 +43,7 @@ class Settings(BaseSettings):
     TRACING_URL: str
     TRACING_PORT: str
     TRACING_PROTOCOL: str
+    TRACING_BATCH_PROCESSOR: bool = False
 
     model_config = SettingsConfigDict(env_file='.env', env_file_encoding='utf-8', extra='ignore')
 

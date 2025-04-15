@@ -11,7 +11,7 @@ from phoenix.otel import register
 # If the provider it is not registered before imports, the @tracer.chain decorator gives an error
 # because its checks for the default tracer from opentelemetry
 # is this the correct way of doing this?
-tracer_provider = register(protocol=s.TRACING_PROTOCOL, project_name=s.TRACING_PROJECT_NAME)
+tracer_provider = register(protocol=s.TRACING_PROTOCOL, project_name=s.TRACING_PROJECT_NAME, batch=s.TRACING_BATCH_PROCESSOR)
 trace.set_tracer_provider(tracer_provider)
 
 from fastapi import FastAPI
