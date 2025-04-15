@@ -10,7 +10,7 @@ class VLLMServiceRepositoryV2:
     def __init__(self, llm_service: VLLMService):
         self.llm_service = llm_service
 
-    #
+
     async def classify_documents(
         self,
         docs: List[BaseDocument],
@@ -24,6 +24,8 @@ class VLLMServiceRepositoryV2:
          4. Assemble classification output preserving skipped entries.
         """
         self._validate_inputs(docs, request)
+        
+        #TODO: This preprocess should be in Elastic Search repository. Not here.
         valid_data, skipped_data = self._preprocess_documents(docs, request)
 
         if not valid_data["content"]:

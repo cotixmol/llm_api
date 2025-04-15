@@ -4,13 +4,13 @@ from typing import Optional, Dict, List
 from api.config.secrets import settings as s
 
 
-class LLMException(Exception):
+class VLLMException(Exception):
     pass
 
 
 class VLLMService:
-    def __init__(self, llm_instance: LLM) -> None:
-        self.llm_instance = llm_instance
+    def __init__(self, vllm_instance: LLM) -> None:
+        self.vllm_instance = vllm_instance
         logger.info(f"[VLLM DEBUG] Model initialized. Instance type: {type(self.llm)}")
 
     async def generate_text(
@@ -28,7 +28,7 @@ class VLLMService:
                 f"Generating text for {len(prompts)} prompts with sampling parameters: "
                 f"temperature={temperature}, top_p={top_p}, max_tokens={max_new_tokens}"
             )
-            generations = self.llm_instance.chat(
+            generations = self.vllm_instance.chat(
                 prompts, sampling_params=sampling_params
             )
             response = {"outputs": [], "general_info": {}}
@@ -58,4 +58,4 @@ class VLLMService:
             return response
         except Exception as error:
             logger.error(f"Error generating text: {error}")
-            raise LLMException(f"Error generating text: {error}")
+            raise VLLMException(f"Error generating text: {error}")
