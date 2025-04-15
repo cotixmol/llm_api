@@ -116,12 +116,10 @@ class LLMService:
         """
         Generate a structured response indicating the function to call and its parameters.
         """
-        #####################################
-        return {
-            "function_name": "get_summary",
-            "parameters": {
-                "index": "CDMX",
-                "since_date": "2025-03-10",
-                "to_date": "2025-03-17"
-            }
-        }
+        sampling_params = SamplingParams(temperature=0.0, top_p=1.0, max_tokens=1000)
+        outputs = self.llm.chat(messages, sampling_params=sampling_params, tools=tools)
+        logger.info(f"################Outputs: {outputs}")
+        output = outputs[0].outputs[0].text.strip()
+        logger.info(f"################Output: {output}")
+        
+        return output

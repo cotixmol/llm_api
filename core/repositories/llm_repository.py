@@ -561,7 +561,27 @@ class LLMRepository:
         """
         messages = [{"role": "user", "content": input}]
         
-        tools = ["get_summary"]  ##########################
+        tools = [{
+            "type": "function",
+            "function": {
+                "name": "get_summary",
+                "description": "Generate a summary for a specific topic or index within a given date range.",
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "since_date": {
+                            "type": "string",
+                            "description": "The start date for the summary period in the format YYYY-MM-DD."
+                        },
+                        "to_date": {
+                            "type": "string",
+                            "description": "The end date for the summary period in the format YYYY-MM-DD."
+                        }
+                    },
+                    "required": ["since_date", "to_date"]
+                }
+            }
+        }]
         
         raw_response = await self.llm_service.generate_function_call(messages, tools)
         
