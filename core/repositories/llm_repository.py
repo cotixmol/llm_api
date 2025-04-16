@@ -617,8 +617,15 @@ class LLMRepository:
         
         # Llamar a la función que procesa las fechas.
         raw_response = await self.llm_service.generate_function_call(messages, dates_tools)
-        tool_name = raw_response.get("name", "").lower()
-        params = raw_response.get("parameters", {})
+        while isinstance(raw_response, str):
+            try:
+                json_response = json.loads(raw_response)
+            except Exception as e:
+                logging.warning(f"Error al parsear repetidamente: {e}")
+                break
+
+        tool_name = json_response.get("name", "").lower()
+        params = json_response.get("parameters", {})
         
         if tool_name == "get_relative_dates":
             # Aquí usamos cálculo local para mayor precisión.
