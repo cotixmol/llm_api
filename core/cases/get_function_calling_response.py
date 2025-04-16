@@ -39,7 +39,7 @@ class GetFunctionCallingCase:
                         """
                 }
 
-    def get_endpoint_and_parameters(response):
+    def get_endpoint_and_parameters(self, response):
         # Parse the response to extract the function name and parameters
         try:
             function_name = response.get("name")
