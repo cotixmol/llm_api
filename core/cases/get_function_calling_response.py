@@ -11,7 +11,7 @@ class GetFunctionCallingCase:
         self.user_input = user_input
 
     async def __call__(self) -> FunctionCallingResponse:
-        response = await self.llm_repository.apply_function_calling(input=self.user_input)
+        response = await self.llm_repository.apply_function_calling(user_input=self.user_input)
         #endpoint = funcion_para_saber_que_endpoint_llamar(response)
         #endpoint_result = funcion_para_llamar_al_endpoint_correspondiente(endpoint)
         #Acá puede hacerse otra llamada al modelo con la respuesta del endpoint que se llamó + la tool
