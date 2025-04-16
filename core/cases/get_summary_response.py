@@ -49,7 +49,10 @@ class GetSummaryResponseCase:
             since_iso_time=self.since_iso_time, 
             to_iso_time=self.to_iso_time
         )
-        
+        #log extra args
+        logger.debug(f"########Extra args: {self.extra_args}")
+        logger.debug(f"########Extra args: {self.extra_args}")
+
         fields = self.extra_args.fields
 
         # fields necessary to process the document

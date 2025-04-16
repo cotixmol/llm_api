@@ -1,4 +1,6 @@
 from api.dtos.responses_dtos import FunctionCallingResponse
+from pydantic import BaseModel
+from typing import List
 from core.cases.get_summary_response import GetSummaryResponseCase
 import json
 from api.config.logger import logger  
@@ -67,6 +69,9 @@ class GetFunctionCallingCase:
             raise ValueError("Missing parameters in the response.")
         # Llamar al caso correspondiente
         #PROVISORIO
+        class ExtraArgs(BaseModel):
+            fields: List[str]
+
         if function_name in self.function_to_case:
             case_class = self.function_to_case[function_name]
             case_instance = case_class(
@@ -76,7 +81,7 @@ class GetFunctionCallingCase:
                 index_pattern=self.index_pattern,
                 since_date=parameters.get("since_date"),
                 to_date=parameters.get("to_date"),
-                extra_args={"fields": ["_id", "created_at", "category", "content_type", "author", "content", "source", "@timestamp"]},  
+                extra_args=ExtraArgs(fields=["_id", "created_at", "category", "content_type", "author", "content", "source", "@timestamp"]),  
                 prompt=self.summary_prompt,  
                 max_ndocs=100,  
                 batch_size=10,  
