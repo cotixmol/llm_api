@@ -617,9 +617,8 @@ class LLMRepository:
         
         # Llamar a la función que procesa las fechas.
         raw_response = await self.llm_service.generate_function_call(messages, dates_tools)
-        parsed = self._parse_function_call_response(raw_response)
-        tool_name = parsed.get("name", "").lower()
-        params = parsed.get("parameters", {})
+        tool_name = raw_response.get("name", "").lower()
+        params = raw_response.get("parameters", {})
         
         if tool_name == "get_relative_dates":
             # Aquí usamos cálculo local para mayor precisión.
@@ -649,7 +648,7 @@ class LLMRepository:
             to_date = datetime.now().strftime("%Y-%m-%d")
             return since_date, to_date
         
-        
+
     async def apply_function_calling(self, input_text: str) -> str:
         """
         Flujo multi-paso:
