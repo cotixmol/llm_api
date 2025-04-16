@@ -667,7 +667,7 @@ class LLMRepository:
         """
         # Obtener el rango de fechas.
         since_date, to_date = await self.get_dates(user_input)
-        
+        logger.info(f"##########Fechas obtenidas: desde {since_date} hasta {to_date}.")
         # Armar el mensaje final que se enviará a la tool 'get_summary'.
         messages_summary = [
             {"role": "user", "content": user_input + f"Date range: since_date: {since_date}. to_date: {to_date}."}
@@ -725,7 +725,7 @@ class LLMRepository:
                 }
             }
         ]
-        
+        logger.info(f"########## Haciendo segunda llamada")
         raw_response = await self.llm_service.generate_function_call(messages_summary, tools)
         
         #parsed_response = self._parse_function_call_response(raw_response)
