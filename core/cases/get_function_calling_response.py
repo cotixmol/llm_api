@@ -1,6 +1,7 @@
 from api.dtos.responses_dtos import FunctionCallingResponse
 from core.cases.get_summary_response import GetSummaryResponseCase
 import json
+from api.config.logger import logger  
 
 
 
@@ -41,6 +42,13 @@ class GetFunctionCallingCase:
 
     def get_endpoint_and_parameters(self, response):
         # Parse the response to extract the function name and parameters
+        if isinstance(response, str):
+           try:
+               response = json.loads(response)
+           except json.JSONDecodeError as e:
+               logger.error(f"Error parseando response JSON: {e}")
+               raise ValueError(f"Invalid JSON response from LLM: {e}")
+
         try:
             function_name = response.get("name")
             parameters = response.get("parameters")
@@ -51,7 +59,9 @@ class GetFunctionCallingCase:
     async def __call__(self) -> FunctionCallingResponse:
         response = await self.llm_repository.apply_function_calling(user_input=self.user_input)
         #Definir endpoint 
-        function_name, parameters = self.get_endpoint_and_parameters(response)      
+        function_name, parameters = self.get_endpoint_and_parameters(response)  
+        logger.info(f"######Function name: {function_name}")
+        logger.info(f"######Parameters: {parameters}")    
         if not parameters:
             raise ValueError("Missing parameters in the response.")
         # Llamar al caso correspondiente
