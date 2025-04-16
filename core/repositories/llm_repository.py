@@ -736,7 +736,7 @@ class LLMRepository:
         #parsed_response = self._parse_function_call_response(raw_response)
         
         # 5. Retornar la respuesta final.
-        return json.dumps(raw_response) 
+        return raw_response
     
 
 
