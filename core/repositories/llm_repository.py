@@ -630,7 +630,13 @@ class LLMRepository:
         if tool_name == "get_relative_dates":
             # Aquí usamos cálculo local para mayor precisión.
             time_unit = params.get("time_unit", "").lower()
-            time_unit_value = params.get("time_unit_value", 0)
+            raw_time_unit_value = params.get("time_unit_value", 0)
+            try:
+                time_unit_value = int(raw_time_unit_value)
+            except (TypeError, ValueError):
+                logger.warning(f"Valor de time_unit_value no es un entero válido: {raw_time_unit_value!r}, usando 0.")
+                time_unit_value = 0
+
             current_date = datetime.now()
             if time_unit == "days":
                 since_date = (current_date - timedelta(days=time_unit_value)).strftime("%Y-%m-%d")
