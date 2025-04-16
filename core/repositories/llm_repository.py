@@ -559,7 +559,7 @@ class LLMRepository:
     
 
 ##########################################
-    async def get_dates(self, input_text: str):
+    async def get_dates(self, user_input: str):
         """
         Usa function calling para obtener el rango de fechas a partir del input.
         Si el input contiene una expresión relativa (por ejemplo, "últimas 4 semanas" o "últimos 50 días"),
@@ -613,7 +613,7 @@ class LLMRepository:
         ]
         
         # Construir el mensaje con el input original.
-        messages = [{"role": "user", "content": input_text}]
+        messages = [{"role": "user", "content": user_input}]
         
         # Llamar a la función que procesa las fechas.
         raw_response = await self.llm_service.generate_function_call(messages, dates_tools)
@@ -649,7 +649,7 @@ class LLMRepository:
             return since_date, to_date
         
 
-    async def apply_function_calling(self, input_text: str) -> str:
+    async def apply_function_calling(self, user_input: str) -> str:
         """
         Flujo multi-paso:
           1. Se obtiene el rango de fechas (since_date, to_date) a partir del input,
@@ -659,11 +659,11 @@ class LLMRepository:
           4. Se retorna la respuesta final en formato JSON.
         """
         # Obtener el rango de fechas.
-        since_date, to_date = await self.get_dates(input_text)
+        since_date, to_date = await self.get_dates(user_input)
         
         # Armar el mensaje final que se enviará a la tool 'get_summary'.
         messages_summary = [
-            {"role": "user", "content": input_text + f"Date range: since_date: {since_date}. to_date: {to_date}."}
+            {"role": "user", "content": user_input + f"Date range: since_date: {since_date}. to_date: {to_date}."}
         ]
         
         tools = [
