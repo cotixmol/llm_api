@@ -559,29 +559,66 @@ class LLMRepository:
         """
         Arma la consulta al LLM integrando las tools predefinidas y realiza el llamado al método generate_function_call.
         """
-        messages = [{"role": "user", "content": input}]
+        ##Alternativa para manejar las solicitudes con fechas relativas. Otra alternativa sería un doble llamado al LLM, uno para obtener la fecha y otro para el resumen.
+        def get_current_date():
+            from datetime import datetime
+            return datetime.now().strftime("%Y-%m-%d")
+
+        contextual_input = f"{input}. CONTEXTO: Fecha Actual: {get_current_date()}"
+        messages = [{"role": "user", "content": contextual_input}]
         
-        tools = [{
-            "type": "function",
-            "function": {
-                "name": "get_summary",
-                "description": "Generate a summary for a specific topic or index within a given date range.",
-                "parameters": {
-                    "type": "object",
-                    "properties": {
-                        "since_date": {
-                            "type": "string",
-                            "description": "The start date for the summary period in the format YYYY-MM-DD."
+        tools = [
+            {
+                "type": "function",
+                "function": {
+                    "name": "get_summary",
+                    "description": "Generate a summary for a specific topic or index within a given date range.",
+                    "parameters": {
+                        "type": "object",
+                        "properties": {
+                            "since_date": {
+                                "type": "string",
+                                "description": "The start date for the summary period in the format YYYY-MM-DD."
+                            },
+                            "to_date": {
+                                "type": "string",
+                                "description": "The end date for the summary period in the format YYYY-MM-DD."
+                            },
+                            "query_content": {
+                                "type": "string",
+                                "description": "The query content to be used in the Elasticsearch query (i.e. the text after 'content:' used to filter documents). Example: 'luisa OR gonzalez OR \"luisa gonzalez\" AND elecciones'."
+                            }
                         },
-                        "to_date": {
-                            "type": "string",
-                            "description": "The end date for the summary period in the format YYYY-MM-DD."
-                        }
-                    },
-                    "required": ["since_date", "to_date"]
+                        "required": ["since_date", "to_date", "query_content"]
+                    }
+                }
+            },
+            {
+                "type": "function",
+                "function": {
+                    "name": "get_docs",
+                    "description": "Retrieve raw documents for a specific topic or index within a given date range.",
+                    "parameters": {
+                        "type": "object",
+                        "properties": {
+                            "since_date": {
+                                "type": "string",
+                                "description": "The start date for the period in which to retrieve documents, formatted as YYYY-MM-DD."
+                            },
+                            "to_date": {
+                                "type": "string",
+                                "description": "The end date for the period in which to retrieve documents, formatted as YYYY-MM-DD."
+                            }
+                            "query_content": {
+                                "type": "string",
+                                "description": "The query content to be used in the Elasticsearch query (i.e. the text after 'content:' used to filter documents). Example: 'luisa OR gonzalez OR \"luisa gonzalez\" AND elecciones'."
+                            }
+                        },
+                        "required": ["since_date", "to_date", "query_content"]
+                    }
                 }
             }
-        }]
+        ]
         
         raw_response = await self.llm_service.generate_function_call(messages, tools)
         
