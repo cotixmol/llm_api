@@ -76,7 +76,7 @@ class GetFunctionCallingCase:
                 index_pattern=self.index_pattern,
                 since_date=parameters.get("since_date"),
                 to_date=parameters.get("to_date"),
-                extra_args={},  
+                extra_args={"fields": ["_id", "created_at", "category", "content_type", "author", "content", "source", "@timestamp"]},  
                 prompt=self.summary_prompt,  
                 max_ndocs=100,  
                 batch_size=10,  
