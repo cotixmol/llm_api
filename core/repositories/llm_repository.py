@@ -617,12 +617,12 @@ class LLMRepository:
         
         # Llamar a la función que procesa las fechas.
         raw_response = await self.llm_service.generate_function_call(messages, dates_tools)
-        while isinstance(raw_response, str):
+        if isinstance(raw_response, str):
             try:
                 json_response = json.loads(raw_response)
             except Exception as e:
-                logging.warning(f"Error al parsear repetidamente: {e}")
-                break
+                logging.warning(f"Error al parsear la respuesta: {e}")
+                json_response = None  
 
         tool_name = json_response.get("name", "").lower()
         params = json_response.get("parameters", {})
