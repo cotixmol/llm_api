@@ -58,6 +58,7 @@ class GetFunctionCallingCase:
 
     async def __call__(self) -> FunctionCallingResponse:
         response = await self.llm_repository.apply_function_calling(user_input=self.user_input)
+        logger.info(f"################Response: {response}")
         #Definir endpoint 
         function_name, parameters = self.get_endpoint_and_parameters(response)  
         logger.info(f"######Function name: {function_name}")
