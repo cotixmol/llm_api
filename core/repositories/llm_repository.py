@@ -608,7 +608,7 @@ class LLMRepository:
                             "to_date": {
                                 "type": "string",
                                 "description": "The end date for the period in which to retrieve documents, formatted as YYYY-MM-DD."
-                            }
+                            },
                             "query_content": {
                                 "type": "string",
                                 "description": "The query content to be used in the Elasticsearch query (i.e. the text after 'content:' used to filter documents). Example: 'luisa OR gonzalez OR \"luisa gonzalez\" AND elecciones'."
