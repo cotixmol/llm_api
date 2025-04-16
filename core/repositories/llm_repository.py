@@ -612,14 +612,13 @@ class LLMRepository:
             }
         ]
         
-        # Construir el mensaje con el input original.
-        messages = [{"role": "user", "content": user_input}]
         
-        # Llamar a la función que procesa las fechas.
+        messages = [{"role": "user", "content": user_input}]
+
         raw_response = await self.llm_service.generate_function_call(messages, dates_tools)
         if isinstance(raw_response, str):
             try:
-                json_response = json.loads(raw_response)
+                json_response = self._parse_model_response(raw_response)
             except Exception as e:
                 logging.warning(f"Error al parsear la respuesta: {e}")
                 json_response = None  

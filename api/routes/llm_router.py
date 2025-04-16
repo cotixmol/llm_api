@@ -154,12 +154,16 @@ async def get_llm_default_response(
 )
 async def function_calling(
     parameters: FunctionCallingPayload,
-    llm_repository: LLMRepository = Depends(get_llm_repository)
+    llm_repository: LLMRepository = Depends(get_llm_repository),
+    query_repository: Query = Depends(get_query_repository),
+    es_repository: ElasticsearchRepository = Depends(get_elasticsearch_repository)
 ) -> FunctionCallingResponse:
     try:
         function_calling_case = GetFunctionCallingCase(
             llm_repository=llm_repository,
-            user_input=parameters.user_input
+            user_input=parameters.user_input,
+            es_repository=es_repository,
+            query_repository=query_repository
             )
 
         response = await function_calling_case()
