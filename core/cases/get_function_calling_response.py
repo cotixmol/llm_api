@@ -92,4 +92,4 @@ class GetFunctionCallingCase:
             raise ValueError(f"Function {function_name} not supported.")
         # Retornar el resultado del caso
         #Acá puede hacerse otra llamada al modelo con la respuesta del endpoint que se llamó + la tool
-        return FunctionCallingResponse(result=endpoint_result)
+        return FunctionCallingResponse(result=json.dumps(endpoint_result))
