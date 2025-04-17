@@ -27,4 +27,4 @@ class VectorizedSearchResponse(BaseModel):
     response: List[str]
 
 class FunctionCallingResponse(BaseModel):
-    result: str 
+    result: Dict[str, Any] 
