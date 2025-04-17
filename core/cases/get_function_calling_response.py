@@ -83,7 +83,7 @@ class GetFunctionCallingCase:
                 to_date=parameters.get("to_date"),
                 extra_args=ExtraArgs(fields=["_id", "created_at", "category", "content_type", "author", "content", "source", "@timestamp"]),  
                 prompt=self.summary_prompt,  
-                max_ndocs=100,  
+                max_ndocs=30,  
                 batch_size=10,  
                 query=parameters.get("query_content")
             )
@@ -92,4 +92,4 @@ class GetFunctionCallingCase:
             raise ValueError(f"Function {function_name} not supported.")
         # Retornar el resultado del caso
         #Acá puede hacerse otra llamada al modelo con la respuesta del endpoint que se llamó + la tool
-        return FunctionCallingResponse(result=endpoint_result)
+        return FunctionCallingResponse(result=endpoint_result.model_dump())
