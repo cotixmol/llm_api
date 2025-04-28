@@ -8,6 +8,8 @@ from api.config.logger import logger
 import json
 import re
 import logging
+from datetime import datetime, timedelta
+from dateutil.relativedelta import relativedelta
 
 class LLMRepository:
     def __init__(self, llm_service: LLMService):
@@ -554,3 +556,275 @@ class LLMRepository:
                 attempt += 1  
 
         return response
+    
+
+##########################################
+    async def get_dates(self, user_input: str):
+        """
+        Usa function calling para obtener el rango de fechas a partir del input.
+        Si el input contiene una expresión relativa (por ejemplo, "últimas 4 semanas" o "últimos 50 días"),
+        se invoca la tool 'get_relative_dates'. Si contiene fechas fijas, se invoca 'get_fixed_dates'.
+        Se retorna una tupla (since_date, to_date) en formato YYYY-MM-DD.
+        """
+        # Definir las tools para calcular fechas:
+        dates_tools = [
+            {
+                "type": "function",
+                "function": {
+                    "name": "get_relative_dates",
+                    "description": "Get the dates to establish the 'since' and 'to' values from a relative expression. Example: 'last 4 weeks', 'last 50 days'.",
+                    "parameters": {
+                        "type": "object",
+                        "properties": {
+                            "time_unit": {
+                                "type": "string",
+                                "description": "The time unit expressed in the input. Example: Days, Weeks, Months, Years."
+                            },
+                            "time_unit_value": {
+                                "type": "integer",
+                                "description": "The numeric value of the time unit. Example: 4 for 'last 4 weeks'."
+                            }
+                        },
+                        "required": ["time_unit", "time_unit_value"]
+                    }
+                }
+            },
+            {
+                "type": "function",
+                "function": {
+                    "name": "get_fixed_dates",
+                    "description": "Get the 'since' and 'to' dates from a fixed expression. Example: '2025-03-01' to '2025-03-06'.",
+                    "parameters": {
+                        "type": "object",
+                        "properties": {
+                            "since_date": {
+                                "type": "string",
+                                "description": "The start date in the format YYYY-MM-DD."
+                            },
+                            "to_date": {
+                                "type": "string",
+                                "description": "The end date in the format YYYY-MM-DD."
+                            }
+                        },
+                        "required": ["since_date", "to_date"]
+                    }
+                }
+            }
+        ]
+        
+        
+        messages = [{"role": "user", "content": user_input}]
+
+        raw_response = await self.llm_service.generate_function_call(messages, dates_tools)
+        if isinstance(raw_response, str):
+            try:
+                json_response = self._parse_model_response(raw_response)
+            except Exception as e:
+                logging.warning(f"Error al parsear la respuesta: {e}")
+                json_response = None  
+
+        tool_name = json_response.get("name", "").lower()
+        params = json_response.get("parameters", {})
+        
+        if tool_name == "get_relative_dates":
+            # Aquí usamos cálculo local para mayor precisión.
+            time_unit = params.get("time_unit", "").lower()
+            raw_time_unit_value = params.get("time_unit_value", 0)
+            try:
+                time_unit_value = int(raw_time_unit_value)
+            except (TypeError, ValueError):
+                logger.warning(f"Valor de time_unit_value no es un entero válido: {raw_time_unit_value!r}, usando 0.")
+                time_unit_value = 0
+
+            current_date = datetime.now()
+            if time_unit == "days":
+                since_date = (current_date - timedelta(days=time_unit_value)).strftime("%Y-%m-%d")
+            elif time_unit == "weeks":
+                since_date = (current_date - timedelta(weeks=time_unit_value)).strftime("%Y-%m-%d")
+            elif time_unit == "months":
+                since_date = (current_date - relativedelta(months=time_unit_value)).strftime("%Y-%m-%d")
+            elif time_unit == "years":
+                since_date = (current_date - relativedelta(years=time_unit_value)).strftime("%Y-%m-%d")
+            else:
+                since_date = current_date.strftime("%Y-%m-%d")
+            to_date = current_date.strftime("%Y-%m-%d")
+            return since_date, to_date
+
+        elif tool_name == "get_fixed_dates":
+            since_date = params.get("since_date", datetime.now().strftime("%Y-%m-%d"))
+            to_date = params.get("to_date", datetime.now().strftime("%Y-%m-%d"))
+            return since_date, to_date
+        else:
+            # Fallback: usar últimos 7 días
+            since_date = (datetime.now() - timedelta(days=7)).strftime("%Y-%m-%d")
+            to_date = datetime.now().strftime("%Y-%m-%d")
+            return since_date, to_date
+        
+
+    async def apply_function_calling(self, user_input: str) -> str:
+        """
+        Flujo multi-paso:
+          1. Se obtiene el rango de fechas (since_date, to_date) a partir del input,
+             usando las tools 'get_relative_dates' o 'get_fixed_dates' según corresponda.
+          2. Se utiliza el rango obtenido y se extrae el contenido relevante para la query.
+          3. Se invoca la tool 'get_summary' con el rango y el query_content.
+          4. Se retorna la respuesta final en formato JSON.
+        """
+        # Obtener el rango de fechas.
+        since_date, to_date = await self.get_dates(user_input)
+        logger.info(f"##########Fechas obtenidas: desde {since_date} hasta {to_date}.")
+        # Armar el mensaje final que se enviará a la tool 'get_summary'.
+        messages_summary = [
+            {"role": "user", "content": user_input + f"Date range: since_date: {since_date}. to_date: {to_date}."}
+        ]
+        
+        tools = [
+            {
+                "type": "function",
+                "function": {
+                    "name": "get_summary",
+                    "description": "Generate a summary for a specific topic or index within a given date range.",
+                    "parameters": {
+                        "type": "object",
+                        "properties": {
+                            "since_date": {
+                                "type": "string",
+                                "description": "The start date for the summary period in the format YYYY-MM-DD."
+                            },
+                            "to_date": {
+                                "type": "string",
+                                "description": "The end date for the summary period in the format YYYY-MM-DD."
+                            },
+                            "query_content": {
+                                "type": "string",
+                                "description": "The query content to be used in the Elasticsearch query (i.e. the text after 'content:' used to filter documents). Example: 'luisa OR gonzalez OR \"luisa gonzalez\" AND elecciones'."
+                            }
+                        },
+                        "required": ["since_date", "to_date", "query_content"]
+                    }
+                }
+            },
+            {
+                "type": "function",
+                "function": {
+                    "name": "get_docs",
+                    "description": "Retrieve raw documents for a specific topic or index within a given date range.",
+                    "parameters": {
+                        "type": "object",
+                        "properties": {
+                            "since_date": {
+                                "type": "string",
+                                "description": "The start date for the period in which to retrieve documents, formatted as YYYY-MM-DD."
+                            },
+                            "to_date": {
+                                "type": "string",
+                                "description": "The end date for the period in which to retrieve documents, formatted as YYYY-MM-DD."
+                            },
+                            "query_content": {
+                                "type": "string",
+                                "description": "The query content to be used in the Elasticsearch query (i.e. the text after 'content:' used to filter documents). Example: 'luisa OR gonzalez OR \"luisa gonzalez\" AND elecciones'."
+                            }
+                        },
+                        "required": ["since_date", "to_date", "query_content"]
+                    }
+                }
+            }
+        ]
+        logger.info(f"########## Haciendo segunda llamada")
+        raw_response = await self.llm_service.generate_function_call(messages_summary, tools)
+        
+        #parsed_response = self._parse_function_call_response(raw_response)
+        
+        # 5. Retornar la respuesta final.
+        return raw_response
+    
+
+
+        # def get_dates(input):
+        #     dates_tools = [
+        #             {
+        #                 "type": "function",
+        #                 "function": {
+        #                     "name": "get_relative_dates",
+        #                     "description": "Get the date to estabish the 'since' and 'to' dates for the query from a relativ expression. Example 'last 4 weeks', 'last year'.",
+        #                     "parameters": {
+        #                         "type": "object",
+        #                         "properties": {
+        #                             "time_unit": {
+        #                                 "type": "str",
+        #                                 "description": "The time unit expressed in the input. Example: Hours, Days, Weeks, Months, Years."
+        #                             },
+        #                             "time_unit_value": {
+        #                                 "type": "integer",
+        #                                 "description": "The value of the time unit expressed in the input. Example: 1, 2, 3."
+        #                             }
+        #                         },
+        #                         "required": ["time_unit", "time_unit_value"]
+        #                     }
+        #                 }
+        #             },
+        #             {
+        #                 "type": "function",
+        #                 "function": {
+        #                     "name": "get_fixed_dates",
+        #                     "description": "Get the date to estabish the 'since' and 'to' dates for the query from a fixed expression. Example '2023-01-01', '2023-12-31'.",
+        #                     "parameters": {
+        #                         "type": "object",
+        #                         "properties": {
+        #                             "since_date": {
+        #                                 "type": "string",
+        #                                 "description": "The start date for the summary period in the format YYYY-MM-DD."
+        #                             },
+        #                             "to_date": {
+        #                                 "type": "string",
+        #                                 "description": "The end date for the summary period in the format YYYY-MM-DD."
+        #                             }
+        #                         },
+        #                         "required": ["since_date", "to_date"]
+        #                     }
+        #                 }
+        #             }
+        #         ]
+        #     raw_response = await self.llm_service.generate_function_call(messages, dates_tools)
+
+        #     def get_relative_dates(response):
+        #         # Parse the input to extract the time unit and value
+        #         time_unit = response.get("time_unit")
+        #         time_unit_value = response.get("time_unit_value")
+        #         current_date = get_current_date()
+
+        #         since_date = get_since_date(time_unit, time_unit_value)
+        #         to_date = current_date
+        #         return since_date, to_date
+
+        #     def get_current_date():
+        #         from datetime import datetime
+        #         return datetime.now().strftime("%Y-%m-%d")
+        
+        #     def get_since_date(time_unit, time_unit_value):
+        #         from datetime import datetime, timedelta
+        #         current_date = datetime.now()
+        #         if time_unit.lower() == "days":
+        #             return (current_date - timedelta(days=time_unit_value)).strftime("%Y-%m-%d")
+        #         elif time_unit.lower() == "weeks":
+        #             return (current_date - timedelta(weeks=time_unit_value)).strftime("%Y-%m-%d")
+        #         elif time_unit.lower() == "months":
+        #             return (current_date - timedelta(days=30*time_unit_value)).strftime("%Y-%m-%d")
+        #         elif time_unit.lower() == "years":
+        #             return (current_date - timedelta(days=365*time_unit_value)).strftime("%Y-%m-%d")
+        #         else:
+        #             raise ValueError("Invalid time unit.")
+                
+        #     def get_fixed_dates(response):
+        #         since_date = response.get("since_date")
+        #         to_date = response.get("to_date")
+        #         return since_date, to_date
+
+        #     tool_answers = [
+        #         tool_funtions[call['name']](**call['arguments']) for call in raw_response
+        #     ]
+
+        #     return tool_answers
+
+
+

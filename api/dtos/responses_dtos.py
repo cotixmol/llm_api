@@ -25,3 +25,6 @@ class LLMTestResponse(BaseModel):
 
 class VectorizedSearchResponse(BaseModel): 
     response: List[str]
+
+class FunctionCallingResponse(BaseModel):
+    result: Dict[str, Any] 

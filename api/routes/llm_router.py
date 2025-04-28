@@ -1,7 +1,7 @@
 import typing
 from fastapi import APIRouter, HTTPException, Depends
-from api.dtos.responses_dtos import LLMClassificationResponse, LLMSummaryResponse, LLMPromptResponse, LLMTestResponse
-from api.dtos.requests_dtos import LLMClassificationPreviewPayload, LLMPromptPreviewPayload, LLMSummaryPreviewPayload, LLMTestPreviewPayload
+from api.dtos.responses_dtos import LLMClassificationResponse, LLMSummaryResponse, LLMPromptResponse, LLMTestResponse, FunctionCallingResponse
+from api.dtos.requests_dtos import LLMClassificationPreviewPayload, LLMPromptPreviewPayload, LLMSummaryPreviewPayload, LLMTestPreviewPayload, FunctionCallingPayload
 from api.config.logger import logger
 from core.repositories.elasticsearch_repository import ElasticsearchRepository
 from core.repositories.query_repository import Query
@@ -14,6 +14,7 @@ from services.elasticsearch_service import ElasticsearchException
 from core.cases.get_classification_response import GetClassificationResponseCase
 from core.cases.get_prompt_response import GetPromptResponseCase
 from core.cases.get_summary_response import GetSummaryResponseCase
+from core.cases.get_function_calling_response import GetFunctionCallingCase
 from api.utils.dict_from_vllm_response import convert_request_outputs_to_dict
 
 llm_router = APIRouter()
@@ -144,4 +145,28 @@ async def get_llm_default_response(
     except Exception as error:
         logger.error(f"{type(error)}: {error}")
         raise HTTPException(status_code=500, detail="Something went wrong.")
-    
+
+
+@llm_router.post(
+    "/functioncalling",
+    response_model=FunctionCallingResponse,
+    response_model_exclude_none=True
+)
+async def function_calling(
+    parameters: FunctionCallingPayload,
+    llm_repository: LLMRepository = Depends(get_llm_repository),
+    query_repository: Query = Depends(get_query_repository),
+    es_repository: ElasticsearchRepository = Depends(get_elasticsearch_repository)
+) -> FunctionCallingResponse:
+    try:
+        function_calling_case = GetFunctionCallingCase(
+            llm_repository=llm_repository,
+            user_input=parameters.user_input,
+            es_repository=es_repository,
+            query_repository=query_repository
+            )
+
+        response = await function_calling_case()
+        return response
+    except Exception as error:
+        raise HTTPException(status_code=500, detail=str(error))
