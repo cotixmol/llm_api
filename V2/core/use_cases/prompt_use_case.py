@@ -17,7 +17,10 @@ class PromptUseCase:
         """
         Executes the prompt request by delegating to the repository.
         """
-        prompt_result = await self.prompt_repository.execute_prompt(request)
+        try:
+            prompt_result = await self.prompt_repository.execute_prompt(request)
+        except Exception as e:
+            raise ValueError(f"Failed to execute prompt: {str(e)}")
 
         return PromptResponse(
             result=prompt_result.get("result"),
