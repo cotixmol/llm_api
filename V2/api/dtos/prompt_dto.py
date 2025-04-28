@@ -1,0 +1,97 @@
+import typing
+from typing import Dict, Any, Optional
+from pydantic import BaseModel
+from V2.core.objects.elastic_search_object import ElasticSearchDocument
+
+
+class Filters(BaseModel):
+    fields: typing.Optional[typing.List[str]] = [
+        "_id",
+        "created_at",
+        "category",
+        "content_type",
+        "author",
+        "content",
+        "source",
+    ]
+    category: typing.Optional[typing.List[str]] = []
+    lang: typing.Optional[typing.List[str]] = None
+    words: typing.Optional[typing.List[str]] = None
+    not_words: typing.Optional[typing.List[str]] = None
+    sentiment: typing.Optional[typing.List[str]] = None
+    emotion: typing.Optional[typing.List[str]] = None
+
+
+class ClassificationRequest(BaseModel):
+    index_pattern: str
+    since_date: str
+    to_date: str
+    filters: typing.Optional[Filters] = None
+    prompt: dict
+    update_field: str
+    task_key: str
+    # Discuss the origin of these in V1, as a possible request field
+    match_field: str
+    #####
+    valid_labels: typing.List[str]
+    max_ndocs: typing.Optional[int] = 10000
+    batch_size: typing.Optional[int] = 50
+    query: typing.Optional[str] = None
+
+
+class ClassificationResponse(BaseModel):
+    total_docs: int
+    updated_docs: int
+
+
+class ClassificationOutput(BaseModel):
+    classification: Optional[str]
+    metadata: Dict[str, Any]
+
+
+from pydantic import BaseModel
+from typing import Any, Dict
+from datetime import datetime
+import typing
+
+
+class BaseDocument(BaseModel):
+    id: str
+    index: str
+    content: str
+    metadata: Dict[str, Any] = {}
+
+    @classmethod
+    def from_elasticsearch(cls, es_doc: Dict) -> "BaseDocument":
+        """
+        Converts an Elasticsearch document (represented as a dict)
+        into a BaseDocument instance.
+        The 'index' field is now stored as a top-level property.
+        """
+        doc_id = es_doc.get("_id")
+        index = es_doc.get("_index")
+        content = es_doc.get("content", "")
+        metadata = {
+            "created_at": es_doc.get("created_at"),
+            "category": es_doc.get("category"),
+            "author": es_doc.get("author"),
+            "followers": es_doc.get("followers"),
+            "following": es_doc.get("following"),
+            "location": es_doc.get("location"),
+            "coordinates": es_doc.get("coordinates"),
+            "content_type": es_doc.get("content_type"),
+            "reach": es_doc.get("reach"),
+            "estimated_reach": es_doc.get("estimated_reach"),
+            "engagement": es_doc.get("engagement"),
+            "reactions": es_doc.get("reactions"),
+            "interactions": es_doc.get("interactions"),
+            "shares": es_doc.get("shares"),
+            "replies": es_doc.get("replies"),
+            "source": es_doc.get("source"),
+            "lang": es_doc.get("lang"),
+            "author_thumbnail": es_doc.get("author_thumbnail"),
+            "sentiment_name": es_doc.get("sentiment_name"),
+            "embedding": es_doc.get("embedding"),
+            "primary_category": es_doc.get("primary_category"),
+        }
+        return cls(id=doc_id, index=index, content=content, metadata=metadata)
