@@ -11,12 +11,14 @@ os.environ["VLLM_WORKER_MULTIPROC_METHOD"] = s.VLLM_WORKER_MULTIPROC_METHOD
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from api.routes.topic_router import topic_router
-from api.routes.llm_router import llm_router
+
 from api.config.settings import VERSION
 from api.config.settings import minio_client
-from factories.services.llm_client_initialization import initilialize_llm_client
 from contextlib import asynccontextmanager
+
+from V2.core.factories.llm_service_factory import initialize_vllm_instance
+from V2.api.routers.prompt_router import prompt_router_V2
+from V2.api.routers.classification_router import classification_router_V2
 
 description = """# API overview
 > Reports and visualizations for RD APP.
@@ -26,8 +28,7 @@ description = """# API overview
 async def lifespan(app: FastAPI):
     # Startup event
     minio_client.update_model_folder(model_name=s.MODEL_NAME, bucket=s.MINIO_BUCKET)
-    MODEL_PATH = f"models/{s.MODEL_NAME}"
-    app.state.llm_service = initilialize_llm_client(model_path=MODEL_PATH)
+    app.state.llm_service = initialize_vllm_instance()
     yield
     # Shutdown event
     
@@ -43,8 +44,11 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-app.include_router(router=topic_router, prefix=('/topics'), tags=["Topics"])
-app.include_router(router=llm_router, prefix=('/llm'), tags=["LLM"])
+#app.include_router(router=topic_router, prefix=('/topics'), tags=["Topics"])
+#app.include_router(router=llm_router, prefix=('/llm'), tags=["LLM"])
+
+app.include_router(router=prompt_router_V2, prefix=('/V2/llm'), tags=["LLM"])
+app.include_router(router=classification_router_V2, prefix=('/V2/classification'), tags=["LLM"])
 
 if __name__ == "__main__":
     import uvicorn

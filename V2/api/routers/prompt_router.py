@@ -15,7 +15,7 @@ prompt_router_V2 = APIRouter()
 
 
 @prompt_router_V2.post(
-    "V2/prompt", response_model=PromptResponse
+    "/prompt", response_model=PromptResponse
 )
 async def prompt_endpoint(
     request: PromptRequest,
