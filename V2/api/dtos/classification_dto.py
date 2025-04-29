@@ -1,11 +1,10 @@
-import typing
-from typing import Dict, Any, Optional
+from typing import Dict, Any, Optional, List
 from pydantic import BaseModel
 from V2.core.objects.elastic_search_object import ElasticSearchDocument
 
 
 class Filters(BaseModel):
-    fields: typing.Optional[typing.List[str]] = [
+    fields: Optional[List[str]] = [
         "_id",
         "created_at",
         "category",
@@ -14,29 +13,29 @@ class Filters(BaseModel):
         "content",
         "source",
     ]
-    category: typing.Optional[typing.List[str]] = []
-    lang: typing.Optional[typing.List[str]] = None
-    words: typing.Optional[typing.List[str]] = None
-    not_words: typing.Optional[typing.List[str]] = None
-    sentiment: typing.Optional[typing.List[str]] = None
-    emotion: typing.Optional[typing.List[str]] = None
+    category: Optional[List[str]] = []
+    lang: Optional[List[str]] = None
+    words: Optional[List[str]] = None
+    not_words: Optional[List[str]] = None
+    sentiment: Optional[List[str]] = None
+    emotion: Optional[List[str]] = None
 
 
 class ClassificationRequest(BaseModel):
     index_pattern: str
     since_date: str
     to_date: str
-    filters: typing.Optional[Filters] = None
+    filters: Optional[Filters] = None
     prompt: dict
     update_field: str
     task_key: str
     # Discuss the origin of these in V1, as a possible request field
     match_field: str
     #####
-    valid_labels: typing.List[str]
-    max_ndocs: typing.Optional[int] = 10000
-    batch_size: typing.Optional[int] = 50
-    query: typing.Optional[str] = None
+    valid_labels: List[str]
+    max_ndocs: Optional[int] = 10000
+    batch_size: Optional[int] = 50
+    query: Optional[str] = None
 
 
 class ClassificationResponse(BaseModel):
@@ -47,12 +46,6 @@ class ClassificationResponse(BaseModel):
 class ClassificationOutput(BaseModel):
     classification: Optional[str]
     metadata: Dict[str, Any]
-
-
-from pydantic import BaseModel
-from typing import Any, Dict
-from datetime import datetime
-import typing
 
 
 class BaseDocument(BaseModel):
