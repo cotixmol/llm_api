@@ -167,3 +167,26 @@ class VLLMServiceRepositoryV2:
                 return {task_key: label}
 
         return {}
+    
+    def execute_prompt(
+        self,
+        prompt: str,
+        max_new_tokens: Optional[int] = 1000,
+        temperature: Optional[float] = 0.0,
+        top_p: Optional[float] = 1.0,
+    ) -> dict:
+        """
+        Execute a prompt using the LLM service.
+        """
+        try:
+            return self.llm_service.generate_text(
+                prompts=[prompt],
+                max_new_tokens=max_new_tokens,
+                temperature=temperature,
+                top_p=top_p,
+            )
+        except Exception as error:
+            logger.error(f"Error executing prompt: {error}")
+            raise VLLMServiceRepositoryV2(f"Error executing prompt: {error}")
+        
+        
