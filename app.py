@@ -28,7 +28,7 @@ description = """# API overview
 async def lifespan(app: FastAPI):
     # Startup event
     minio_client.update_model_folder(model_name=s.MODEL_NAME, bucket=s.MINIO_BUCKET)
-    app.state.llm_service = initialize_vllm_instance()
+    app.state.llm_instance = initialize_vllm_instance()
     yield
     # Shutdown event
     

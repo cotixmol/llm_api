@@ -21,5 +21,5 @@ class PromptRepository(PromptRepositoryInterface):
         """
         Executes a prompt request by delegating to the LLM service repository.
         """
-        response = await self.llm_service_repository.execute_prompt(request.dict())
+        response = await self.llm_service_repository.execute_prompt(request.input_prompt)
         return response

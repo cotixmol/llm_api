@@ -21,8 +21,8 @@ class PromptUseCase:
             prompt_result = await self.prompt_repository.execute_prompt(request)
         except Exception as e:
             raise ValueError(f"Failed to execute prompt: {str(e)}")
+        print(f"[DEBUG] Prompt result: {prompt_result}")
 
         return PromptResponse(
-            result=prompt_result.get("result"),
-            metadata=prompt_result.get("metadata"),
+            response=prompt_result.get("outputs")[0].get("text"),
         )
