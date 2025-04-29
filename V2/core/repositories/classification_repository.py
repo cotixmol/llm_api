@@ -34,9 +34,15 @@ class ClassificationRepository(ClassificationRepositoryInterface):
     ) -> List[dict]:
         """
         Delegates classification to the LLM service repository.
-        Expects docs to be already converted to the agnostic BaseDocument type.
         """
-        classification_results = await self.llm_service_repository.classify_document(
-            request, docs
+        return await self.llm_service_repository.classify_documents(request, docs)
+
+    async def push_documents(
+        self,
+        request: ClassificationRequest,
+        docs: List[BaseDocument],
+        classification_list: List[Dict],
+    ) -> None:
+        await self.document_search_service_repository.update_documents(
+            request, docs, classification_list
         )
-        return classification_results

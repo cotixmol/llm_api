@@ -1,4 +1,4 @@
-from typing import List, Dict, Optional
+from typing import List, Dict, Optional, Tuple
 from V2.core.interfaces.services.document_search_service_repository_interface import (
     DocumentSearchServiceRepositoryInterface,
 )
@@ -7,7 +7,6 @@ from V2.api.dtos.classification_dto import ClassificationRequest
 from V2.core.services.document_search_service.elastic_search_service import (
     ElasticsearchService,
 )
-from V2.core.objects.elastic_search_object import ElasticSearchDocument
 from api.config import logger
 from V2.api.dtos.classification_dto import BaseDocument
 
@@ -16,6 +15,39 @@ class ElasticSearchServiceRepositoryV2(DocumentSearchServiceRepositoryInterface)
     def __init__(self, es_service: ElasticsearchService):
         self._elastic_search_service = es_service
         self._page_size = 1000
+
+    async def get_documents(self, request: ClassificationRequest) -> List[BaseDocument]:
+        """Public entry point: build query, paginate, and return parsed BaseDocument objects."""
+        qb = await self._prepare_query_builder(request)
+        raw_results = await self._execute_search(request, qb)
+        documents = [BaseDocument.from_elasticsearch(doc) for doc in raw_results]
+        return documents
+
+    async def update_documents(
+        self,
+        request: ClassificationRequest,
+        documents: List[BaseDocument],
+        classification_list: List[Dict],
+    ) -> None:
+        actions = []
+        for doc, classification in zip(documents, classification_list):
+            if classification.get(request.update_field) is None:
+                continue
+            actions.append(
+                {
+                    "_op_type": "update",
+                    "_index": doc.index,
+                    "_id": doc.id,
+                    "doc": classification,
+                }
+            )
+
+        if not actions:
+            logger.info("No documents to update in Elasticsearch.")
+            return
+
+        await self._elastic_search_service.bulk_update(actions, chunk_size=500)
+        logger.info("Bulk-updated %d documents.", len(actions))
 
     async def _prepare_query_builder(
         self, request: ClassificationRequest
@@ -93,21 +125,3 @@ class ElasticSearchServiceRepositoryV2(DocumentSearchServiceRepositoryInterface)
             page_number += 1
 
         return total_hits
-
-    async def get_documents(self, request: ClassificationRequest) -> List[BaseDocument]:
-        """Public entry point: build query, paginate, and return parsed BaseDocument objects."""
-        qb = await self._prepare_query_builder(request)
-        raw_results = await self._execute_search(request, qb)
-        documents = [BaseDocument.from_elasticsearch(doc) for doc in raw_results]
-        return documents
-
-    async def update_documents(
-        self,
-        es_index_list: List[str],
-        data_to_update: List[Dict],
-        doc_id_list: List[str],
-    ) -> None:
-        """
-        Bulk updates documents in Elasticsearch.
-        """
-        pass

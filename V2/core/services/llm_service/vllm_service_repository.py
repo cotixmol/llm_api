@@ -1,4 +1,4 @@
-from typing import List, Dict, Optional, Tuple
+from typing import List, Dict, Optional
 import json
 from api.config.logger import logger
 from V2.core.services.llm_service.vllm_service import VLLMService
@@ -10,23 +10,20 @@ class VLLMServiceRepositoryV2:
     def __init__(self, llm_service: VLLMService):
         self.llm_service = llm_service
 
-
     async def classify_documents(
         self,
-        docs: List[BaseDocument],
+        documents: List[BaseDocument],
         request: ClassificationRequest,
-    ) -> Dict[str, List]:
+    ) -> List[Dict]:
         """
         Refactored version of the classification method:
          1. Validate inputs.
-         2. Pre-process documents: separate valid and skipped documents.
          3. Process valid documents in batches with retry logic.
-         4. Assemble classification output preserving skipped entries.
+         4. Assemble classification output.
         """
-        self._validate_inputs(docs, request)
-        
-        #TODO: This preprocess should be in Elastic Search repository. Not here.
-        valid_data, skipped_data = self._preprocess_documents(docs, request)
+        self._validate_inputs(documents, request)
+
+        valid_data = {"content": [d.content or "empty" for d in documents]}
 
         if not valid_data["content"]:
             raise ValueError("No valid documents found for classification.")
@@ -47,20 +44,16 @@ class VLLMServiceRepositoryV2:
             )
 
         for idx in pending_indexes:
-            logger.error(f"Document discarded after 3 attempts: {valid_data["content"][idx]}")
+            logger.error(
+                f"Document discarded after 3 attempts: {valid_data['content'][idx]}"
+            )
 
-        classification_list = [{request.update_field: prediction} for prediction in predictions]
-
-        return {
-            "index_list": valid_data["index_list"] + skipped_data["index_list"],
-            "doc_id_list": valid_data["doc_id_list"] + skipped_data["doc_id_list"],
-            "classification_list": classification_list + skipped_data["classification"],
-        }
+        return [{request.update_field: p} for p in predictions]
 
     def _validate_inputs(
-        self, docs: List[BaseDocument], request: ClassificationRequest
+        self, documents: List[BaseDocument], request: ClassificationRequest
     ):
-        if not docs:
+        if not documents:
             logger.error("Document list cannot be None or empty.")
             raise ValueError("No documents provided for classification.")
         if (
@@ -71,31 +64,10 @@ class VLLMServiceRepositoryV2:
             logger.error("Prompt template is missing required fields.")
             raise ValueError("Invalid prompt template provided.")
 
-    def _preprocess_documents(
-        self, docs: List[BaseDocument], request: ClassificationRequest
-    ) -> Tuple[Dict[str, List], Dict[str, List]]:
-        """
-        Separates documents with valid content from those that should be skipped.
-        """
-        valid_data = {"index_list": [], "doc_id_list": [], "content": []}
-        skipped_data = {"index_list": [], "doc_id_list": [], "classification": []}
-
-        for doc in docs:
-            if (doc.content or "empty").strip() in ("", "empty"):
-                skipped_data["index_list"].append(doc.index)
-                skipped_data["doc_id_list"].append(doc.id)
-                skipped_data["classification"].append({request.task_key: None})
-            else:
-                valid_data["index_list"].append(doc.index)
-                valid_data["content"].append(doc.content or "empty")
-                valid_data["doc_id_list"].append(doc.id)
-
-        return valid_data, skipped_data
-
     async def _process_batches(
         self,
         pending_indexes: List[int],
-        valid_data: Dict[str, List],
+        valid_data: Dict[str, List[str]],
         request: ClassificationRequest,
         predictions: List[Optional[str]],
     ) -> List[int]:
@@ -126,7 +98,8 @@ class VLLMServiceRepositoryV2:
                 try:
                     generated_text = response.get("text", "")
                     logger.info(
-                        f"Doc index {idx} (id: {valid_data['doc_id_list'][idx]}): generated text: {generated_text} | Prompt time: {response['other_info']['prompt_time']}"
+                        f"Doc index {idx}: generated text: {generated_text} | "
+                        f"Prompt time: {response['other_info']['prompt_time']}"
                     )
                     parsed = self._parse_model_response(
                         generated_text, request.valid_labels, request.task_key

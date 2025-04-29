@@ -80,7 +80,7 @@ class ElasticsearchService:
 
     # -------------------- BULK UPDATE -------------------- #
     async def bulk_update(
-        self, actions: Iterable[Dict[str, Any]], *, chunk_size: int = 500
+        self, actions: Iterable[Dict[str, Any]], chunk_size: int = 500
     ) -> None:
         async for ok, res in async_streaming_bulk(
             self._client, actions, chunk_size=chunk_size

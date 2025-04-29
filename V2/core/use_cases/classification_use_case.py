@@ -19,12 +19,19 @@ class ClassificationUseCase:
 
     async def execute(self, request: ClassificationRequest) -> ClassificationResponse:
 
-        documents = await self.classification_repository.fetch_documents(request)
-        classification_results = (
-            await self.classification_repository.classify_documents(request, documents)
+        docs = await self.classification_repository.fetch_documents(request)
+        classification_list = await self.classification_repository.classify_documents(
+            request, docs
+        )
+        await self.classification_repository.push_documents(
+            request, docs, classification_list
         )
 
         return ClassificationResponse(
-            total_docs=len(classification_results),
-            updated_docs=sum(1 for doc in classification_results if doc.get("updated")),
+            total_docs=len(classification_list),
+            updated_docs=sum(
+                1
+                for d in classification_list
+                if d.get(request.update_field) is not None
+            ),
         )
