@@ -20,6 +20,8 @@ services:
     container_name: gpu_full_1
     networks:
       - gpu_traefik_dev
+    expose:
+      - "8002"
     environment:
       CONFIG_TYPE: "gpu_full_1"
     volumes:
