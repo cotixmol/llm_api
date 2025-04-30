@@ -21,7 +21,7 @@ class ClassificationRepository(ClassificationRepositoryInterface):
         self.document_search_service_repository = document_search_service_repository
         self.llm_service_repository = llm_service_repository
 
-    async def fetch_documents(
+    async def fetch_documents_for_classification(
         self, request: ClassificationRequest
     ) -> List[BaseDocument]:
         """
@@ -37,7 +37,7 @@ class ClassificationRepository(ClassificationRepositoryInterface):
         """
         return await self.llm_service_repository.classify_documents(request, docs)
 
-    async def push_documents(
+    async def push_classified_documents(
         self,
         request: ClassificationRequest,
         docs: List[BaseDocument],
