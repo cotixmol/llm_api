@@ -43,7 +43,7 @@ services:
               capabilities: [gpu]
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.siso.rule=PathPrefix(`/llm/prompt`) || PathPrefix(`/llm/classification`)"
+      - "traefik.http.routers.siso.rule=PathPrefix(`/llm/prompt`) || PathPrefix(`/llm/classification`) || PathPrefix(`/vectorsearch`)"
       - "traefik.http.routers.siso.entrypoints=web"
       - "traefik.http.services.siso.loadbalancer.server.port=8002"
   gpu_siso_2:
@@ -75,7 +75,7 @@ services:
               capabilities: [gpu]
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.siso.rule=PathPrefix(`/llm/prompt`) || PathPrefix(`/llm/classification`)"
+      - "traefik.http.routers.siso.rule=PathPrefix(`/llm/prompt`) || PathPrefix(`/llm/classification`) || PathPrefix(`/vectorsearch`)"
       - "traefik.http.routers.siso.entrypoints=web"
       - "traefik.http.services.siso.loadbalancer.server.port=8002"
   gpu_liso_1:

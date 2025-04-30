@@ -20,7 +20,7 @@ gpu_siso_1:
     tracing_url: 0.0.0.0
     tracing_port: 4317
     tracing_protocol: grpc
-    tracing_batch_proccesor: False
+    tracing_batch_proccesor: True
 gpu_siso_2:
   llm_model_name: "generic-generation-llama3.2_3B_Instruct-v1"
   embedding_model_name: "generic-embedding-paraphrase_multilingual_MiniLM_L12_v2-v1"
@@ -43,7 +43,7 @@ gpu_siso_2:
     tracing_url: 0.0.0.0
     tracing_port: 4317
     tracing_protocol: grpc
-    tracing_batch_proccesor: False
+    tracing_batch_proccesor: True
 gpu_liso_1:
   llm_model_name: "generic-generation-llama3.2_3B_Instruct-v1"
   embedding_model_name: "generic-embedding-paraphrase_multilingual_MiniLM_L12_v2-v1"
@@ -66,7 +66,7 @@ gpu_liso_1:
     tracing_url: 0.0.0.0
     tracing_port: 4317
     tracing_protocol: grpc
-    tracing_batch_proccesor: False
+    tracing_batch_proccesor: True
 gpu_liso_2:
   llm_model_name: "generic-generation-llama3.2_3B_Instruct-v1"
   embedding_model_name: "generic-embedding-paraphrase_multilingual_MiniLM_L12_v2-v1"
@@ -89,4 +89,4 @@ gpu_liso_2:
     tracing_url: 0.0.0.0
     tracing_port: 4317
     tracing_protocol: grpc
-    tracing_batch_proccesor: False
+    tracing_batch_proccesor: True

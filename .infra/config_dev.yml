@@ -20,3 +20,4 @@ gpu_full_1:
     tracing_url: 0.0.0.0
     tracing_port: 4317
     tracing_protocol: grpc
+    tracing_batch_proccesor: False
