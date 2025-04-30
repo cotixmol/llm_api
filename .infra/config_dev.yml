@@ -1,5 +1,5 @@
 gpu_full_1:
-  model_name: "generic-generation-llama3.2_3B_Instruct-v1"
+  llm_model_name: "generic-generation-llama3.2_3B_Instruct-v1"
   embedding_model_name: "generic-embedding-paraphrase_multilingual_MiniLM_L12_v2-v1"
   vllm_params:
     worker_multiproc:method: fork
