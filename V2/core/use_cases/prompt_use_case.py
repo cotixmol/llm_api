@@ -1,4 +1,4 @@
-from V2.api.dtos.prompt_dto import PromptRequest, PromptResponse
+from V2.api.dtos.prompt_dto import PromptRequest, PromptResponse, PromptMessageItem
 from V2.core.interfaces.repositories.prompt_repository_interface import (
     PromptRepositoryInterface,
 )
@@ -23,6 +23,15 @@ class PromptUseCase:
             raise ValueError(f"Failed to execute prompt: {str(e)}")
         print(f"[DEBUG] Prompt result: {prompt_result}")
 
+        #append response to previous messages
+        messages_list = request.messages_list
+        messages_list.append(
+            PromptMessageItem(
+                role="assistant",
+                content=prompt_result[0],
+            )
+        )
+
         return PromptResponse(
-            response=prompt_result.get("outputs")[0].get("text"),
+            messages_list=messages_list,
         )

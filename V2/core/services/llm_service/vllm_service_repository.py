@@ -170,19 +170,18 @@ class VLLMServiceRepositoryV2:
     
     def execute_prompt(
         self,
-        prompt: str,
-        max_new_tokens: Optional[int] = 1000,
+        messages_list: str,
+        max_tokens: Optional[int] = 1000,
         temperature: Optional[float] = 0.0,
         top_p: Optional[float] = 1.0,
-    ) -> dict:
+    ) -> List[str]:
         """
         Execute a prompt using the LLM service.
         """
-        prompt = [{"role": "user", "content": prompt}]
         try:
             return self.llm_service.generate_text(
-                prompts=prompt,
-                max_new_tokens=max_new_tokens,
+                requests=messages_list,
+                max_tokens=max_tokens,
                 temperature=temperature,
                 top_p=top_p,
             )
