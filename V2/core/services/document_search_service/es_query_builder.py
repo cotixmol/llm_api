@@ -14,6 +14,7 @@ class ESQueryBuilder:
         self._date_range: Dict[str, str] = {}
         self._size: int | None = None
         self._search_after: Optional[List] = None
+        self._aggs: Dict[str, Any] = {}
 
         self._filter_registry: Dict[str, Callable[[Any], Dict[str, Any]]] = {
             "category": self._build_category_filter,
@@ -78,6 +79,11 @@ class ESQueryBuilder:
 
     def clear_search_after(self) -> "ESQueryBuilder":
         self._search_after = None
+        return self
+
+    def set_custom_agg(self, name: str, body: Dict[str, Any]) -> "ESQueryBuilder":
+        """Register a named aggregation block (used only by Summary)."""
+        self._aggs[name] = body
         return self
 
     # -------------------------------------------------------------------------
@@ -165,6 +171,10 @@ class ESQueryBuilder:
         # 9) Search after (for pagination)
         if self._search_after:  # NEW
             query_template["search_after"] = self._search_after
+
+        # 10) Aggregations
+        if self._aggs:
+            query_template["aggs"] = self._aggs
 
         # Return final DSL
         return query_template
