@@ -23,6 +23,7 @@ python-dateutil==2.9.0.post0
 python-dotenv==1.0.1
 python-json-logger==2.0.7
 pydantic-settings
+PyYAML==6.0.2
 
 #vllm
 bitsandbytes==0.45.3

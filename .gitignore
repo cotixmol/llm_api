@@ -1,4 +1,5 @@
 .env
+config.yml
 .python-version
 __pycache__/
 *.pyc
@@ -21,3 +22,5 @@ logs
 models/*
 test_api/*
 mp_test.py
+
+docker-compose.yml

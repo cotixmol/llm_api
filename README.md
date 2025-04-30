@@ -10,6 +10,7 @@ La capa `core` contiene la lógica de negocio
 La capa `api` expone los enpoints y coordina los servicios para la resolucion de los casos de uso.
 Este microservicio es de acceso privado. (solo LAN)
 
+![arquitecture](./docs/gpu_reports_arquitecture.png)
 
 # Endpoints
 

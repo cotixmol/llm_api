@@ -1,0 +1,148 @@
+services:
+  gpu_traefik:
+    image: traefik:v2.11
+    container_name: gpu_traefik
+    command:
+      - "--entrypoints.web.address=:8001"
+      - "--providers.docker=true"
+      - "--api.insecure=true"  # Opcional: dashboard en :8080
+      - "--log.level=INFO"
+    ports:
+      - "8001:8001"
+      - "8080:8080"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    networks:
+      - gpu_traefik
+  gpu_siso_1:
+    image: registry.reputacion.digital/gpu_reports:${IMAGE_VERSION}
+    container_name: gpu_siso_1
+    networks:
+      - gpu_traefik
+    shm_size: 1g
+    ulimits:
+      memlock: -1
+    environment:
+      CONFIG_TYPE: "gpu_siso_1"
+    restart: always
+    volumes:
+      - ./.env:/app/.env
+      - ./models:/app/models
+      - ./config.yml:/app/config.yml
+    logging:
+      driver: gelf
+      options:
+         gelf-address: "udp://${GELF_IP:-gelf.reputacion.digital}:${GELF_PORT:-12202}"
+         tag: ${GELF_TAG}
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              device_ids: ["0"]
+              capabilities: [gpu]
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.siso.rule=PathPrefix(`/llm/prompt`) || PathPrefix(`/llm/classification`)"
+      - "traefik.http.routers.siso.entrypoints=web"
+      - "traefik.http.services.siso.loadbalancer.server.port=8002"
+  gpu_siso_2:
+    image: registry.reputacion.digital/gpu_reports:${IMAGE_VERSION}
+    container_name: gpu_siso_2
+    networks:
+      - gpu_traefik
+    shm_size: 1g
+    ulimits:
+      memlock: -1
+    environment:
+      CONFIG_TYPE: "gpu_siso_2"
+    restart: always
+    volumes:
+      - ./.env:/app/.env
+      - ./models:/app/models
+      - ./config.yml:/app/config.yml
+    logging:
+      driver: gelf
+      options:
+         gelf-address: "udp://${GELF_IP:-gelf.reputacion.digital}:${GELF_PORT:-12202}"
+         tag: ${GELF_TAG}
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              device_ids: ["1"]
+              capabilities: [gpu]
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.siso.rule=PathPrefix(`/llm/prompt`) || PathPrefix(`/llm/classification`)"
+      - "traefik.http.routers.siso.entrypoints=web"
+      - "traefik.http.services.siso.loadbalancer.server.port=8002"
+  gpu_liso_1:
+    image: registry.reputacion.digital/gpu_reports:${IMAGE_VERSION}
+    container_name: gpu_liso_1
+    networks:
+      - gpu_traefik
+    shm_size: 1g
+    ulimits:
+      memlock: -1
+    environment:
+      CONFIG_TYPE: "gpu_liso_1"
+    restart: always
+    volumes:
+      - ./.env:/app/.env
+      - ./models:/app/models
+      - ./config.yml:/app/config.yml
+    logging:
+      driver: gelf
+      options:
+         gelf-address: "udp://${GELF_IP:-gelf.reputacion.digital}:${GELF_PORT:-12202}"
+         tag: ${GELF_TAG}
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              device_ids: ["2", "3"]
+              capabilities: [gpu]
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.liso.rule=PathPrefix(`/llm/summary`) || PathPrefix(`/topics`)"
+      - "traefik.http.routers.liso.entrypoints=web"
+      - "traefik.http.services.liso.loadbalancer.server.port=8002"
+  gpu_liso_2:
+    image: registry.reputacion.digital/gpu_reports:${IMAGE_VERSION}
+    container_name: gpu_liso_2
+    networks:
+      - gpu_traefik
+    shm_size: 1g
+    ulimits:
+      memlock: -1
+    environment:
+      CONFIG_TYPE: "gpu_liso_2"
+    restart: always
+    volumes:
+      - ./.env:/app/.env
+      - ./models:/app/models
+      - ./config.yml:/app/config.yml
+    logging:
+      driver: gelf
+      options:
+         gelf-address: "udp://${GELF_IP:-gelf.reputacion.digital}:${GELF_PORT:-12202}"
+         tag: ${GELF_TAG}
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              device_ids: ["4"]
+              capabilities: [gpu]
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.liso.rule=PathPrefix(`/llm/summary`) || PathPrefix(`/topics`)"
+      - "traefik.http.routers.liso.entrypoints=web"
+      - "traefik.http.services.liso.loadbalancer.server.port=8002"
+
+networks:
+  gpu_traefik:
+    driver: bridge

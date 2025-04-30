@@ -1,8 +1,9 @@
 import os
 from api.config.secrets import settings as s
+from api.config.settings import node_config
 
 #os.environ["VLLM_WORKER_MULTIPROC_METHOD"] = s.VLLM_WORKER_MULTIPROC_METHOD
-tracing_endpoint = f"http://{s.TRACING_URL}:{s.TRACING_PORT}"
+tracing_endpoint = f"http://{node_config["tracing_params"]["tracing_url"]}:{node_config["tracing_params"]["tracing_port"]}"
 os.environ["PHOENIX_COLLECTOR_ENDPOINT"] = tracing_endpoint
 from opentelemetry import trace
 from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
@@ -11,7 +12,7 @@ from phoenix.otel import register
 # If the provider it is not registered before imports, the @tracer.chain decorator gives an error
 # because its checks for the default tracer from opentelemetry
 # is this the correct way of doing this?
-tracer_provider = register(protocol=s.TRACING_PROTOCOL, project_name=s.TRACING_PROJECT_NAME, batch=s.TRACING_BATCH_PROCESSOR)
+tracer_provider = register(protocol=node_config["tracing_params"]["tracing_protocol"], project_name=node_config["tracing_params"]["tracing_project_name"], batch=s.TRACING_BATCH_PROCESSOR)
 trace.set_tracer_provider(tracer_provider)
 
 from fastapi import FastAPI
@@ -34,13 +35,13 @@ description = """# API overview
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # check if model exists and download it
-    minio_client.update_model_folder(model_name=s.MODEL_NAME, bucket=s.MINIO_BUCKET)
+    minio_client.update_model_folder(model_name=node_config["llm_model_name"], bucket=s.MINIO_BUCKET)
     # initialize llm client
-    MODEL_PATH = f"models/{s.MODEL_NAME}"
+    MODEL_PATH = f"models/{node_config["llm_model_name"]}"
     app.state.llm_service = initilialize_llm_client(model_path=MODEL_PATH)
 
     #REVISAR LA CARGA DEL MODELO. OBJETIVO: QUE SE CARGUE Y SE DESCARGUE
-    minio_client.update_model_folder(model_name=s.EMBEDDING_MODEL_NAME, bucket=s.MINIO_BUCKET)
+    minio_client.update_model_folder(model_name=node_config["embedding_model_name"], bucket=s.MINIO_BUCKET)
     #MODEL_PATH_EMBEDDINGS = f"models/{s.EMBEDDING_MODEL_NAME}"
     #app.state.embedding_service = initialize_embedding_client(model_path=MODEL_PATH_EMBEDDINGS)
 

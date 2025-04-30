@@ -1,7 +1,8 @@
 from vllm import LLM, SamplingParams
 from api.config.logger import logger
 from typing import Optional, Dict, List
-from api.config.secrets import settings as s
+# from api.config.secrets import settings as s
+from api.config.settings import node_config
 from openinference.semconv.trace import SpanAttributes, OpenInferenceSpanKindValues, MessageAttributes
 from opentelemetry.trace import Status, StatusCode
 from opentelemetry import trace
@@ -16,17 +17,17 @@ class LLMService:
     def __init__(self, model_path: str) -> None:
         self.llm = LLM(
             model=model_path, 
-            tensor_parallel_size=s.VLLM_TENSOR_PARALLEL_SIZE,
-            pipeline_parallel_size=s.VLLM_PIPELINE_PARALLEL_SIZE,
-            quantization=s.VLLM_QUANTIZATION, 
-            enforce_eager=s.VLLM_ENFORCE_EAGER, 
-            max_seq_len_to_capture=s.VLLM_MAX_SEQ_LEN_TO_CAPTURE, 
-            disable_custom_all_reduce=s.VLLM_DISABLE_CUSTOM_ALL_REDUCE, 
-            gpu_memory_utilization=s.VLLM_MEMORY_UTILIZATION,
-            max_model_len=s.VLLM_MAX_MODEL_LEN,
-            max_num_batched_tokens=s.VLLM_MAX_NUM_BATCHED_TOKENS,
-            max_num_seqs=s.VLLM_MAX_NUM_SEQS,
-            enable_chunked_prefill=s.VLLM_ENABLE_CHUNKED_PREFILL
+            tensor_parallel_size=node_config["vllm_params"]["tensor_parallel_size"],
+            pipeline_parallel_size=node_config["vllm_params"]["pipeline_parallel_size"],
+            quantization=node_config["vllm_params"]["quantization"], 
+            enforce_eager=node_config["vllm_params"]["enforce_eager"], 
+            max_seq_len_to_capture=node_config["vllm_params"]["max_seq_len_to_capture"], 
+            disable_custom_all_reduce=node_config["vllm_params"]["disable_custom_all_reduce"], 
+            gpu_memory_utilization=node_config["vllm_params"]["gpu_memory_utilization"],
+            max_model_len=node_config["vllm_params"]["max_model_len"],
+            max_num_batched_tokens=node_config["vllm_params"]["max_num_batched_tokens"],
+            max_num_seqs=node_config["vllm_params"]["max_num_seqs"],
+            enable_chunked_prefill=node_config["vllm_params"]["enable_chunked_prefill"]
         )
 
     async def generate_text(
@@ -62,7 +63,7 @@ class LLMService:
             # Create a span for the entire LLM request
             with tracer.start_as_current_span("LLM Call", attributes={
                 SpanAttributes.OPENINFERENCE_SPAN_KIND: OpenInferenceSpanKindValues.LLM.value,
-                SpanAttributes.LLM_MODEL_NAME: s.MODEL_NAME,
+                SpanAttributes.LLM_MODEL_NAME: node_config["llm_model_name"],
                 SpanAttributes.LLM_SYSTEM: "vllm",
                 SpanAttributes.LLM_PROVIDER: "self_hosted"
             }) as span:

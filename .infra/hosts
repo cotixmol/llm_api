@@ -1,0 +1,5 @@
+[dev]
+"{{ batman.ip }}" ansible_connection=ssh ansible_ssh_user="{{ batman.user }}" ansible_ssh_pass="{{ batman.pswd }}"
+
+[prod]
+"{{ skynet.ip }}" ansible_connection=ssh ansible_ssh_user="{{ skynet.user }}" ansible_ssh_pass="{{ skynet.pswd }}"
