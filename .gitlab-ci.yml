@@ -17,9 +17,9 @@ build-worker:
     - |
       source VERSION
       if [[ "$CI_COMMIT_BRANCH" == "main" ]]; then
-        tag=":$VERSION"
+        tag="$VERSION"
       else
-        tag=":$CI_COMMIT_REF_SLUG$VERSION"
+        tag="$CI_COMMIT_REF_SLUG$VERSION"
       fi
     - echo "Running on branch '$CI_COMMIT_BRANCH' -- tag = '$tag'"
     - echo "CI_REGISTRY_IMAGE = $CI_REGISTRY_IMAGE"
