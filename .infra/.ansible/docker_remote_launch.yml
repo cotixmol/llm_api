@@ -15,7 +15,7 @@
   
     - name: Creates project directory
       file:
-        path: /opt/deploy/{{ folder_name }}
+        path: /opt/deploy/{{ folder_name }}/{{ item }}
         state: directory
       loop:
         - "models"
@@ -24,7 +24,7 @@
       block:
       - name: copy_file_docker-compose
         ansible.builtin.copy:
-          src: ../docker-compose.yml
+          src: ../../docker-compose.yml
           dest: /opt/deploy/{{ folder_name }}/docker-compose.yml
           owner: ansible_data_science
           group: deploy
@@ -32,7 +32,7 @@
 
       - name: copy_file_env
         ansible.builtin.copy:
-          src: ../.env
+          src: ../../.env
           dest: /opt/deploy/{{ folder_name }}/.env
           owner: ansible_data_science
           group: deploy
@@ -40,7 +40,7 @@
       
       - name: copy_file_config
         ansible.builtin.copy:
-          src: ../config.yml
+          src: ../../config.yml
           dest: /opt/deploy/{{ folder_name }}/config.yml
           owner: ansible_data_science
           group: deploy
