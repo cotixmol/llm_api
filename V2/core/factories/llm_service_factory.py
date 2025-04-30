@@ -1,13 +1,12 @@
 from V2.core.services.llm_service.vllm_service import VLLMService
 from api.config.secrets import settings
+from fastapi import Request
 from vllm import LLM
 import torch
 
-
-def build_vllm_service() -> VLLMService:
+def initialize_vllm_instance():
     vllm_instance = LLM(
-        model=settings.MODEL_NAME,
-        device=torch.device("cuda" if torch.cuda.is_available() else "cpu"),
+        model=f"models/{settings.MODEL_NAME}",
         tensor_parallel_size=settings.VLLM_TENSOR_PARALLEL_SIZE,
         pipeline_parallel_size=settings.VLLM_PIPELINE_PARALLEL_SIZE,
         quantization=settings.VLLM_QUANTIZATION,
@@ -20,4 +19,8 @@ def build_vllm_service() -> VLLMService:
         max_num_seqs=settings.VLLM_MAX_NUM_SEQS,
         enable_chunked_prefill=settings.VLLM_ENABLE_CHUNKED_PREFILL,
     )
-    return VLLMService(vllm_instance=vllm_instance)
+    return vllm_instance
+
+def build_vllm_service(request: Request) -> VLLMService:
+    llm_instance = request.app.state.llm_instance
+    return VLLMService(vllm_instance=llm_instance)

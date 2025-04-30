@@ -11,7 +11,7 @@ class VLLMException(Exception):
 class VLLMService:
     def __init__(self, vllm_instance: LLM) -> None:
         self.vllm_instance = vllm_instance
-        logger.info(f"[VLLM DEBUG] Model initialized. Instance type: {type(self.llm)}")
+        logger.info(f"[VLLM DEBUG] Model initialized. Instance type: {type(self.vllm_instance)}")
 
     async def generate_text(
         self,
@@ -36,15 +36,8 @@ class VLLMService:
             for idx, generation in enumerate(generations):
                 try:
                     text = generation.outputs[0].text
-                    total_prompt_time = (
-                        generation.metrics.finished_time
-                        - generation.metrics.arrival_time
-                    )
                     response["outputs"].append(
-                        {"text": text, "other_info": {"prompt_time": total_prompt_time}}
-                    )
-                    logger.debug(
-                        f"Generation {idx + 1}: produced text (prompt_time={total_prompt_time:.3f}s)."
+                        {"text": text}
                     )
                 except Exception as inner_error:
                     logger.error(
@@ -53,7 +46,7 @@ class VLLMService:
                     )
                     # Append an empty result so the response list maintains the same size as prompts.
                     response["outputs"].append(
-                        {"text": "", "other_info": {"prompt_time": None}}
+                        {"text": ""}
                     )
             return response
         except Exception as error:
