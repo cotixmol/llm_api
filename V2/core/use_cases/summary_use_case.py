@@ -12,4 +12,4 @@ class SummaryUseCase:
         self.summary_repository = summary_repository
 
     async def execute(self, request: ClassificationRequest) -> ClassificationResponse:
-        pass
+        docs = await self.summary_repository.fetch_documents_for_summary(request)
