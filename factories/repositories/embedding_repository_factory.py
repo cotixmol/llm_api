@@ -5,7 +5,7 @@ from api.config.settings import node_config
 from factories.services.embedding_client_factory import initialize_embedding_client
 
 def get_embedding_model_path() -> str:
-    return f"models/{node_config["embedding_model_name"]}"
+    return f"models/{node_config['embedding_model_name']}"
 
 def get_embedding_service(
     model_path: str = Depends(get_embedding_model_path)
