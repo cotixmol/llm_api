@@ -2,7 +2,7 @@ from typing import List, Dict, Optional
 import json
 from api.config.logger import logger
 from V2.core.services.llm_service.vllm_service import VLLMService
-from V2.api.dtos.classification_dto import BaseDocument
+from V2.api.dtos.common_dto import BaseDocument
 from V2.api.dtos.classification_dto import ClassificationRequest
 
 
@@ -167,7 +167,7 @@ class VLLMServiceRepositoryV2:
                 return {task_key: label}
 
         return {}
-    
+
     def execute_prompt(
         self,
         prompt: str,
@@ -188,5 +188,3 @@ class VLLMServiceRepositoryV2:
         except Exception as error:
             logger.error(f"Error executing prompt: {error}")
             raise VLLMServiceRepositoryV2(f"Error executing prompt: {error}")
-        
-        

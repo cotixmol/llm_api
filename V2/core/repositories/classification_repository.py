@@ -9,7 +9,7 @@ from V2.core.interfaces.services.document_search_service_repository_interface im
 from V2.core.interfaces.services.llm_service_repository_interface import (
     LLMServiceRepositoryInterface,
 )
-from V2.api.dtos.classification_dto import BaseDocument
+from V2.api.dtos.common_dto import BaseDocument
 
 
 class ClassificationRepository(ClassificationRepositoryInterface):

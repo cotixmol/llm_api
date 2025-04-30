@@ -1,10 +1,12 @@
 from abc import ABC, abstractmethod
 from V2.api.dtos.summary_dto import SummaryRequest
-from V2.api.dtos.classification_dto import BaseDocument
+from V2.api.dtos.common_dto import BaseDocument
 from typing import List
 
 
 class SummaryRepositoryInterface(ABC):
     @abstractmethod
-    def fetch_documents(self, request: SummaryRequest) -> List[dict]:
+    def fetch_documents_for_summary(
+        self, request: SummaryRequest
+    ) -> List[BaseDocument]:
         pass

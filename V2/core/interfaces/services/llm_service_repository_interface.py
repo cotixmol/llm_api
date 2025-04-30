@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 from typing import List, Dict, Any
 from V2.api.dtos.classification_dto import ClassificationRequest
-from V2.api.dtos.classification_dto import BaseDocument
+from V2.api.dtos.common_dto import BaseDocument
 
 
 class LLMServiceRepositoryInterface(ABC):
