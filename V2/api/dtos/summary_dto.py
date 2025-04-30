@@ -1,27 +1,10 @@
 from typing import Dict, Any, Optional, List
 from pydantic import BaseModel
+from V2.api.dtos.common_dto import Filters
 
 
 class SummaryResponse(BaseModel):
     response: Dict[str, Any]
-
-
-class Filters(BaseModel):
-    fields: Optional[List[str]] = [
-        "_id",
-        "created_at",
-        "category",
-        "content_type",
-        "author",
-        "content",
-        "source",
-    ]
-    category: Optional[List[str]] = []
-    lang: Optional[List[str]] = None
-    words: Optional[List[str]] = None
-    not_words: Optional[List[str]] = None
-    sentiment: Optional[List[str]] = None
-    emotion: Optional[List[str]] = None
 
 
 class SummaryRequest(BaseModel):
