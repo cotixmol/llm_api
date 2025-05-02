@@ -2,22 +2,22 @@ gpu_full_1:
   llm_model_name: "generic-generation-llama3.2_3B_Instruct-v1"
   embedding_model_name: "generic-embedding-paraphrase_multilingual_MiniLM_L12_v2-v1"
   vllm_params:
-    worker_multiproc:method: fork
-    tensor_parallel: 1
-    pipeline_perallel_size: 1
-    quantization: null
+    worker_multiproc:method: spawn
+    tensor_parallel_size: 1
+    pipeline_parallel_size: 1
+    quantization: fp8
     enforce_eager: False
     max_seq_len_to_capture: 8192
     disable_custom_all_reduce: False
-    memory_utilization: 1.0
-    max_model_len: 4000
-    max_num_batched_tokens: 200000
-    max_num_seqs: 1
+    gpu_memory_utilization: 0.8
+    max_model_len: 5000
+    max_num_batched_tokens: 50000
+    max_num_seqs: 10
     enable_chunked_prefill: False
   tracing_params:
     log_level: info
     tracing_project_name: gpu_reports_dev
-    tracing_url: 0.0.0.0
+    tracing_url: mazinger
     tracing_port: 4317
     tracing_protocol: grpc
     tracing_batch_proccesor: False
