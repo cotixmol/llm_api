@@ -1,9 +1,11 @@
 from typing import List, Dict, Optional
 import json
+import re
 from api.config.logger import logger
 from V2.core.services.llm_service.vllm_service import VLLMService
 from V2.api.dtos.common_dto import BaseDocument
 from V2.api.dtos.classification_dto import ClassificationRequest
+from V2.api.dtos.summary_dto import SummaryRequest
 
 
 class VLLMServiceRepositoryV2:
@@ -188,3 +190,157 @@ class VLLMServiceRepositoryV2:
         except Exception as error:
             logger.error(f"Error executing prompt: {error}")
             raise VLLMServiceRepositoryV2(f"Error executing prompt: {error}")
+
+    # ────────────────────────────────────────────────────────────────
+    # PUBLIC API – called from SummaryRepository
+    # ────────────────────────────────────────────────────────────────
+
+    async def generate_summary(  # NEW PUBLIC METHOD
+        self,
+        documents: List[BaseDocument],
+        request: SummaryRequest,
+    ) -> Dict[str, str]:
+        """
+        Route the request to the correct summary strategy:
+         • category‑based   (request.summary_field)
+         • query‑focused    (request.query)
+         • generic summary  (fallback)
+        """
+        if request.summary_field:
+            return await self._summary_by_category(documents, request)
+        if request.query:
+            return await self._summary_by_query(documents, request)
+        return await self._summary_generic(documents, request)
+
+    # ────────────────────────────────────────────────────────────────
+    # 1. CATEGORY SUMMARY  (equiv. to V1 apply_prompt_categories_summary)
+    # ────────────────────────────────────────────────────────────────
+
+    async def _summary_by_category(
+        self,
+        documents: List[BaseDocument],
+        request: SummaryRequest,
+    ) -> Dict[str, str]:
+        cat_docs: Dict[str, List[str]] = defaultdict(list)
+        for doc in documents:
+            category = getattr(doc, request.summary_field, None)
+            if category and doc.content:
+                if len(cat_docs[category]) < 50:  # keep top‑50 per cat
+                    cat_docs[category].append(doc.content.strip())
+
+        pending = list(cat_docs.keys())
+        summaries: Dict[str, str] = {}
+        MAX_ATTEMPT = 5
+        attempt = 0
+        while pending and attempt < MAX_ATTEMPT:
+            prompts = []
+            for cat in pending:
+                prompts.append(
+                    [
+                        {"role": "system", "content": request.prompt["system"]},
+                        {
+                            "role": "user",
+                            "content": request.prompt["user"].format(
+                                category=cat,
+                                contents=cat_docs[cat],
+                                summary_field=request.summary_field,
+                            ),
+                        },
+                    ]
+                )
+            resp = await self.llm_service.generate_text(
+                prompts, max_new_tokens=5000, batch_size=request.batch_size
+            )
+            for block in resp["outputs"]:
+                parsed = self._parse_summary_response(block["text"])
+                if parsed:
+                    summaries.update(parsed)
+            pending = [
+                c for c in pending if c.lower() not in map(str.lower, summaries.keys())
+            ]
+            attempt += 1
+        return summaries
+
+    # ────────────────────────────────────────────────────────────────
+    # 2. QUERY SUMMARY  (equiv. to V1 apply_prompt_query_summary)
+    # ────────────────────────────────────────────────────────────────
+
+    async def _summary_by_query(
+        self,
+        documents: List[BaseDocument],
+        request: SummaryRequest,
+    ) -> Dict[str, str]:
+        contents = [d.content.strip() for d in documents if d.content]
+        prompt = [
+            {"role": "system", "content": request.prompt["system"]},
+            {
+                "role": "user",
+                "content": request.prompt["user"].format(
+                    contents=contents, query=request.query
+                ),
+            },
+        ]
+        resp = await self.llm_service.generate_text(prompt, max_new_tokens=5000)
+        return {"summary": resp["outputs"][0]["text"]}
+
+    # ────────────────────────────────────────────────────────────────
+    # 3. GENERIC SUMMARY  (equiv. to V1 apply_prompt_summary)
+    # ────────────────────────────────────────────────────────────────
+
+    async def _summary_generic(
+        self,
+        documents: List[BaseDocument],
+        request: SummaryRequest,
+    ) -> Dict[str, str]:
+        contents = [d.content.strip() for d in documents if d.content]
+        prompt = [
+            {"role": "system", "content": request.prompt["system"]},
+            {
+                "role": "user",
+                "content": request.prompt["user"].format(contents=contents),
+            },
+        ]
+        resp = await self.llm_service.generate_text(prompt, max_new_tokens=5000)
+        return {"summary": resp["outputs"][0]["text"]}
+
+    # ────────────────────────────────────────────────────────────────
+    # Helper – JSON extractor reused by the three strategies
+    # ────────────────────────────────────────────────────────────────
+
+    def _parse_summary_response(self, response_text: str) -> Optional[Dict[str, str]]:
+        """
+        Very robust extractor:
+        • finds the first {...} block that deserialises
+        • accepts both ```json fenced blocks and plain text
+        • tolerant to trailing commas / single quotes
+        """
+        try:
+            # 1) quickly try naïve slice
+            start, end = response_text.find("{"), response_text.rfind("}") + 1
+            if start != -1 and end != -1 and start < end:
+                data = json.loads(response_text[start:end])
+                return (
+                    {data["category"]: data["summary"]} if "category" in data else data
+                )
+        except Exception:
+            pass
+
+        # 2) clean md fences
+        cleaned = re.sub(r"```(?:json)?", "", response_text, flags=re.I).strip("` \n")
+        match = re.search(r"({.*})", cleaned, flags=re.S)
+        if not match:
+            return None
+        block = match.group(1)
+        for txt in (
+            block,
+            re.sub(r",\s*}", "}", block),
+        ):  # try with / w.o. trailing commas
+            try:
+                data = json.loads(txt.replace("'", '"'))
+                if isinstance(data, dict):
+                    if "category" in data and "summary" in data:
+                        return {data["category"]: data["summary"]}
+                    return data
+            except Exception:
+                continue
+        return None
