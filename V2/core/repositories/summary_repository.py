@@ -27,3 +27,6 @@ class SummaryRepository(SummaryRepositoryInterface):
         self, request: SummaryRequest
     ) -> List[BaseDocument]:
         return await self.document_search_service_repository.get_documents(request)
+
+    async def generate_summary(self, documents: List[BaseDocument]) -> Dict[str, str]:
+        return await self.llm_service_repository.generate_summary(documents)

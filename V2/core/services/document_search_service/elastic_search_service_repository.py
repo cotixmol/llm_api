@@ -56,11 +56,12 @@ class ElasticSearchServiceRepositoryV2(DocumentSearchServiceRepositoryInterface)
         self, request: Union[ClassificationRequest, SummaryRequest]
     ) -> ESQueryBuilder:
         """Translate a Request into a fully configured ESQueryBuilder."""
-        qb = ESQueryBuilder().set_date_range(request.since_date, request.to_date)
+
         # ────────────────────────  CLASSIFICATION  ─────────────────────── #
         if isinstance(request, ClassificationRequest):
             qb = (
-                qb.set_fields(request.filters.fields)
+                qb.set_date_range(request.since_date, request.to_date)
+                .set_fields(request.filters.fields)
                 .set_match_by_field(request.match_field)
                 .set_not_match_by_field(request.update_field)
                 .set_filters(request.filters.model_dump())
@@ -77,13 +78,15 @@ class ElasticSearchServiceRepositoryV2(DocumentSearchServiceRepositoryInterface)
 
             if request.filters is None:
                 raise ValueError("filters must be provided")
+
             fields = list(request.filters.fields)
-            for name in ("content", "interactions"):
-                if name not in fields:
-                    fields.append(name)
+            for value in ("content", "interactions"):
+                if value not in fields:
+                    fields.append(value)
 
             qb = (
-                qb.set_fields(fields)
+                qb.set_date_range(request.since_date, request.to_date)
+                .set_fields(fields)
                 .set_match_by_field(request.summary_field or "content")
                 .set_filters(request.filters.model_dump())
                 .set_sort("interactions", {"order": "desc", "unmapped_type": "long"})
