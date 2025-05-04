@@ -180,9 +180,10 @@ class VLLMServiceRepositoryV2:
         """
         Execute a prompt using the LLM service.
         """
+        prompt = [{"role": "user", "content": prompt}]
         try:
             return self.llm_service.generate_text(
-                prompts=[prompt],
+                prompts=prompt,
                 max_new_tokens=max_new_tokens,
                 temperature=temperature,
                 top_p=top_p,

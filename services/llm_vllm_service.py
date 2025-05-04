@@ -1,9 +1,9 @@
-import torch
 from vllm import LLM, SamplingParams
 from api.config.logger import logger
 from typing import Optional, Dict, List
 from api.config.secrets import settings as s
 import os
+import torch
 
 
 class LLMException(Exception):
@@ -13,10 +13,10 @@ class LLMException(Exception):
 class LLMService:
     def __init__(self, model_path: str) -> None:
         # maybe this torch call creates the need for setting the start method to spawn in VLLM envs
-        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        #self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.llm = LLM(
             model=model_path,
-            device=self.device,
+            #device=self.device,
             tensor_parallel_size=s.VLLM_TENSOR_PARALLEL_SIZE,
             pipeline_parallel_size=s.VLLM_PIPELINE_PARALLEL_SIZE,
             quantization=s.VLLM_QUANTIZATION,
@@ -28,9 +28,6 @@ class LLMService:
             max_num_batched_tokens=s.VLLM_MAX_NUM_BATCHED_TOKENS,
             max_num_seqs=s.VLLM_MAX_NUM_SEQS,
             enable_chunked_prefill=s.VLLM_ENABLE_CHUNKED_PREFILL,
-        )
-        logger.info(
-            f"[VLLM DEBUG] Modelo inicializado con vLLM en dispositivo: {self.device}. Clase: {type(self.llm)}"
         )
 
     async def generate_text(
