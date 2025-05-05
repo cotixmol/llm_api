@@ -26,8 +26,9 @@ pydantic-settings
 PyYAML==6.0.2
 
 #vllm
-bitsandbytes==0.45.3
 sentence-transformers==3.4.1
+bitsandbytes==0.45.3; sys_platform == "linux"
+bitsandbytes==0.42.0; sys_platform == "darwin"
 
 
 #embedding
