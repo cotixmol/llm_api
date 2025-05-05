@@ -24,8 +24,8 @@ from api.config.settings import VERSION
 from api.config.settings import minio_client
 from contextlib import asynccontextmanager
 from factories.services.embedding_client_factory import initialize_embedding_client
-
-from V2.core.factories.llm_service_factory import initialize_vllm_instance
+from V2.core.factories.llm.vllm_instance_factory import initialize_vllm_instance
+from V2.core.factories.llm.fake_llm_instance_factory import initialize_fake_llm_instance
 from V2.api.routers.prompt_router import prompt_router_V2
 from V2.api.routers.classification_router import classification_router_V2
 
@@ -40,7 +40,7 @@ async def lifespan(app: FastAPI):
     minio_client.update_model_folder(
         model_name=node_config["llm_model_name"], bucket=secrets.MINIO_BUCKET
     )
-    app.state.llm_instance = initialize_vllm_instance()
+    app.state.llm_instance = initialize_fake_llm_instance()
     yield
 
 

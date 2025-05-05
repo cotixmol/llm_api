@@ -33,4 +33,4 @@ class PromptUseCase:
             )
         )
 
-        return PromptResponse(messages_list)
+        return PromptResponse(messages_list=messages_list)

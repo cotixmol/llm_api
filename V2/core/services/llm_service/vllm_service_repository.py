@@ -171,7 +171,7 @@ class VLLMServiceRepositoryV2:
 
         return {}
 
-    def execute_prompt(
+    async def execute_prompt(
         self,
         messages_list: str,
         max_tokens: Optional[int] = 1000,
@@ -182,7 +182,7 @@ class VLLMServiceRepositoryV2:
         Execute a prompt using the LLM service.
         """
         try:
-            generation = self.llm_service.generate_text(
+            generation = await self.llm_service.generate_text(
                 requests=messages_list,
                 max_tokens=max_tokens,
                 temperature=temperature,

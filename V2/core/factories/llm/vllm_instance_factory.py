@@ -1,5 +1,4 @@
 from V2.core.services.llm_service.vllm_service import VLLMService
-from V2.api.config.secrets import secrets
 from V2.api.config.settings import node_config
 from fastapi import Request
 from vllm import LLM
@@ -26,8 +25,3 @@ def initialize_vllm_instance():
     )
 
     return vllm_instance
-
-
-def build_vllm_service(request: Request) -> VLLMService:
-    llm_instance = request.app.state.llm_instance
-    return VLLMService(vllm_instance=llm_instance)

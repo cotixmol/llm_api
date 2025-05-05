@@ -20,7 +20,6 @@ FROM base AS gpu_reports
 
 COPY ./requirements.txt ./requirements.txt 
 RUN pip install -r requirements.txt
-RUN pip install --upgrade pynvml==12.0.0
 RUN rm requirements.txt
 
 # Update package list and install build-essential (includes gcc, g++, make, etc.)

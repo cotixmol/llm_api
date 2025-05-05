@@ -5,7 +5,7 @@ from V2.core.services.document_search_service.elastic_search_service_repository 
 from V2.core.services.llm_service.vllm_service_repository import VLLMServiceRepositoryV2
 from V2.core.repositories.classification_repository import ClassificationRepository
 from V2.core.factories.elastic_search_service_factory import build_es_service
-from V2.core.factories.llm_service_factory import (
+from V2.core.factories.llm.llm_service_factory import (
     build_vllm_service,
 )
 
