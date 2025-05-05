@@ -15,18 +15,19 @@ class PromptRepository(PromptRepositoryInterface):
         """
         self.llm_service_repository = llm_service_repository
 
-    async def execute_prompt(
-        self, request: PromptRequest
-    ) -> List[str]:
+    async def execute_prompt(self, request: PromptRequest) -> List[str]:
         """
         Executes a prompt request by delegating to the LLM service repository.
         """
 
-        messages_list = [{"role": message.role, "content": message.content} for message in request.messages_list]
+        messages_list = [
+            {"role": message.role, "content": message.content}
+            for message in request.messages_list
+        ]
         response = await self.llm_service_repository.execute_prompt(
             messages_list=messages_list,
             temperature=request.temperature,
             top_p=request.top_p,
             max_tokens=request.max_tokens,
-            )
+        )
         return response

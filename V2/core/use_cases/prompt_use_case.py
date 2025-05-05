@@ -18,20 +18,19 @@ class PromptUseCase:
         Executes the prompt request by delegating to the repository.
         """
         try:
-            prompt_result = await self.prompt_repository.execute_prompt(request)
+            result = await self.prompt_repository.execute_prompt(request)
         except Exception as e:
             raise ValueError(f"Failed to execute prompt: {str(e)}")
-        print(f"[DEBUG] Prompt result: {prompt_result}")
+        print(f"[DEBUG] Prompt result: {result}")
 
-        #append response to previous messages
+        # append response to previous messages
         messages_list = request.messages_list
+
         messages_list.append(
             PromptMessageItem(
                 role="assistant",
-                content=prompt_result[0],
+                content=result[0],
             )
         )
 
-        return PromptResponse(
-            messages_list=messages_list,
-        )
+        return PromptResponse(messages_list)

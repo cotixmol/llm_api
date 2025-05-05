@@ -14,14 +14,10 @@ from V2.core.interfaces.repositories.prompt_repository_interface import (
 prompt_router_V2 = APIRouter()
 
 
-@prompt_router_V2.post(
-    "/prompt", response_model=PromptResponse
-)
+@prompt_router_V2.post("/prompt", response_model=PromptResponse)
 async def prompt_endpoint(
     request: PromptRequest,
-    prompt_repository: PromptRepositoryInterface = Depends(
-        build_prompt_repository
-    ),
+    prompt_repository: PromptRepositoryInterface = Depends(build_prompt_repository),
 ) -> PromptResponse:
     try:
         use_case = PromptUseCase(prompt_repository)

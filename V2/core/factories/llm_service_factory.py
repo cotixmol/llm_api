@@ -4,6 +4,7 @@ from fastapi import Request
 from vllm import LLM
 import torch
 
+
 def initialize_vllm_instance():
     vllm_instance = LLM(
         model=f"models/{settings.MODEL_NAME}",
@@ -20,6 +21,7 @@ def initialize_vllm_instance():
         enable_chunked_prefill=settings.VLLM_ENABLE_CHUNKED_PREFILL,
     )
     return vllm_instance
+
 
 def build_vllm_service(request: Request) -> VLLMService:
     llm_instance = request.app.state.llm_instance

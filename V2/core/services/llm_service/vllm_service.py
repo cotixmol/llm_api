@@ -57,7 +57,9 @@ class VLLMService:
                         exc_info=True,
                     )
                     response["outputs"].append({"text": ""})
+
             return response
+
         except Exception as error:
             logger.error(f"Error generating text: {error}")
             raise VLLMException(f"Error generating text: {error}")
