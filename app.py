@@ -1,12 +1,11 @@
 import os
-from api.config.secrets import settings as s
-from api.config.settings import node_config
+from V2.api.config.secrets import secrets
+from V2.api.config.settings import node_config
 
 # os.environ["VLLM_WORKER_MULTIPROC_METHOD"] = s.VLLM_WORKER_MULTIPROC_METHOD
 tracing_endpoint = f"http://{node_config['tracing_params']['tracing_url']}:{node_config['tracing_params']['tracing_port']}"
 os.environ["PHOENIX_COLLECTOR_ENDPOINT"] = tracing_endpoint
 from opentelemetry import trace
-from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
 from phoenix.otel import register
 
 # If the provider it is not registered before imports, the @tracer.chain decorator gives an error
@@ -38,7 +37,9 @@ description = """# API overview
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Startup event
-    minio_client.update_model_folder(model_name=s.MODEL_NAME, bucket=s.MINIO_BUCKET)
+    minio_client.update_model_folder(
+        model_name=node_config["llm_model_name"], bucket=secrets.MINIO_BUCKET
+    )
     app.state.llm_instance = initialize_vllm_instance()
     yield
 

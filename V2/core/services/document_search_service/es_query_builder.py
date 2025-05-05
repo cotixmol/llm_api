@@ -1,6 +1,6 @@
 from typing import Dict, List, Any, Optional, Callable
 import iso8601
-from api.config.logger import logger
+from V2.api.config.logger import logger
 
 
 class ESQueryBuilder:

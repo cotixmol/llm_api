@@ -2,7 +2,7 @@ from typing import List, Dict, Optional
 import json
 from collections import defaultdict
 import re
-from api.config.logger import logger
+from V2.api.config.logger import logger
 from V2.core.services.llm_service.vllm_service import VLLMService
 from V2.api.dtos.common_dto import BaseDocument
 from V2.api.dtos.classification_dto import ClassificationRequest

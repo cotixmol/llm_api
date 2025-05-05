@@ -1,5 +1,6 @@
 from V2.core.services.llm_service.vllm_service import VLLMService
-from api.config.secrets import settings
+from V2.api.config.secrets import secrets
+from V2.api.config.settings import node_config
 from fastapi import Request
 from vllm import LLM
 import torch
@@ -7,19 +8,23 @@ import torch
 
 def initialize_vllm_instance():
     vllm_instance = LLM(
-        model=f"models/{settings.MODEL_NAME}",
-        tensor_parallel_size=settings.VLLM_TENSOR_PARALLEL_SIZE,
-        pipeline_parallel_size=settings.VLLM_PIPELINE_PARALLEL_SIZE,
-        quantization=settings.VLLM_QUANTIZATION,
-        enforce_eager=settings.VLLM_ENFORCE_EAGER,
-        max_seq_len_to_capture=settings.VLLM_MAX_SEQ_LEN_TO_CAPTURE,
-        disable_custom_all_reduce=settings.VLLM_DISABLE_CUSTOM_ALL_REDUCE,
-        gpu_memory_utilization=settings.VLLM_MEMORY_UTILIZATION,
-        max_model_len=settings.VLLM_MAX_MODEL_LEN,
-        max_num_batched_tokens=settings.VLLM_MAX_NUM_BATCHED_TOKENS,
-        max_num_seqs=settings.VLLM_MAX_NUM_SEQS,
-        enable_chunked_prefill=settings.VLLM_ENABLE_CHUNKED_PREFILL,
+        device=node_config["vllm_params"]["device"],
+        model=f"models/{node_config['llm_model_name']}",
+        tensor_parallel_size=node_config["vllm_params"]["tensor_parallel_size"],
+        pipeline_parallel_size=node_config["vllm_params"]["pipeline_parallel_size"],
+        quantization=node_config["vllm_params"]["quantization"],
+        enforce_eager=node_config["vllm_params"]["enforce_eager"],
+        max_seq_len_to_capture=node_config["vllm_params"]["max_seq_len_to_capture"],
+        disable_custom_all_reduce=node_config["vllm_params"][
+            "disable_custom_all_reduce"
+        ],
+        gpu_memory_utilization=node_config["vllm_params"]["gpu_memory_utilization"],
+        max_model_len=node_config["vllm_params"]["max_model_len"],
+        max_num_batched_tokens=node_config["vllm_params"]["max_num_batched_tokens"],
+        max_num_seqs=node_config["vllm_params"]["max_num_seqs"],
+        enable_chunked_prefill=node_config["vllm_params"]["enable_chunked_prefill"],
     )
+
     return vllm_instance
 
 

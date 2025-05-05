@@ -1,7 +1,6 @@
 from vllm import SamplingParams, LLM
 from api.config.logger import logger
-from typing import Optional, Dict, List
-from api.config.secrets import settings as s
+from typing import Dict, List
 
 
 class VLLMException(Exception):

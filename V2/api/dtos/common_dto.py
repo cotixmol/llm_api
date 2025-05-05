@@ -1,5 +1,5 @@
 # V2/api/dtos/common.py  (new tiny file – just a model, not a new repo function)
-from typing import List, Optional
+from typing import List, Optional, Any, Dict
 from pydantic import BaseModel
 
 
