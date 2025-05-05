@@ -11,7 +11,9 @@ class VLLMException(Exception):
 class VLLMService:
     def __init__(self, vllm_instance: LLM) -> None:
         self.vllm_instance = vllm_instance
-        logger.info(f"[VLLM DEBUG] Model initialized. Instance type: {type(self.vllm_instance)}")
+        logger.info(
+            f"[VLLM DEBUG] Model initialized. Instance type: {type(self.vllm_instance)}"
+        )
 
     async def generate_text(
         self,
@@ -35,25 +37,26 @@ class VLLMService:
                 temperature=temperature, top_p=top_p, max_tokens=max_tokens
             )
             logger.info(
-                f"Generating text for {len(requests)} requests with sampling parameters: "
+                f"Generating text for {len(requests)} prompts with sampling parameters: "
                 f"temperature={temperature}, top_p={top_p}, max_tokens={max_tokens}"
             )
             generations = self.vllm_instance.chat(
                 requests, sampling_params=sampling_params
             )
-            
-            def _extract_text_safe(generation, idx):
+
+            response = {"outputs": [], "general_info": {}}  # GENERAL INFO IS EMPTY
+            # Add general info to the response base on settings in the future
+
+            for idx, generation in enumerate(generations):
                 try:
-                    return generation.outputs[0].text
+                    text = generation.outputs[0].text
+                    response["outputs"].append({"text": text})
                 except Exception as inner_error:
                     logger.error(
                         f"Error processing generation {idx + 1}: {inner_error}",
                         exc_info=True,
                     )
-                    return "" # Return empty string on error
-
-            response = [_extract_text_safe(gen, idx) for idx, gen in enumerate(generations)]
-
+                    response["outputs"].append({"text": ""})
             return response
         except Exception as error:
             logger.error(f"Error generating text: {error}")

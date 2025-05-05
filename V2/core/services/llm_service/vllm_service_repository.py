@@ -182,12 +182,26 @@ class VLLMServiceRepositoryV2:
         Execute a prompt using the LLM service.
         """
         try:
-            return self.llm_service.generate_text(
+            generation = self.llm_service.generate_text(
                 requests=messages_list,
                 max_tokens=max_tokens,
                 temperature=temperature,
                 top_p=top_p,
             )
+
+            response = []
+            for block in generation["outputs"]:
+                try:
+                    text = block["text"]
+                    response.append(text)
+                except Exception as inner_error:
+                    logger.error(
+                        f"Error processing generation: {inner_error}",
+                        exc_info=True,
+                    )
+                    response.append("")
+            return response
+
         except Exception as error:
             logger.error(f"Error executing prompt: {error}")
             raise VLLMServiceRepositoryV2(f"Error executing prompt: {error}")
