@@ -1,15 +1,8 @@
 from vllm import SamplingParams, LLM
 from V2.api.config.logger import logger
-from V2.api.config.settings import node_config
 from V2.api.dtos.prompt_dto import PromptMessageItem
 from V2.core.services.llm_service.vllm_tracing import trace_llm_call, trace_llm_prompt
-from typing import Dict, List
-from openinference.semconv.trace import (
-    SpanAttributes,
-    OpenInferenceSpanKindValues,
-    MessageAttributes,
-)
-from opentelemetry.trace import Status, StatusCode
+from typing import List
 from opentelemetry import trace
 
 tracer = trace.get_tracer(__name__)
