@@ -2,7 +2,7 @@ import typing
 from fastapi import APIRouter, HTTPException, Depends
 from api.dtos.requests_dtos import TopicPreviewPayload
 from api.dtos.responses_dtos import BaseResponse
-from api.config.logger import logger
+from V2.api.config.logger import logger
 from core.repositories.elasticsearch_repository import ElasticsearchRepository
 from core.repositories.query_repository import Query
 from core.repositories.llm_repository import LLMRepository

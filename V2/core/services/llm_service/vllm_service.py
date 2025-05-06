@@ -1,6 +1,18 @@
 from vllm import SamplingParams, LLM
-from api.config.logger import logger
+from V2.api.config.logger import logger
+from V2.api.config.settings import node_config
+from V2.api.dtos.prompt_dto import PromptMessageItem
+from V2.core.services.llm_service.vllm_tracing import trace_llm_call, trace_llm_prompt
 from typing import Dict, List
+from openinference.semconv.trace import (
+    SpanAttributes,
+    OpenInferenceSpanKindValues,
+    MessageAttributes,
+)
+from opentelemetry.trace import Status, StatusCode
+from opentelemetry import trace
+
+tracer = trace.get_tracer(__name__)
 
 
 class VLLMException(Exception):
@@ -14,9 +26,10 @@ class VLLMService:
             f"[VLLM DEBUG] Model initialized. Instance type: {type(self.vllm_instance)}"
         )
 
+    @trace_llm_call
     async def generate_text(
         self,
-        requests: List[List[Dict[str, str]]],
+        requests: List[List[PromptMessageItem]],
         temperature: float = 0.0,
         top_p: float = 1.0,
         max_tokens: int = 40,
@@ -39,15 +52,18 @@ class VLLMService:
                 f"Generating text for {len(requests)} prompts with sampling parameters: "
                 f"temperature={temperature}, top_p={top_p}, max_tokens={max_tokens}"
             )
+
             generations = self.vllm_instance.chat(
                 requests, sampling_params=sampling_params
             )
-
-            response = {"outputs": [], "general_info": {}}  # GENERAL INFO IS EMPTY
-            # Add general info to the response base on settings in the future
-
-            for idx, generation in enumerate(generations):
+            
+            response = {"outputs": [], "general_info": {}}
+            
+            for idx, (generation, prompt_messages) in enumerate(zip(generations, requests)):
                 try:
+                    # Create span for this prompt
+                    trace_llm_prompt(generation, prompt_messages)
+                    # Add generated text to the response
                     text = generation.outputs[0].text
                     response["outputs"].append({"text": text})
                 except Exception as inner_error:

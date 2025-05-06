@@ -6,6 +6,7 @@ from V2.api.config.settings import node_config
 tracing_endpoint = f"http://{node_config['tracing_params']['tracing_url']}:{node_config['tracing_params']['tracing_port']}"
 os.environ["PHOENIX_COLLECTOR_ENDPOINT"] = tracing_endpoint
 from opentelemetry import trace
+from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
 from phoenix.otel import register
 
 # If the provider it is not registered before imports, the @tracer.chain decorator gives an error
@@ -57,13 +58,12 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# app.include_router(router=topic_router, prefix=('/topics'), tags=["Topics"])
-# app.include_router(router=llm_router, prefix=('/llm'), tags=["LLM"])
-
 app.include_router(router=prompt_router_V2, prefix=("/V2/llm"), tags=["LLM"])
 app.include_router(
     router=classification_router_V2, prefix=("/V2/classification"), tags=["LLM"]
 )
+
+FastAPIInstrumentor().instrument_app(app)
 
 if __name__ == "__main__":
     import uvicorn

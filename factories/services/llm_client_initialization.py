@@ -1,5 +1,5 @@
 from services.llm_vllm_service import LLMService
-from api.config.logger import logger
+from V2.api.config.logger import logger
 
 def initilialize_llm_client(model_path: str):
     try:

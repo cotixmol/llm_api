@@ -3,7 +3,7 @@ from pydantic import BaseModel
 from typing import List
 from core.cases.get_summary_response import GetSummaryResponseCase
 import json
-from api.config.logger import logger  
+from V2.api.config.logger import logger  
 
 
 

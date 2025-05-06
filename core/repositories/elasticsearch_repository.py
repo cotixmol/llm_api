@@ -1,7 +1,7 @@
 from core.objects.document import Document
 from services.elasticsearch_service import ElasticsearchService
 from core.repositories.query_repository import Query
-from api.config.logger import logger
+from V2.api.config.logger import logger
 import typing
 from collections import defaultdict
 from typing import List, Dict

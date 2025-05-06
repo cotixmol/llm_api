@@ -1,6 +1,6 @@
 from typing import List
 from services.embedding_service import EmbeddingService  # Asume que tienes un servicio para el modelo
-from api.config.logger import logger
+from V2.api.config.logger import logger
 
 
 class EmbeddingRepository:

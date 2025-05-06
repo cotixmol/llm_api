@@ -1,13 +1,9 @@
-from V2.core.services.llm_service.vllm_service import VLLMService
 from V2.api.config.settings import node_config
-from fastapi import Request
 from vllm import LLM
-import torch
 
 
 def initialize_vllm_instance():
     vllm_instance = LLM(
-        device=node_config["vllm_params"]["device"],
         model=f"models/{node_config['llm_model_name']}",
         tensor_parallel_size=node_config["vllm_params"]["tensor_parallel_size"],
         pipeline_parallel_size=node_config["vllm_params"]["pipeline_parallel_size"],

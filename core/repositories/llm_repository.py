@@ -4,7 +4,7 @@ import logging
 from services.llm_vllm_service import LLMService
 from core.objects.document import Document
 from typing import List, Dict
-from api.config.logger import logger
+from V2.api.config.logger import logger
 import json
 import re
 import logging

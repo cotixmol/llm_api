@@ -1,5 +1,5 @@
 from sentence_transformers import SentenceTransformer
-from api.config.logger import logger
+from V2.api.config.logger import logger
 
 class EmbeddingService:
     def __init__(self, model_name: str):

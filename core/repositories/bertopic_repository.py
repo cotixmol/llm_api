@@ -22,7 +22,7 @@ from core.objects.stackedline import StackedLine, StackedSerie
 from core.objects.document import ContentText, DocumentGroup
 from core.objects.pie import PieChart, PieSlice
 from core.objects.topic_info import TopicInfo
-from api.config.logger import logger
+from V2.api.config.logger import logger
 
 class BertopicRepositoryException(Exception):
     pass

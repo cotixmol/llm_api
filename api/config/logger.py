@@ -18,6 +18,7 @@ logger.error(f"some_debug_code: {s.MY_STR}" , extra= {"n_docs":23})
 }
 ```
 """
+"""
 import logging
 from pythonjsonlogger import jsonlogger
 from api.config.secrets import settings as s
@@ -42,3 +43,4 @@ class CustomJsonFormatter(jsonlogger.JsonFormatter):
 formatter = CustomJsonFormatter('%(level)s %(msg)s', timestamp=True)
 logHandler.setFormatter(formatter)
 logger.addHandler(logHandler)
+"""
