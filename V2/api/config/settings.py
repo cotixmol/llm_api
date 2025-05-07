@@ -1,6 +1,6 @@
 import yaml
 import os
-from services.minio_service import MinIOClient
+from V2.core.services.storage_service.minio_service import MinIOClient
 from V2.api.config.secrets import secrets
 
 VERSION = open("VERSION").read().strip()

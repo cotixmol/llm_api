@@ -20,8 +20,8 @@ trace.set_tracer_provider(tracer_provider)
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from api.config.settings import VERSION
-from api.config.settings import minio_client
+from V2.api.config.settings import VERSION
+from V2.api.config.settings import minio_client
 from contextlib import asynccontextmanager
 from factories.services.embedding_client_factory import initialize_embedding_client
 from V2.core.factories.llm.vllm_instance_factory import initialize_vllm_instance
@@ -40,7 +40,7 @@ async def lifespan(app: FastAPI):
     minio_client.update_model_folder(
         model_name=node_config["llm_model_name"], bucket=secrets.MINIO_BUCKET
     )
-    app.state.llm_instance = initialize_vllm_instance()
+    app.state.llm_instance = initialize_fake_llm_instance()
     yield
 
 
