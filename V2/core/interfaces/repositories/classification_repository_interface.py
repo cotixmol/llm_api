@@ -6,7 +6,9 @@ from typing import List, Dict
 
 class ClassificationRepositoryInterface(ABC):
     @abstractmethod
-    async def fetch_documents(self, request: ClassificationRequest) -> List[dict]:
+    async def fetch_documents_for_classification(
+        self, request: ClassificationRequest
+    ) -> List[dict]:
         pass
 
     @abstractmethod
@@ -16,7 +18,7 @@ class ClassificationRepositoryInterface(ABC):
         pass
 
     @abstractmethod
-    async def push_documents(
+    async def push_classified_documents(
         self,
         request: ClassificationRequest,
         documents: List[BaseDocument],

@@ -14,9 +14,7 @@ from V2.core.interfaces.repositories.classification_repository_interface import 
 classification_router_V2 = APIRouter()
 
 
-@classification_router_V2.post(
-    "V2/classification", response_model=ClassificationResponse
-)
+@classification_router_V2.post("/classification", response_model=ClassificationResponse)
 async def classification_endpoint(
     request: ClassificationRequest,
     classification_repository: ClassificationRepositoryInterface = Depends(

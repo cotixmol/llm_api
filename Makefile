@@ -1,4 +1,4 @@
-dev:
+run-local:
 	uvicorn app:app --reload --env-file .env --port 8002 --log-level debug
 
 docker-build-local:

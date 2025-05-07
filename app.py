@@ -62,9 +62,7 @@ app.add_middleware(
 # app.include_router(router=llm_router, prefix=('/llm'), tags=["LLM"])
 
 app.include_router(router=prompt_router_V2, prefix=("/V2/llm"), tags=["LLM"])
-app.include_router(
-    router=classification_router_V2, prefix=("/V2/classification"), tags=["LLM"]
-)
+app.include_router(router=classification_router_V2, prefix=("/V2/llm"), tags=["LLM"])
 
 if __name__ == "__main__":
     import uvicorn

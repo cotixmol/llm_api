@@ -12,13 +12,12 @@ from V2.core.factories.llm.llm_service_factory import (
 )
 
 
-def build_classification_repository():
-    es_service = Depends(build_es_service)
+def build_classification_repository(
+    es_service=Depends(build_es_service), llm_service=Depends(build_vllm_service)
+):
     document_search_service_repository = ElasticSearchServiceRepositoryV2(
         es_service=es_service
     )
-
-    llm_service = Depends(build_vllm_service)
     llm_service_repository = VLLMServiceRepositoryV2(llm_service=llm_service)
 
     return ClassificationRepository(

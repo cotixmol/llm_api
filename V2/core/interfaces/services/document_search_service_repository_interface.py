@@ -6,10 +6,6 @@ from V2.api.dtos.common_dto import BaseDocument
 
 class DocumentSearchServiceRepositoryInterface(ABC):
     @abstractmethod
-    def create_query(self, request: ClassificationRequest) -> dict:
-        pass
-
-    @abstractmethod
     async def get_documents(
         self, request: ClassificationRequest, docs: List[BaseDocument]
     ) -> List[Dict]:
