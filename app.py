@@ -1,12 +1,23 @@
 import os
+from contextlib import asynccontextmanager
+
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+from opentelemetry import trace
+from phoenix.otel import register
+
+from api.config.settings import VERSION, minio_client
+from factories.services.embedding_client_factory import initialize_embedding_client
 from V2.api.config.secrets import secrets
 from V2.api.config.settings import node_config
+from V2.api.routers.classification_router import classification_router_V2
+from V2.api.routers.prompt_router import prompt_router_V2
+from V2.core.factories.llm.fake_llm_instance_factory import initialize_fake_llm_instance
+from V2.core.factories.llm.vllm_instance_factory import initialize_vllm_instance
 
 # os.environ["VLLM_WORKER_MULTIPROC_METHOD"] = s.VLLM_WORKER_MULTIPROC_METHOD
 tracing_endpoint = f"http://{node_config['tracing_params']['tracing_url']}:{node_config['tracing_params']['tracing_port']}"
 os.environ["PHOENIX_COLLECTOR_ENDPOINT"] = tracing_endpoint
-from opentelemetry import trace
-from phoenix.otel import register
 
 # If the provider it is not registered before imports, the @tracer.chain decorator gives an error
 # because its checks for the default tracer from opentelemetry
@@ -18,16 +29,6 @@ tracer_provider = register(
 )
 trace.set_tracer_provider(tracer_provider)
 
-from fastapi import FastAPI
-from fastapi.middleware.cors import CORSMiddleware
-from V2.api.config.settings import VERSION
-from V2.api.config.settings import minio_client
-from contextlib import asynccontextmanager
-from factories.services.embedding_client_factory import initialize_embedding_client
-from V2.core.factories.llm.vllm_instance_factory import initialize_vllm_instance
-from V2.core.factories.llm.fake_llm_instance_factory import initialize_fake_llm_instance
-from V2.api.routers.prompt_router import prompt_router_V2
-from V2.api.routers.classification_router import classification_router_V2
 
 description = """# API overview
 > Reports and visualizations for RD APP.
