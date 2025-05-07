@@ -1,0 +1,16 @@
+version: "3.9"
+
+services:
+  fastapi:
+    image: gpu_reports:test          
+    build:
+      context: .
+      target: gpu_reports           
+    container_name: gpu_reports_debug
+    entrypoint: ["/app/.docker/entrypoint.debug.sh"]
+    volumes:
+      - .:/app                      
+    env_file: .env
+    ports:
+      - "8002:8002"                  
+      - "5678:5678"                 

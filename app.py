@@ -5,7 +5,6 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from opentelemetry import trace
 from phoenix.otel import register
-
 from api.config.settings import VERSION, minio_client
 from factories.services.embedding_client_factory import initialize_embedding_client
 from V2.api.config.secrets import secrets
