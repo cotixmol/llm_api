@@ -3,6 +3,7 @@ import json
 from collections import defaultdict
 import re
 from V2.api.config.logger import logger
+from V2.api.config.settings import node_config
 from V2.core.services.llm_service.vllm_service import VLLMService
 from V2.api.dtos.common_dto import BaseDocument
 from V2.api.dtos.classification_dto import ClassificationRequest
@@ -81,7 +82,14 @@ class VLLMServiceRepositoryV2:
          - Updates the predictions list.
          Returns an updated list of pending document indices.
         """
+
+        max_num_seqs = node_config["vllm_params"]["max_num_seqs"]
         batch_size = request.batch_size
+
+        logger.info(
+            f"Processing {len(pending_indexes)} documents in batches of size {batch_size}. VLLM's Generate text with max_num_seqs={max_num_seqs}."
+        )
+
         for i in range(0, len(pending_indexes), batch_size):
             batch_indexes = pending_indexes[i : i + batch_size]
             batch_prompts = self._build_batch_prompts(
@@ -165,6 +173,8 @@ class VLLMServiceRepositoryV2:
         except Exception as e:
             logger.warning(f"JSON parsing failed: {e}. Using substring matching.")
 
+        # TODO: Check that only one label is found
+        # and that it is not a substring of another label
         for label in valid_labels:
             if label.lower() in response_text.lower():
                 return {task_key: label}

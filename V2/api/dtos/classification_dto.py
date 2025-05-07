@@ -12,9 +12,7 @@ class ClassificationRequest(BaseModel):
     prompt: dict
     update_field: str
     task_key: str
-    # Discuss the origin of these in V1, as a possible request field
-    match_field: str
-    #####
+    match_field: Optional[str] = None
     valid_labels: List[str]
     max_ndocs: Optional[int] = 10000
     batch_size: Optional[int] = 50

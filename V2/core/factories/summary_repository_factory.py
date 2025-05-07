@@ -3,7 +3,7 @@ from V2.core.services.document_search_service.elastic_search_service_repository 
     ElasticSearchServiceRepositoryV2,
 )
 from V2.core.services.llm_service.vllm_service_repository import VLLMServiceRepositoryV2
-from V2.core.repositories.classification_repository import SummaryRepository
+from V2.core.repositories.summary_repository import SummaryRepository
 from V2.core.factories.elasticsearch.elastic_search_service_factory import (
     build_es_service,
 )

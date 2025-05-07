@@ -216,7 +216,7 @@ class ElasticSearchServiceRepositoryV2(DocumentSearchServiceRepositoryInterface)
 
     def __init__(self, es_service: ElasticsearchService):
         self._elastic_search_service = es_service
-        self._page_size = 1000  # Default page size for pagination
+        self._page_size = 10000  # Default page size for pagination
 
     # ───────────── GET DOCUMENTS ─────────────
     async def get_documents(
