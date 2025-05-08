@@ -143,6 +143,8 @@ class ESQueryBuilder:
 
         # 5) Filters using registry or fallback
         for key, value in self._filters.items():
+            if not value or key == "fields":
+                continue
             if key in self._filter_registry:
                 snippet = self._filter_registry[key](
                     value
