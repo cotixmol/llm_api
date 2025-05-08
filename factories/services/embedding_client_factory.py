@@ -1,5 +1,6 @@
 from services.embedding_service import EmbeddingService
-from api.config.logger import logger
+from V2.utils.logger import logger
+
 
 def initialize_embedding_client(model_path: str):
     try:

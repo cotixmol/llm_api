@@ -1,5 +1,5 @@
 from vllm import LLM, SamplingParams
-from api.config.logger import logger
+from V2.utils.logger import logger
 from typing import Optional, Dict, List
 
 # from api.config.secrets import settings as s

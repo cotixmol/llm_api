@@ -1,11 +1,12 @@
 from sentence_transformers import SentenceTransformer
-from api.config.logger import logger
+from V2.utils.logger import logger
+
 
 class EmbeddingService:
     def __init__(self, model_name: str):
         """
         Initialize the embedding model.
-        
+
         :param model_name: Name of the pre-trained model to use for embeddings.
         """
         self.model_name = model_name
@@ -14,19 +15,21 @@ class EmbeddingService:
     def _load_model(self):
         """
         Load the embedding model.
-        
+
         :return: Loaded SentenceTransformer model.
         """
         try:
             model = SentenceTransformer(self.model_name)
             return model
         except Exception as e:
-            raise RuntimeError(f"Failed to load embedding model '{self.model_name}': {e}")
+            raise RuntimeError(
+                f"Failed to load embedding model '{self.model_name}': {e}"
+            )
 
     async def get_embedding(self, text: str):
         """
         Generate embedding for a given text.
-        
+
         :param text: Input text to generate embedding for.
         :return: Embedding vector.
         """

@@ -1,5 +1,5 @@
 from typing import List
-from api.config.logger import logger
+from V2.utils.logger import logger
 from api.dtos.responses_dtos import LLMClassificationResponse
 from core.repositories.elasticsearch_repository import ElasticsearchRepository
 from core.repositories.query_repository import Query

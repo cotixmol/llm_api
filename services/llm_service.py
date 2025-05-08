@@ -1,6 +1,6 @@
 import torch
 from transformers import AutoModelForCausalLM, AutoTokenizer, pipeline
-from api.config.logger import logger
+from V2.utils.logger import logger
 from typing import Optional
 import gc
 

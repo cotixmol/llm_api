@@ -2,8 +2,9 @@ from typing import List, Dict, Optional
 import json
 from collections import defaultdict
 import re
-from V2.api.config.logger import logger
+from V2.utils.logger import logger
 from V2.api.config.settings import node_config
+from V2.api.dtos.prompt_dto import PromptMessageItem
 from V2.core.services.llm_service.vllm_service import VLLMService
 from V2.api.dtos.common_dto import BaseDocument
 from V2.api.dtos.classification_dto import ClassificationRequest
@@ -183,7 +184,7 @@ class VLLMServiceRepositoryV2:
 
     async def execute_prompt(
         self,
-        messages_list: str,
+        messages_list: List[PromptMessageItem],
         max_tokens: Optional[int] = 1000,
         temperature: Optional[float] = 0.0,
         top_p: Optional[float] = 1.0,
@@ -193,7 +194,7 @@ class VLLMServiceRepositoryV2:
         """
         try:
             generation = await self.llm_service.generate_text(
-                requests=messages_list,
+                requests=[messages_list],
                 max_tokens=max_tokens,
                 temperature=temperature,
                 top_p=top_p,

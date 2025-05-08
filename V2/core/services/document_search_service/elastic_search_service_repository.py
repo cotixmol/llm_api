@@ -11,7 +11,7 @@ from V2.api.dtos.summary_dto import SummaryRequest
 from V2.core.services.document_search_service.elastic_search_service import (
     ElasticsearchService,
 )
-from V2.api.config import logger
+from V2.utils import logger
 from V2.api.dtos.common_dto import BaseDocument
 
 
