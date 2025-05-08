@@ -2,6 +2,7 @@
 from typing import List, Optional, Any, Dict
 from pydantic import BaseModel
 
+
 class Filters(BaseModel):
     fields: Optional[List[str]] = [
         "_id",
