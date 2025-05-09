@@ -1,3 +1,4 @@
+import os
 from vllm import SamplingParams, LLM
 from V2.utils.logger import logger
 from V2.api.dtos.prompt_dto import PromptMessageItem
@@ -56,11 +57,10 @@ class VLLMService:
                 zip(generations, requests)
             ):
                 try:
-                    # Create span for this prompt
-                    trace_llm_prompt(generation, prompt_messages)
-                    # Add generated text to the response
-                    text = generation.outputs[0].text
-                    response["outputs"].append({"text": text})
+                    if os.getenv("ENVIRONMENT") != "local":
+                        trace_llm_prompt(generation, prompt_messages)
+
+                    response["outputs"].append({"text": generation.outputs[0].text})
                 except Exception as inner_error:
                     logger.error(
                         f"Error processing generation {idx + 1}: {inner_error}",

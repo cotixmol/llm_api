@@ -13,7 +13,7 @@ class ClassificationRepositoryInterface(ABC):
 
     @abstractmethod
     async def classify_documents(
-        self, request: ClassificationRequest, docs: List[Dict]
+        self, docs: List[Dict], request: ClassificationRequest
     ) -> List[dict]:
         pass
 

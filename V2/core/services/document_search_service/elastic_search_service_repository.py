@@ -11,7 +11,7 @@ from V2.api.dtos.summary_dto import SummaryRequest
 from V2.core.services.document_search_service.elastic_search_service import (
     ElasticsearchService,
 )
-from V2.utils import logger
+from V2.utils.logger import logger
 from V2.api.dtos.common_dto import BaseDocument
 
 
@@ -244,14 +244,14 @@ class ElasticSearchServiceRepositoryV2(DocumentSearchServiceRepositoryInterface)
         classification_list: List[Dict],
     ) -> None:
         actions = []
-        for doc, classification in zip(documents, classification_list):
+        for document, classification in zip(documents, classification_list):
             if classification.get(request.update_field) is None:
                 continue
             actions.append(
                 {
                     "_op_type": "update",
-                    "_index": doc.index,
-                    "_id": doc.id,
+                    "_index": document.index,
+                    "_id": document.id,
                     "doc": classification,
                 }
             )

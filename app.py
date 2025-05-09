@@ -5,23 +5,31 @@ from fastapi.middleware.cors import CORSMiddleware
 from opentelemetry import trace
 from phoenix.otel import register
 from api.config.settings import VERSION, minio_client
-from opentelemetry import trace
+from opentelemetry.trace import NoOpTracerProvider
 from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
 from phoenix.otel import register
+from V2.api.config.settings import node_config
 
 # If the provider it is not registered before imports, the @tracer.chain decorator gives an error
 # because its checks for the default tracer from opentelemetry
-tracing_endpoint = f"http://{node_config['tracing_params']['tracing_url']}:{node_config['tracing_params']['tracing_port']}"
-os.environ["PHOENIX_COLLECTOR_ENDPOINT"] = tracing_endpoint
-tracer_provider = register(
-    protocol=node_config["tracing_params"]["tracing_protocol"],
-    project_name=node_config["tracing_params"]["tracing_project_name"],
-    batch=node_config["tracing_params"]["tracing_batch_proccesor"],
-)
+
+
+if os.getenv("ENVIRONMENT") != "local":
+    tracing_endpoint = f"http://{node_config['tracing_params']['tracing_url']}:{node_config['tracing_params']['tracing_port']}"
+    os.environ["PHOENIX_COLLECTOR_ENDPOINT"] = tracing_endpoint
+    tracer_provider = register(
+        protocol=node_config["tracing_params"]["tracing_protocol"],
+        project_name=node_config["tracing_params"]["tracing_project_name"],
+        batch=node_config["tracing_params"]["tracing_batch_proccesor"],
+    )
+else:
+    # In local environment, we don't want to use the tracing provider
+    tracer_provider = NoOpTracerProvider()
+
+
 trace.set_tracer_provider(tracer_provider)
 
 from V2.api.config.secrets import secrets
-from V2.api.config.settings import node_config
 from V2.api.routers.classification_router import classification_router_V2
 from V2.api.routers.prompt_router import prompt_router_V2
 from V2.core.factories.llm.fake_llm_instance_factory import initialize_fake_llm_instance

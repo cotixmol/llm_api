@@ -17,8 +17,8 @@ class VLLMServiceRepositoryV2:
 
     async def classify_documents(
         self,
-        documents: List[BaseDocument],
         request: ClassificationRequest,
+        documents: List[BaseDocument],
     ) -> List[Dict]:
         """
         Refactored version of the classification method:
@@ -111,14 +111,16 @@ class VLLMServiceRepositoryV2:
                     generated_text = response.get("text", "")
                     logger.info(
                         f"Doc index {idx}: generated text: {generated_text} | "
-                        f"Prompt time: {response['other_info']['prompt_time']}"
+                        f"Prompt time: {response.get('other_info',{}).get('prompt_time', 0)}"
                     )
                     parsed = self._parse_model_response(
                         generated_text, request.valid_labels, request.task_key
                     )
                     if not isinstance(parsed, dict) or request.task_key not in parsed:
                         logger.warning(
-                            f"Unexpected response format for doc index {idx}: {parsed}"
+                            f"Unexpected response from _parse_model_response for document index {idx}. "
+                            f"Parsed result: {parsed}. Valid labels: {request.valid_labels}. "
+                            f"Generated text: {generated_text}. Please verify the response format and labels."
                         )
                         continue
                     predictions[idx] = parsed[
@@ -161,21 +163,18 @@ class VLLMServiceRepositoryV2:
         First, it tries to parse a JSON block and check for an exact match.
         If that fails, it searches for a valid label as a substring.
         """
-        try:
-            start = response_text.find("{")
-            end = response_text.rfind("}") + 1
-            if start != -1 and end != -1 and start < end:
-                data = json.loads(response_text[start:end])
-                for value in data.values():
-                    if isinstance(value, str):
-                        for label in valid_labels:
-                            if value.lower() == label.lower():
-                                return {task_key: label}
-        except Exception as e:
-            logger.warning(f"JSON parsing failed: {e}. Using substring matching.")
+        start = response_text.find("{")
+        end = response_text.rfind("}") + 1
+        if start != -1 and end != -1 and start < end:
+            data = json.loads(response_text[start:end])
+            for value in data.values():
+                if isinstance(value, str):
+                    for label in valid_labels:
+                        if value.lower() == label.lower():
+                            return {task_key: label}
 
         # TODO: Check that only one label is found
-        # and that it is not a substring of another label
+        logger.warning(f"JSON parsing failed. Using substring matching.")
         for label in valid_labels:
             if label.lower() in response_text.lower():
                 return {task_key: label}

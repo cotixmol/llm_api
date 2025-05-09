@@ -30,19 +30,21 @@ class ClassificationRepository(ClassificationRepositoryInterface):
         return await self.document_search_service_repository.get_documents(request)
 
     async def classify_documents(
-        self, request: ClassificationRequest, docs: List[BaseDocument]
+        self,
+        request: ClassificationRequest,
+        documents: List[BaseDocument],
     ) -> List[dict]:
         """
         Delegates classification to the LLM service repository.
         """
-        return await self.llm_service_repository.classify_documents(request, docs)
+        return await self.llm_service_repository.classify_documents(request, documents)
 
     async def push_classified_documents(
         self,
         request: ClassificationRequest,
-        docs: List[BaseDocument],
+        documents: List[BaseDocument],
         classification_list: List[Dict],
     ) -> None:
         await self.document_search_service_repository.update_documents(
-            request, docs, classification_list
+            request, documents, classification_list
         )

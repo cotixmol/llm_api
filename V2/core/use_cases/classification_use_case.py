@@ -19,14 +19,16 @@ class ClassificationUseCase:
 
     async def execute(self, request: ClassificationRequest) -> ClassificationResponse:
 
-        docs = await self.classification_repository.fetch_documents_for_classification(
-            request
+        documents = (
+            await self.classification_repository.fetch_documents_for_classification(
+                request
+            )
         )
         classification_list = await self.classification_repository.classify_documents(
-            request, docs
+            request, documents
         )
         await self.classification_repository.push_classified_documents(
-            request, docs, classification_list
+            request, documents, classification_list
         )
 
         return ClassificationResponse(
