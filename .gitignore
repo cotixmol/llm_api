@@ -21,3 +21,8 @@ logs
 models/*
 test_api/*
 mp_test.py
+config_local.yml
+.gitignore
+.docker/entrypoint.debug.bat
+.gitignore
+docker-compose.debug_windows.yml
