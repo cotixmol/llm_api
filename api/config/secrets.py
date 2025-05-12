@@ -22,17 +22,18 @@ class Settings(BaseSettings):
     MINIO_SECRET_KEY: str
     MINIO_BUCKET: str
 
+   
     # LLM variables
     VLLM_TENSOR_PARALLEL_SIZE: int = 1
     VLLM_PIPELINE_PARALLEL_SIZE: int = 1
     VLLM_QUANTIZATION: Optional[str] = None
     VLLM_ENFORCE_EAGER: Optional[bool] = None
-    VLLM_MAX_SEQ_LEN_TO_CAPTURE: int = 4096  
+    VLLM_MAX_SEQ_LEN_TO_CAPTURE: int = 8192  
     VLLM_DISABLE_CUSTOM_ALL_REDUCE: bool = False
-    VLLM_MEMORY_UTILIZATION: float = 0.8
-    VLLM_MAX_MODEL_LEN: int = 9000
-    VLLM_MAX_NUM_BATCHED_TOKENS: int = 1024 
-    VLLM_MAX_NUM_SEQS: int = 128
+    VLLM_MEMORY_UTILIZATION: float = 0.9
+    VLLM_MAX_MODEL_LEN: int = 5000
+    VLLM_MAX_NUM_BATCHED_TOKENS: int = 50000 
+    VLLM_MAX_NUM_SEQS: int = 10
     VLLM_ENABLE_CHUNKED_PREFILL: bool =False
     
     # VLLM variables
