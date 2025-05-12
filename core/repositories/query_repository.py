@@ -323,6 +323,30 @@ class Query:
         )
         return
     
+    def set_not_contains_by_field_and_content(self, field: str, pattern: str) -> None:
+        self.body["query"]["bool"]["must_not"].append(
+            {
+                "wildcard": {
+                    f"{field}.keyword": {
+                        "value": f"*{pattern}*"
+                    }
+                }
+            }
+        )
+        return
+
+    def set_contains_by_field_and_content(self, field: str, pattern: str) -> None:
+        self.body["query"]["bool"]["must"].append(
+            {
+                "wildcard": {
+                    f"{field}.keyword": {
+                        "value": f"*{pattern}*"
+                    }
+                }
+            }
+        )
+        return
+    
     def set_field_range_value_lt(self, field: str, lt_value: any) -> None:
         """Asegura que un campo numerico sea menor que un valor
 

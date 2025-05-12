@@ -55,10 +55,13 @@ class GetClassificationResponseCase:
         fields = self.extra_args.fields
         if "content" not in fields:
             fields.append("content")
+        if "applied_transformations" not in fields:
+            fields.append("applied_transformations")
         self.query_repository.set_fields(
             fields=fields
         )
         self.query_repository.set_match_by_field(field="content")
+        #self.set_not_contains_by_field_and_content("applied_transformations", update_field)
         self.query_repository.set_not_match_by_field(field=self.update_field)
         self.query_repository.set_filters(
             filters=self.extra_args.model_dump()
