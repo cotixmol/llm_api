@@ -248,13 +248,13 @@ class LLMRepository:
     
     async def apply_prompt_classification(
         self,
-        prompt_template: dict[str, str],
+        prompt_template: typing.Dict[str, str],
         task_key: str,
         update_field: str,
-        valid_labels: list[str],
+        valid_labels: typing.List[str],
         batch_size: int,
-        docs: list[dict] = None,
-    ) -> dict[str, list]:
+        docs: List[dict] = None,
+    ) -> typing.List[typing.Dict[str, typing.Optional[str]]]:
         if not docs:
             logging.error("docs_list no puede ser None o vacío.")
             raise ValueError("No se encontraron documentos.")
@@ -262,109 +262,104 @@ class LLMRepository:
             logging.error("El template de prompt no puede ser None o vacío.")
             raise ValueError("No se encontró un template de prompt válido.")
         
-        # Buffers for "to-process" vs "initially skipped" docs
-        es_index_list = []
+        es_index_list = [] 
         doc_id_list = []
         content = []
-        existing_transformations = []
+        skiped_es_index_list = []
+        skiped_doc_id_list = []
+        skiped_category = []
 
-        skipped_es_index_list = []
-        skipped_doc_id_list = []
-        skiped_existing_transformations = []
-
-        # 1) Separate out docs with no content
         for doc in docs:
-            text = getattr(doc, "content", None) or ""
-            if not text.strip() or text.strip().lower() == "empty":
-                skipped_es_index_list.append(doc.index)
-                skipped_doc_id_list.append(doc.id)
-                skiped_existing_transformations.append(
-                    doc["_source"].get("applied_transformations", [])
-                )
-            else:
-                es_index_list.append(doc.index)
-                doc_id_list.append(doc.id)
-                content.append(text)
-                existing_transformations.append(
-                    doc["_source"].get("applied_transformations", [])
-                )
+            # check if content exits in "_source" dict
+            doc_content = doc.content if doc.content else "empty"
+            # check if content is None, an empty string, or the word "empty"
+            if not doc_content or doc_content=="empty":
+                skiped_es_index_list.append(doc.index)
+                skiped_doc_id_list.append(doc.id)
+                skiped_category.append({
+                    task_key: None
+                })
+                continue
+            content.append(doc_content)
+            es_index_list.append(doc.index)
+            doc_id_list.append(doc.id)
 
+        # create a list of indices to process
+        pending_indices = list(range(len(content))) 
+        predictions = [None] * len(content)
+        
+        # check if content is None, an empty string, or the word "empty"
         if not content:
             raise ValueError("No se encontraron documentos válidos para procesar.")
 
-        # 2) Run LLM in batches, retry up to 3 times
-        pending = list(range(len(content)))
-        predictions: list[str | None] = [None] * len(content)
+        for attempt in range(3): 
+            if not pending_indices:
+                break 
 
-        for attempt in range(3):
-            if not pending:
-                break
-            logging.info(f"Intento {attempt + 1} con {len(pending)} docs pendientes.")
-            for start in range(0, len(pending), batch_size):
-                batch_idxs = pending[start : start + batch_size]
+            logging.info(f"Intento {attempt + 1} con {len(pending_indices)} documentos pendientes.")
+
+            # iteramos sobre batches de documentos de tamaño batch_size    
+            for i in range(0, len(pending_indices), batch_size):
+                print(f"Procesando batch {i // batch_size + 1} de {len(pending_indices) // batch_size + 1}")
+                batch_indices = pending_indices[i:i + batch_size]
                 batch_prompts = [
                     [
-                        {"role": "system", "content": prompt_template["system"]},
-                        {"role": "user", "content": prompt_template["user"].format(doc=content[i])},
+                        {
+                            "role": "system",
+                            "content": prompt_template["system"],
+                        },
+                        {
+                            "role": "user",
+                            "content": prompt_template["user"].format(doc=content[idx])
+                        }
                     ]
-                    for i in batch_idxs
+                    for idx in batch_indices
                 ]
+
                 try:
-                    responses = await self.llm_service.generate_text(batch_prompts, max_new_tokens=40)
-                except Exception as e:
-                    logging.error(f"Error batch {start//batch_size + 1}: {e}")
-                    continue
+                    output = await self.llm_service.generate_text(batch_prompts, max_new_tokens=40)
+                    responses = output
+                except Exception as batch_error:
+                    logging.error(f"Error procesando el batch {i // batch_size + 1}: {batch_error}")
 
-                for idx, resp in zip(batch_idxs, responses):
+
+                for idx, response in zip(batch_indices, responses):
                     try:
-                        parsed = self._parse_model_response(resp, valid_labels)
-                        if isinstance(parsed, dict) and task_key in parsed:
-                            predictions[idx] = parsed[task_key]
-                            logging.info(f"Doc {idx} ⇒ {parsed[task_key]}")
-                    except Exception as e:
-                        logging.error(f"Error parseando doc {idx}: {e}", exc_info=True)
+                        generated_text = response
 
-            # drop any that got a prediction this round
-            pending = [i for i in pending if predictions[i] is None]
+                        # Parsear el texto generado
+                        response_data = self._parse_model_response(generated_text, valid_labels)
 
-        # 3) Build “successful” updates (only those with a non-None prediction)
-        success_es_idx = []
-        success_doc_ids = []
-        success_updates = []
+                        # Validar si el response_data es un diccionario y contiene la clave esperada
+                        if not isinstance(response_data, dict):
+                            logging.warning(f"Formato inesperado del response_data para el documento {idx}. Response: {response_data}")
+                            continue
 
-        for i, label in enumerate(predictions):
-            if label is not None:
-                # record ES index & doc ID for this slot
-                success_es_idx.append(es_index_list[i])
-                success_doc_ids.append(doc_id_list[i])
-                # append the name of the transformation (update_field) to the history
-                new_history = existing_transformations[i] + [update_field]
-                success_updates.append({
-                    update_field: label,
-                    "applied_transformations": new_history
-                })
+                        if task_key not in response_data:
+                            logging.warning(f"El response_data no contiene la clave '{task_key}' para el documento {idx}. Response: {response_data}")
+                            continue
 
-        # 4) Build “skipped” updates (the ones we filtered out at step 1)
-        skipped_updates = []
-        for history in skiped_existing_transformations:
-            skipped_updates.append({
-                "applied_transformations": history + [update_field]
-            })
-        
-        #debug logs for skipped docs, classified docs and pending docs
-        logger.debug(f"Skipped docs: {len(skipped_es_index_list)}")
-        logger.debug(f"Example of skiped update: {skipped_updates[0]}")
-        logger.debug(f"Classified docs: {len(success_es_idx)}")
-        logger.debug(f"Example of classified update: {success_updates[0]}")
-        logger.debug(f"Pending docs: {len(pending)}")
-        
+                        # Extraer la etiqueta y asignarla a las predicciones
+                        label = response_data[task_key]
+                        predictions[idx] = label
+                        logging.info(f"Predicción exitosa para el documento {idx}: {label}")
+
+                    except Exception as parse_error:
+                        logging.error(f"Error al procesar el documento {idx}. Detalles: {parse_error}", exc_info=True)
+
+
+            pending_indices = [idx for idx in pending_indices if not predictions[idx]]
+
+        for idx in pending_indices:
+            logging.error(f"Documento descartado tras 5 intentos: {content[idx]}")
+
+        category_list = [{update_field: prediction} for prediction in predictions]
 
         return {
-            "es_index_list":  success_es_idx      + skipped_es_index_list,
-            "doc_id_list":    success_doc_ids     + skipped_doc_id_list,
-            "classification_list": success_updates + skipped_updates
-        }
-
+        "es_index_list": es_index_list + skiped_es_index_list,
+        "doc_id_list": doc_id_list + skiped_doc_id_list,
+        "classification_list": category_list + skiped_category
+         }
 
     async def apply_prompt(self, prompt: list) -> str:
         attempts = 0
