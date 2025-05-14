@@ -1,6 +1,8 @@
 from types import SimpleNamespace
 from typing import List, Dict
 from faker import Faker
+import json
+
 
 faker = Faker()
 
@@ -26,6 +28,23 @@ class FakeLLMLibrary:
         chars = 150
         return faker.text(max_nb_chars=chars).replace("\n", " ")
 
+    def _fake_summary_response(self) -> str:
+        """
+        Return a block that `_parse_summary_response` will always accept:
+        {"category": "...", "summary": "- …\n- …\n- …"}
+        """
+        fake_category = faker.word().title()
+
+        bullet_points = [
+            f"- {faker.sentence(nb_words=6).rstrip('.')}" for _ in range(3)
+        ]
+        payload = {
+            "category": fake_category,
+            "summary": "\n".join(bullet_points),
+        }
+        # ensure_ascii=False lets Faker’s accented words pass through unchanged
+        return json.dumps(payload, ensure_ascii=False)
+
     def chat(
         self,
         requests: List[List[Dict[str, str]]],
@@ -34,7 +53,10 @@ class FakeLLMLibrary:
         generations = []
 
         for _ in requests:
-            fake_text = self._fake_sentence(sampling_params.max_tokens)
+            # For testing prompting endpoint
+            # fake_text = self._fake_sentence(sampling_params.max_tokens)
+            # For testing summarization endpoint
+            fake_text = self._fake_summary_response()
             gen = SimpleNamespace(outputs=[SimpleNamespace(text=fake_text)])
             generations.append(gen)
 

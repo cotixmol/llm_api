@@ -53,9 +53,8 @@ class SummaryQueryBuilder:
 
     def _collect_fields(self) -> List[str]:
         fields = list(self.request.filters.fields)
-        for value in ("content", "interactions"):
-            if value not in fields:
-                fields.append(value)
+        if "interactions" not in fields:
+            fields.append("interactions")
         return fields
 
     def build(self) -> ESQueryBuilder:
@@ -73,7 +72,7 @@ class SummaryQueryBuilder:
             .set_sort("interactions", {"order": "desc", "unmapped_type": "long"})
             .set_sort("@timestamp", {"order": "desc"})
             .set_sort("created_at", {"order": "desc"})
-            .set_size(min(self.page_size, self.request.max_ndocs or 1000))
+            .set_size(min(self.page_size, self.request.max_ndocs))
         )
 
         base_qs = '(NOT category.keyword: "Streaming") AND (NOT content_type.keyword: "Repost")'
@@ -190,8 +189,14 @@ class SummarySearchRunner(_BaseSearchRunner):
             buckets = resp.aggregations.get("top_categories_hits", {}).get(
                 "buckets", []
             )
+
             docs: List[Dict] = [
-                {"_index": h["_index"], "_id": h["_id"], **h["_source"]}
+                {
+                    "_index": h["_index"],
+                    "_id": h["_id"],
+                    **h["_source"],
+                    "summary_field_category": bucket["key"],
+                }
                 for bucket in buckets
                 for h in bucket["top_docs"]["hits"]["hits"]
             ]

@@ -13,7 +13,6 @@ from V2.api.config.settings import node_config
 # If the provider it is not registered before imports, the @tracer.chain decorator gives an error
 # because its checks for the default tracer from opentelemetry
 
-
 if os.getenv("ENVIRONMENT") != "local":
     tracing_endpoint = f"http://{node_config['tracing_params']['tracing_url']}:{node_config['tracing_params']['tracing_port']}"
     os.environ["PHOENIX_COLLECTOR_ENDPOINT"] = tracing_endpoint
@@ -32,6 +31,7 @@ trace.set_tracer_provider(tracer_provider)
 from V2.api.config.secrets import secrets
 from V2.api.routers.classification_router import classification_router_V2
 from V2.api.routers.prompt_router import prompt_router_V2
+from V2.api.routers.summary_router import summary_router_V2
 from V2.core.factories.llm.fake_llm_instance_factory import initialize_fake_llm_instance
 from V2.core.factories.llm.vllm_instance_factory import initialize_vllm_instance
 from factories.services.embedding_client_factory import initialize_embedding_client
@@ -43,7 +43,7 @@ async def lifespan(app: FastAPI):
     minio_client.update_model_folder(
         model_name=node_config["llm_model_name"], bucket=secrets.MINIO_BUCKET
     )
-    app.state.llm_instance = initialize_fake_llm_instance()
+    app.state.llm_instance = initialize_vllm_instance()
     yield
 
 
@@ -59,6 +59,7 @@ app.add_middleware(
 
 app.include_router(router=prompt_router_V2, prefix=("/V2/llm"), tags=["LLM"])
 app.include_router(router=classification_router_V2, prefix=("/V2/llm"), tags=["LLM"])
+app.include_router(router=summary_router_V2, prefix=("/V2/llm"), tags=["LLM"])
 
 FastAPIInstrumentor().instrument_app(app)
 

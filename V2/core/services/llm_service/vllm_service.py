@@ -23,7 +23,7 @@ class VLLMService:
     @trace_llm_call
     async def generate_text(
         self,
-        requests: List[List[PromptMessageItem]],
+        prompts: List[List[PromptMessageItem]],
         temperature: float = 0.0,
         top_p: float = 1.0,
         max_tokens: int = 40,
@@ -43,18 +43,18 @@ class VLLMService:
                 temperature=temperature, top_p=top_p, max_tokens=max_tokens
             )
             logger.info(
-                f"Generating text for {len(requests)} prompts with sampling parameters: "
+                f"Generating text for {len(prompts)} prompts with sampling parameters: "
                 f"temperature={temperature}, top_p={top_p}, max_tokens={max_tokens}"
             )
 
             generations = self.vllm_instance.chat(
-                requests, sampling_params=sampling_params
+                prompts, sampling_params=sampling_params
             )
 
             response = {"outputs": [], "general_info": {}}
 
             for idx, (generation, prompt_messages) in enumerate(
-                zip(generations, requests)
+                zip(generations, prompts)
             ):
                 try:
                     if os.getenv("ENVIRONMENT") != "local":

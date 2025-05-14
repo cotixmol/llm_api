@@ -13,5 +13,5 @@ class SummaryUseCase:
 
     async def execute(self, request: SummaryRequest) -> SummaryResponse:
         docs = await self.summary_repository.fetch_documents_for_summary(request)
-        summary = await self.summary_repository.create_summary(docs)
+        summary = await self.summary_repository.create_summary(docs, request)
         return SummaryResponse(response=summary)

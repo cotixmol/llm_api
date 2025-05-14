@@ -248,7 +248,7 @@ class VLLMServiceRepositoryV2:
     ) -> Dict[str, str]:
         cat_docs: Dict[str, List[str]] = defaultdict(list)
         for doc in documents:
-            category = getattr(doc, request.summary_field, None)
+            category = doc.metadata.get("summary_field_category")
             if category and doc.content:
                 if len(cat_docs[category]) < 50:  # keep top‑50 per cat
                     cat_docs[category].append(doc.content.strip())
@@ -273,9 +273,7 @@ class VLLMServiceRepositoryV2:
                         },
                     ]
                 )
-            resp = await self.llm_service.generate_text(
-                prompts, max_new_tokens=5000, batch_size=request.batch_size
-            )
+            resp = await self.llm_service.generate_text(prompts, max_tokens=5000)
             for block in resp["outputs"]:
                 parsed = self._parse_summary_response(block["text"])
                 if parsed:
@@ -338,6 +336,24 @@ class VLLMServiceRepositoryV2:
         • finds the first {...} block that deserialises
         • accepts both ```json fenced blocks and plain text
         • tolerant to trailing commas / single quotes
+
+        ──────────────────────────────────────────────────────────────
+        Expected format of `response_text`  (what the prompt must ask for)
+        -----------------------------------------------------------------
+        The assistant’s reply **must begin with** a JSON‑serialisable object
+        shaped exactly like:
+
+            {
+            "category": "<string>",
+            "summary": "<string>"
+            }
+
+        Rules the prompt should state clearly:
+        • No explanatory text before the opening “{” or after the closing “}”.
+        • Keys **category** and **summary** are mandatory.
+
+        Any deviation may cause this function to return `None`.
+        ──────────────────────────────────────────────────────────────
         """
         try:
             # 1) quickly try naïve slice
@@ -354,12 +370,17 @@ class VLLMServiceRepositoryV2:
         cleaned = re.sub(r"```(?:json)?", "", response_text, flags=re.I).strip("` \n")
         match = re.search(r"({.*})", cleaned, flags=re.S)
         if not match:
+            logger.warning(
+                "LLM response did not match the expected JSON format. "
+                "Prompt/output contract violated.\nRaw response (truncated): %s",
+                response_text[:200],
+            )
             return None
         block = match.group(1)
         for txt in (
             block,
             re.sub(r",\s*}", "}", block),
-        ):  # try with / w.o. trailing commas
+        ):
             try:
                 data = json.loads(txt.replace("'", '"'))
                 if isinstance(data, dict):

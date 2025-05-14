@@ -12,7 +12,7 @@ summary_router_V2 = APIRouter()
 
 
 @summary_router_V2.post(
-    "V2/summary",
+    "/summary",
     response_model=SummaryResponse,
 )
 async def summary_endpoint(

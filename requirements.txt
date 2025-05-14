@@ -1,43 +1,39 @@
-#elastic and minio
+# elastic & MinIO
 elastic-transport==8.15.1
 elasticsearch==8.15.1
 aiohttp==3.11.11
 iso8601==2.1.0
 minio==7.2.4
 
-#bertopic
+# BERTopic
 pandas==2.2.3
 plotly==5.24.0
 umap-learn==0.5.6
 hdbscan==0.8.39
 
-#api
+# API
 fastapi==0.115.4
 uvicorn==0.32.0
 
-# utils
+# Utils
 pydantic==2.9.2
 pydantic_core==2.23.4
+pydantic-settings==2.2.1
 pynndescent==0.5.13
 python-dateutil==2.9.0.post0
 python-dotenv==1.0.1
 python-json-logger==2.0.7
-pydantic-settings
 PyYAML==6.0.2
 Faker==37.1.0
 
-#vllm
+# vLLM / embeddings
 sentence-transformers==3.4.1
-bitsandbytes==0.45.3; sys_platform == "linux"
-bitsandbytes==0.42.0; sys_platform == "darwin"
-
-
-#embedding
+bitsandbytes==0.45.3 ; sys_platform == "linux"  and platform_machine == "x86_64"
+bitsandbytes==0.42.0 ; sys_platform == "darwin" and platform_machine == "x86_64"
 accelerate==0.34.2
 
-# phoenix
+# Phoenix / OpenTelemetry
 arize-phoenix-otel==0.9.0
 openinference-semantic-conventions==0.1.16
 openinference-instrumentation==0.1.26
 opentelemetry-instrumentation-fastapi==0.52b1
-

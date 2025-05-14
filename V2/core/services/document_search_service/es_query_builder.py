@@ -144,6 +144,8 @@ class ESQueryBuilder:
         # 5) Filters using registry or fallback
         for key, value in self._filters.items():
             if not value or key == "fields":
+                # We ignore fields because request.filters.fields is part of _source in the query. This is a mistake that we inherited from V1.
+                # In request.filters.fields we should only pass filters from manager in any of the self._filter_registry.
                 continue
             if key in self._filter_registry:
                 snippet = self._filter_registry[key](
