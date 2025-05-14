@@ -303,7 +303,7 @@ class VLLMServiceRepositoryV2:
                 ),
             },
         ]
-        resp = await self.llm_service.generate_text(prompt, max_new_tokens=5000)
+        resp = await self.llm_service.generate_text(prompt, max_tokens=5000)
         return {"summary": resp["outputs"][0]["text"]}
 
     # ────────────────────────────────────────────────────────────────
@@ -323,7 +323,7 @@ class VLLMServiceRepositoryV2:
                 "content": request.prompt["user"].format(contents=contents),
             },
         ]
-        resp = await self.llm_service.generate_text(prompt, max_new_tokens=5000)
+        resp = await self.llm_service.generate_text(prompt, max_tokens=5000)
         return {"summary": resp["outputs"][0]["text"]}
 
     # ────────────────────────────────────────────────────────────────
