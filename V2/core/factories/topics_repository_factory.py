@@ -10,6 +10,9 @@ from V2.core.factories.elasticsearch.elastic_search_service_factory import (
 from V2.core.factories.llm.llm_service_factory import (
     build_vllm_service,
 )
+from V2.core.services.topics_modelling_service.bertopic_repository import (
+    BertopicServiceRepositoryV2,
+)
 
 
 def build_topics_repository(
@@ -20,6 +23,10 @@ def build_topics_repository(
     )
     llm_service_repository = VLLMServiceRepositoryV2(llm_service=llm_service)
 
-    # Add Any other service that need the repository, bertopic, etc
+    topics_modelling_service_repository = BertopicServiceRepositoryV2()
 
-    return TopicsRepository(document_search_service_repository, llm_service_repository)
+    return TopicsRepository(
+        document_search_service_repository,
+        llm_service_repository,
+        topics_modelling_service_repository,
+    )

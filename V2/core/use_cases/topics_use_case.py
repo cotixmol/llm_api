@@ -1,11 +1,4 @@
-from V2.api.dtos.classification_dto import (
-    ClassificationRequest,
-    ClassificationResponse,
-)
-from V2.core.interfaces.repositories.classification_repository_interface import (
-    ClassificationRepositoryInterface,
-)
-from V2.api.dtos.topics_dto import TopicsResponse
+from V2.api.dtos.topics_dto import TopicsResponse, TopicsRequest
 from V2.core.interfaces.repositories.topics_repository_interface import (
     TopicsRepositoryInterface,
 )
@@ -20,10 +13,14 @@ class TopicsUseCase:
     def __init__(self, topics_repository: TopicsRepositoryInterface):
         self.topics_repository = topics_repository
 
-    async def execute(self, request: ClassificationRequest) -> ClassificationResponse:
+    async def execute(self, request: TopicsRequest) -> TopicsResponse:
 
         documents = await self.topics_repository.fetch_documents_for_topics(request)
 
-        # We need to add all the other steps here for the topics use case
+        topics = await self.topics_repository.get_topics_for_topics(documents)
+
+        enriched_topics = await self.topics_repository.enrich_topics(topics)
+
+        topics_response = self.topics_repository.build_topics_response(enriched_topics)
 
         return TopicsResponse()

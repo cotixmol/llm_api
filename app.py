@@ -44,7 +44,7 @@ async def lifespan(app: FastAPI):
     minio_client.update_model_folder(
         model_name=node_config["llm_model_name"], bucket=secrets.MINIO_BUCKET
     )
-    app.state.llm_instance = initialize_vllm_instance()
+    app.state.llm_instance = initialize_fake_llm_instance()
     yield
 
 
