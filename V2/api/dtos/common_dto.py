@@ -40,6 +40,7 @@ class BaseDocument(BaseModel):
         metadata = {
             "created_at": es_doc.get("created_at"),
             "category": es_doc.get("category"),
+            "@timestamp": es_doc.get("@timestamp"),
             "summary_field_category": es_doc.get("summary_field_category"),
             "author": es_doc.get("author"),
             "followers": es_doc.get("followers"),

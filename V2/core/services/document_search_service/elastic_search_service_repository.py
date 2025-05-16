@@ -133,7 +133,7 @@ class TopicsQueryBuilder:
             .set_fields(fields)
             .set_match_by_field(field="embedding")
             .set_filters(self.request.filters.model_dump())
-            .set_sort("interactions", {"order": "desc"})
+            .set_sort("interactions", {"order": "desc", "unmapped_type": "long"})
             .set_sort("@timestamp", {"order": "desc"})
             .set_sort("created_at", {"order": "desc"})
         )
