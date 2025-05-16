@@ -8,6 +8,7 @@ from V2.core.interfaces.services.document_search_service_repository_interface im
 from V2.core.services.document_search_service.es_query_builder import ESQueryBuilder
 from V2.api.dtos.classification_dto import ClassificationRequest
 from V2.api.dtos.summary_dto import SummaryRequest
+from V2.api.dtos.topics_dto import TopicsRequest
 from V2.core.services.document_search_service.elastic_search_service import (
     ElasticsearchService,
 )
@@ -105,6 +106,37 @@ class SummaryQueryBuilder:
                     },
                 },
             )
+
+        return qb
+
+
+class TopicsQueryBuilder:
+    """Translate a *TopicsRequest* into an ESQueryBuilder."""
+
+    def __init__(self, request: TopicsRequest, page_size: int):
+        self.request = request
+        self.page_size = page_size
+
+    def _collect_fields(self) -> List[str]:
+        fields = list(self.request.filters.fields)
+        if "embedding" not in fields:
+            fields.append("embedding")
+        return fields
+
+    def build(self) -> ESQueryBuilder:
+        qb = ESQueryBuilder()
+
+        fields = self._collect_fields()
+
+        qb = (
+            qb.set_date_range(self.request.since_date, self.request.to_date)
+            .set_fields(fields)
+            .set_match_by_field(field="embedding")
+            .set_filters(self.request.filters.model_dump())
+            .set_sort("interactions", {"order": "desc"})
+            .set_sort("@timestamp", {"order": "desc"})
+            .set_sort("created_at", {"order": "desc"})
+        )
 
         return qb
 
@@ -211,6 +243,11 @@ class SummarySearchRunner(_BaseSearchRunner):
         return await self._paginate(request, qb)
 
 
+class TopicsSearchRunner(_BaseSearchRunner):
+    async def run(self, request: TopicsRequest, qb: ESQueryBuilder) -> List[Dict]:
+        return await self._paginate(request, qb)
+
+
 # ─────────────────────────────────────────────────────────────
 #  Public repository (unchanged interface)
 # ─────────────────────────────────────────────────────────────
@@ -225,7 +262,7 @@ class ElasticSearchServiceRepositoryV2(DocumentSearchServiceRepositoryInterface)
 
     # ───────────── GET DOCUMENTS ─────────────
     async def get_documents(
-        self, request: Union[ClassificationRequest, SummaryRequest]
+        self, request: Union[ClassificationRequest, SummaryRequest, TopicsRequest]
     ) -> List[BaseDocument]:
         if isinstance(request, ClassificationRequest):
             builder_cls = ClassificationQueryBuilder
@@ -233,6 +270,9 @@ class ElasticSearchServiceRepositoryV2(DocumentSearchServiceRepositoryInterface)
         elif isinstance(request, SummaryRequest):
             builder_cls = SummaryQueryBuilder
             runner_cls = SummarySearchRunner
+        elif isinstance(request, TopicsRequest):
+            builder_cls = TopicsQueryBuilder
+            runner_cls = TopicsSearchRunner
         else:
             raise TypeError(f"Unsupported request type: {type(request)}")
 
