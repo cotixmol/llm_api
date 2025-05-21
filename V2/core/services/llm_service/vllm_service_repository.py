@@ -53,7 +53,24 @@ class VLLMServiceRepositoryV2:
                 f"Document discarded after 3 attempts: {valid_data['content'][idx]}"
             )
 
-        return [{request.update_field: p} for p in predictions]
+        results: List[Dict] = []
+        for doc in documents:
+            # extraemos el histórico de metadata
+            prev = doc.metadata.get("applied_transformations", []) or []
+            # copiamos defensivamente
+            results.append({
+                request.update_field: None,
+                "applied_transformations": prev.copy(),
+            })
+
+        # 2) Recorremos las predicciones y actualizamos solo las exitosas
+        for idx, prediction in enumerate(predictions):
+            if prediction is not None:
+                # 2.1) y actualizamos el placeholder en results
+                results[idx]["applied_transformations"].append(request.update_field)
+                results[idx][request.update_field] = prediction
+
+        return results
 
     def _validate_inputs(
         self, documents: List[BaseDocument], request: ClassificationRequest

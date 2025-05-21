@@ -29,6 +29,8 @@ class ClassificationQueryBuilder:
 
     def build(self) -> ESQueryBuilder:
         qb = ESQueryBuilder()
+        if "applied_transformations" not in self.request.filters.fields:
+            self.request.filters.fields.append("applied_transformations")
         qb = (
             qb.set_date_range(self.request.since_date, self.request.to_date)
             .set_fields(self.request.filters.fields)

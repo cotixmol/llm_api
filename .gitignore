@@ -24,3 +24,6 @@ test_api/*
 mp_test.py
 
 docker-compose.yml
+config_local.yml
+docker-compose.debug_windows.yml
+.docker/entrypoint.debug.bat
