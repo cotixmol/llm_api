@@ -61,7 +61,7 @@ class FakeLLMLibrary:
 
         for _ in requests:
             # For testing prompting endpoint
-            # fake_text = self._fake_sentence(sampling_params.max_tokens)
+            #fake_text = self._fake_sentence(sampling_params.max_tokens)
             # For testing summarization endpoint
             #fake_text = self._fake_summary_response()
             # For testing classification endpoint
