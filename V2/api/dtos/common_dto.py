@@ -60,5 +60,6 @@ class BaseDocument(BaseModel):
             "sentiment_name": es_doc.get("sentiment_name"),
             "embedding": es_doc.get("embedding"),
             "primary_category": es_doc.get("primary_category"),
+            "applied_transformations": es_doc.get("applied_transformations"),
         }
         return cls(id=doc_id, index=index, content=content, metadata=metadata)
