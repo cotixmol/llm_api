@@ -11,19 +11,22 @@ class ClassificationUseCase:
     """
     Use case for handling classification requests.
     This class is responsible for orchestrating the classification process,
-    including fetching documents and classifying them.
+    including fetching documents (when necessary) and classifying them.
     """
 
     def __init__(self, classification_repository: ClassificationRepositoryInterface):
         self.classification_repository = classification_repository
 
     async def execute(self, request: ClassificationRequest) -> ClassificationResponse:
-
-        documents = (
-            await self.classification_repository.fetch_documents_for_classification(
-                request
+        if request.documents:
+            documents = request.documents
+        else:
+            documents = (
+                await self.classification_repository.fetch_documents_for_classification(
+                    request
+                )
             )
-        )
+
         classification_list = await self.classification_repository.classify_documents(
             request, documents
         )
