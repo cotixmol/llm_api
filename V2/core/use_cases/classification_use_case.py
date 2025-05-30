@@ -5,6 +5,7 @@ from V2.api.dtos.classification_dto import (
 from V2.core.interfaces.repositories.classification_repository_interface import (
     ClassificationRepositoryInterface,
 )
+from V2.api.dtos.common_dto import BaseDocument
 
 
 class ClassificationUseCase:
@@ -18,8 +19,17 @@ class ClassificationUseCase:
         self.classification_repository = classification_repository
 
     async def execute(self, request: ClassificationRequest) -> ClassificationResponse:
+
+        #         documents = (
+        #     BaseDocument(request.documents)
+        #     if request.documents
+        #     else await self.classification_repository.fetch_documents_for_classification(request)
+        # )
         if request.documents:
-            documents = request.documents
+            documents = [
+                d if isinstance(d, BaseDocument) else BaseDocument(**d)
+                for d in request.documents
+            ]
         else:
             documents = (
                 await self.classification_repository.fetch_documents_for_classification(
