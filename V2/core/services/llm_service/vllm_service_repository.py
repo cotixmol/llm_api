@@ -1,4 +1,4 @@
-from typing import List, Dict, Optional
+from typing import List, Dict, Optional, Any
 import json
 from collections import defaultdict
 import re
@@ -9,9 +9,13 @@ from V2.core.services.llm_service.vllm_service import VLLMService
 from V2.api.dtos.common_dto import BaseDocument
 from V2.api.dtos.classification_dto import ClassificationRequest
 from V2.api.dtos.summary_dto import SummaryRequest
+from V2.core.interfaces.services.llm_service_repository_interface import (
+    LLMServiceRepositoryInterface,
+    EnrichedTopic
+)
 
 
-class VLLMServiceRepositoryV2:
+class VLLMServiceRepositoryV2(LLMServiceRepositoryInterface):
     def __init__(self, llm_service: VLLMService):
         self.llm_service = llm_service
 
@@ -390,3 +394,113 @@ class VLLMServiceRepositoryV2:
             except Exception:
                 continue
         return None
+
+    # ────────────────────────────────────────────────────────────────
+    # Enrichment methods for topics
+    # ────────────────────────────────────────────────────────────────
+    
+    async def enrich_topics(
+        self,
+        summary_inputs: List[Dict[str, Any]]
+    ) -> List[EnrichedTopic]:
+        enriched: List[EnrichedTopic] = []
+        for inp in summary_inputs:
+            topic_id = inp["topic_id"]
+            keywords = inp.get("keywords", [])
+            docs     = inp.get("docs", [])[:9]
+
+            # Construye prompt
+            prompt = [
+                {
+                    "role": "system", 
+                    "content": 
+                        """
+                        You are a world-class topic analysis expert.
+                        Your task is to read a set of keywords and document snippets, 
+                        identify the core theme, and produce a concise topic name plus a brief descriptive summary. 
+                        Be factual, use precise language, and obey the format instructions strictly. 
+                        Always respond with valid JSON only, without any additional commentary.
+                        """
+                    },
+                {
+                    "role": "user",
+                    "content":  
+                        f"""
+                        Here are the inputs:\n
+                        - Keywords: {keywords}\n
+                        - Documents: {docs}\n\n
+                        **Instructions:**\n
+                        1. **Topic Name**: Generate a short, catchy name (3–5 words) that captures the essence of the theme.\n
+                        2. **Topic Description**: Write 1–2 sentences (max 30 words) that clearly describe what the topic is about.\n\n
+                        **Output Format:**\n
+                        Produce exactly one JSON object, following this schema:\n
+                        ```json\n
+                        {{\n
+                          \topic_name\: \<string>\,\n
+                          \topic_description\: \<string>\\n
+                        }}\n
+                        ```\n
+                        - Do not include any other keys or wrappers.\n
+                        - Do not output markdown, code fences, or extra text.\n\n
+                        Now generate the JSON based on the given keywords and documents.
+                        """
+                }
+            ]
+            # Llama al LLM
+            response = await self.execute_prompt(prompt)
+            text = response[0] if response else ""
+            name    = self._extract_name(text) if text else f"Tópico {topic_id}"
+            summary = self._extract_summary(text) if text else ""
+
+            enriched.append(EnrichedTopic(
+                topic_id=topic_id,
+                name=name,
+                summary=summary,
+                keywords=keywords,
+                docs=docs
+            ))
+        return enriched
+
+    def _extract_name(self, response_text: str) -> str:
+        # 1) Intento JSON
+        try:
+            # cojo todo el bloque { … } si existe
+            start = response_text.find("{")
+            end   = response_text.rfind("}") + 1
+            if start != -1 and end != -1:
+                payload = json.loads(response_text[start:end])
+                # claves posibles en tu schema
+                for key in ("topic_name", "name", "topicName"):
+                    if key in payload:
+                        return payload[key]
+        except Exception:
+            pass
+
+        # 2) Heurística: primera oración antes del primer punto
+        first_sentence = response_text.strip().split(".")[0]
+        return first_sentence.strip()
+
+    def _extract_summary(self, response_text: str) -> str:
+        # 1) Intento JSON
+        try:
+            start = response_text.find("{")
+            end   = response_text.rfind("}") + 1
+            if start != -1 and end != -1:
+                payload = json.loads(response_text[start:end])
+                # claves posibles
+                for key in ("topic_description", "description", "summary"):
+                    if key in payload:
+                        return payload[key]
+        except Exception:
+            pass
+
+
+#MODIFICAR
+        # 2) Heurística: todo lo que quede tras la primera oración
+        parts = response_text.strip().split(".")
+        if len(parts) > 1:
+            return ".".join(parts[1:]).strip()
+        return ""
+
+
+    

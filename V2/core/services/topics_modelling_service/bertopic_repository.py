@@ -1,33 +1,33 @@
+from typing import List, Dict, Tuple, NamedTuple
 import re
 import numpy as np
-from V2.core.interfaces.services.topics_modelling_service_repository_interface import (
-    TopicsModellingServiceRepositoryInterface,
-)
-from typing import Tuple, List, Dict
+import pandas as pd
+from collections import namedtuple
 from umap import UMAP
 from hdbscan import HDBSCAN
-from sklearn.feature_extraction.text import CountVectorizer
-from utils.constants import (
-    NLTK_SPANISH_STOPWORDS,
-    CUSTOM_STOPWORDS,
-)
-from utils.logger import logger
-from bertopic.representation import MaximalMarginalRelevance
-from bertopic.vectorizers import ClassTfidfTransformer
-from bertopic.dimensionality import BaseDimensionalityReduction
 from bertopic import BERTopic
+from bertopic.vectorizers import ClassTfidfTransformer
+from bertopic.representation import MaximalMarginalRelevance
+from bertopic.dimensionality import BaseDimensionalityReduction
+from V2.utils.logger import logger
+from sklearn.feature_extraction.text import CountVectorizer
 from V2.api.dtos.common_dto import BaseDocument
+from V2.core.interfaces.services.topics_modelling_service_repository_interface import (
+    TopicsModellingServiceRepositoryInterface,
+    RawTopicAnalysis
+)
 
 
 class BertopicServiceRepositoryV2(TopicsModellingServiceRepositoryInterface):
     def __init__(
         self,
         top_n_words: int = 20,
-        n_gram_range: Tuple = (1, 3),
+        n_gram_range: Tuple[int, int] = (1, 3),
         nr_topics: str = "auto",
         language: str = "Spanish",
         calculate_probabilities: bool = False,
     ) -> None:
+        # Initialize UMAP, HDBSCAN, vectorizer and BERTopic model
         self.umap_model = self.__get_umap_model()
         self.hdbscan_model = self.__get_hdbscan_model()
         self.vectorizer_model = self.__get_vectorizer_model()
@@ -41,7 +41,7 @@ class BertopicServiceRepositoryV2(TopicsModellingServiceRepositoryInterface):
 
         try:
             self.model = BERTopic(
-                umap_model=BaseDimensionalityReduction(),  # Different here from the init
+                umap_model=BaseDimensionalityReduction(),
                 hdbscan_model=self.hdbscan_model,
                 vectorizer_model=self.vectorizer_model,
                 representation_model=self.representation_model,
@@ -54,103 +54,105 @@ class BertopicServiceRepositoryV2(TopicsModellingServiceRepositoryInterface):
                 verbose=True,
             )
         except Exception as error:
-            raise Exception(error)
+            raise Exception(f"Failed to initialize BERTopic: {error}")
 
-    def get_topics(
-        self, documents: List[BaseDocument], max_topics: int = 8
-    ) -> List[dict]:
-
+    async def get_raw_analysis(
+        self,
+        documents: List[BaseDocument],
+        max_topics: int = 8,
+    ) -> RawTopicAnalysis:
+        """
+        Ejecuta solo la fase de modelado de tópicos y devuelve datos puros:
+        - reduced_embeddings: np.ndarray (n_docs x 2)
+        - topics_over_time: pd.DataFrame
+        - doc_info: pd.DataFrame
+        - topics_dict: Dict[int, List[Tuple[str,float]]]
+        - num_topics: número efectivo de tópicos a exponer
+        """
+        # 1) Preparar datos
         created_at, content, embeddings = self.__prepare_data(documents)
 
-        self.hdbscan_model = self.__get_hdbscan_model(len(content))
-        self.model.hdbscan_model = self.hdbscan_model  # tell BERTopic
+        # 2) Ajustar modelo y reducir embeddings
+        reduced_embeddings = self.__setup_and_fit_model(content, embeddings)
 
-        self.__fit_model(content, embeddings)
-
-        topics_over_time = self.__calculate_topics(content, created_at)
-        doc_info = self.model.get_document_info(content)
-
-        topics_dict = self.__extract_topic_dict()
-        num_topics = min(max_topics, len(topics_dict) - 1)
-
-        #   ↓―― build the plain-dict payload expected by upper layers
-        result: List[dict] = []
-        for tid in range(num_topics):
-            words = topics_dict.get(tid, [])[: self.top_n_words]
-            result.append(
-                {
-                    "topic_id": tid,
-                    "keywords": [w for w, _ in words],
-                    "keyword_scores": words,
-                    "documents": self.__top_documents(doc_info, tid),
-                    "timeline": topics_over_time[topics_over_time["Topic"] == tid],
-                }
-            )
-        return result
-
-    def __reduce_embeddings(self, embeddings_np: np.ndarray) -> np.ndarray:
-        logger.info(f"Embeddings shape: {embeddings_np.shape}")
-        return self.umap_model.fit_transform(embeddings_np)
-
-    def __extract_topic_dict(self) -> Dict[int, List[Tuple[str, float]]]:
-        """Returns {topic_id: [(word, weight), ...]}."""
-        return self.model.get_topics() or {}
-
-    def __top_documents(self, doc_info_df, topic_id: int, k: int = 5) -> List[str]:
-        return (
-            doc_info_df[doc_info_df["Topic"] == topic_id]
-            .sort_values("Probability", ascending=False)["Document"]
-            .head(k)
-            .tolist()
+        # 3) Calcular análisis de tópicos puros
+        topics_over_time, doc_info, topics_dict, num_topics = self.__calculate_topic_analysis(
+            content, created_at, max_topics
         )
+
+        return RawTopicAnalysis(
+            reduced_embeddings=reduced_embeddings,
+            topics_over_time=topics_over_time,
+            doc_info=doc_info,
+            topics_dict=topics_dict,
+            num_topics=num_topics,
+        )
+
+    # --- Métodos auxiliares privados ---
 
     def __prepare_data(
         self, documents: List[BaseDocument]
     ) -> Tuple[List[str], List[str], List[List[float]]]:
-        content = []
-        embeddings = []
-        created_at = []
-
+        content, embeddings, created_at = [], [], []
         for doc in documents:
-            doc_content = re.sub(r"https?://[^\s]+|www\.[^\s]+", "", doc.content)
-            doc_embedding = doc.metadata.get("embedding")
-            doc_created_at = doc.metadata.get("created_at")
-            if not doc_content or not doc_embedding:
+            text = re.sub(r"https?://[^\s]+|www\.[^\s]+", "", doc.content)
+            emb = doc.metadata.get("embedding")
+            ts = doc.metadata.get("created_at")
+            if not text or emb is None:
                 continue
-
-            content.append(doc_content)
-            embeddings.append(doc_embedding)
-            created_at.append(doc_created_at.strftime("%Y-%m-%dT%H:%M:%S"))
-
-        if not content or not embeddings:
-            raise ValueError("No valid documents found to calculate topics")
-
+            content.append(text)
+            embeddings.append(emb)
+            # Normalizar timestamp
+            if isinstance(ts, str):
+                ts_clean = ts.rstrip("Z").split("+")[0]
+                created_at.append(ts_clean)
+            elif hasattr(ts, "strftime"):
+                created_at.append(ts.strftime("%Y-%m-%dT%H:%M:%S"))
+            else:
+                logger.warning(f"Skipping doc with invalid timestamp: {ts}")
+        if not content:
+            raise ValueError("No valid documents found for topic modeling.")
         return created_at, content, embeddings
 
-    def __get_ctidf_model(self):
-        return ClassTfidfTransformer(reduce_frequent_words=True)
+    def __setup_and_fit_model(
+        self, content: List[str], embeddings: List[List[float]]
+    ) -> np.ndarray:
+        # Re-calcular HDBSCAN de acuerdo al tamaño de corpus
+        self.hdbscan_model = self.__get_hdbscan_model(len(content))
+        self.model.hdbscan_model = self.hdbscan_model
 
-    def __get_vectorizer_model(self):
-        stopwords = NLTK_SPANISH_STOPWORDS + CUSTOM_STOPWORDS
-        return CountVectorizer(ngram_range=(1, 2), stop_words=stopwords, min_df=0.01)
+        # Ajustar UMAP + BERTopic
+        embeddings_np = np.array(embeddings)
+        reduced = self.umap_model.fit_transform(embeddings_np)
+        try:
+            self.model.fit_transform(content, reduced)
+        except Exception as e:
+            logger.warning(f"Error during BERTopic fit: {e}")
+            raise Exception(f"Topic modeling failed: {e}")
+        return reduced
 
-    def __get_representation_model(self):
-        return MaximalMarginalRelevance(diversity=0.9)
+    def __calculate_topic_analysis(
+        self, content: List[str], created_at: List[str], max_topics: int
+    ) -> Tuple[pd.DataFrame, pd.DataFrame, Dict[int, List[Tuple[str, float]]], int]:
+        # Evolución temporal
+        topics_over_time = self.model.topics_over_time(
+            docs=content,
+            timestamps=created_at,
+            nr_bins=20,
+            datetime_format="%Y-%m-%dT%H:%M:%S",
+        )
+        # Información por documento
+        doc_info = self.model.get_document_info(content)
+        # Diccionario de tópicos {topic_id: [(keyword, score), ...]}
+        topics_dict = self.model.get_topics() or {}
+        num_topics = min(max_topics, len(topics_dict) - 1)
+        return topics_over_time, doc_info, topics_dict, num_topics
 
-    def __get_umap_model(self):
-        umap_model = UMAP(n_neighbors=15, n_components=2, min_dist=0.0, metric="cosine")
-        return umap_model
+    def __get_umap_model(self) -> UMAP:
+        return UMAP(n_neighbors=15, n_components=2, min_dist=0.0, metric="cosine")
 
-    def __get_hdbscan_model(self, n_docs: int | None = None):
-        if n_docs is None:
-            n = 10
-        elif n_docs < 2_000:
-            n = 10
-        elif n_docs < 10_000:
-            n = 40
-        else:
-            n = 80
-
+    def __get_hdbscan_model(self, n_docs: int = None) -> HDBSCAN:
+        n = 10 if n_docs is None or n_docs < 2000 else 40 if n_docs < 10000 else 80
         return HDBSCAN(
             min_cluster_size=n,
             min_samples=n,
@@ -160,29 +162,16 @@ class BertopicServiceRepositoryV2(TopicsModellingServiceRepositoryInterface):
             prediction_data=True,
         )
 
-    def __fit_model(
-        self,
-        content_list: List[str],
-        embeddings_list: List[List[float]],
-    ):
-        embeddings_np = np.array(embeddings_list)
-        logger.info(f"Embeddings shape: {embeddings_np.shape}")
-        # embeddings_np = normalize(embeddings_np)
-        reduced_embeddings = self.umap_model.fit_transform(embeddings_np)
-        logger.info(f"Reduced embeddings shape: {reduced_embeddings.shape}")
-        logger.info(f"reduce embeddings: {len(reduced_embeddings)}")
-        logger.info(f"content_list: {len(content_list)}")
-        try:
-            self.model.fit_transform(content_list, reduced_embeddings)
-        except Exception as error:
-            logger.warning(f"An error occurred during topic calculation: {error}")
-            raise Exception(error)
-        return reduced_embeddings
-
-    def __calculate_topics(self, content_list: List[str], created_at_list: List[str]):
-        return self.model.topics_over_time(
-            docs=content_list,
-            timestamps=created_at_list,
-            nr_bins=20,
-            datetime_format="%Y-%m-%dT%H:%M:%S",
+    def __get_vectorizer_model(self) -> CountVectorizer:
+        from V2.core.services.topics_modelling_service.utils.constants import (
+            NLTK_SPANISH_STOPWORDS,
+            CUSTOM_STOPWORDS,
         )
+        stopwords = NLTK_SPANISH_STOPWORDS + CUSTOM_STOPWORDS
+        return CountVectorizer(ngram_range=(1, 2), stop_words=stopwords, min_df=0.01)
+
+    def __get_ctidf_model(self) -> ClassTfidfTransformer:
+        return ClassTfidfTransformer(reduce_frequent_words=True)
+
+    def __get_representation_model(self) -> MaximalMarginalRelevance:
+        return MaximalMarginalRelevance(diversity=0.9)

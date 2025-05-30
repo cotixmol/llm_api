@@ -27,6 +27,6 @@ def build_topics_repository(
 
     return TopicsRepository(
         document_search_service_repository,
-        llm_service_repository,
         topics_modelling_service_repository,
+        llm_service_repository,        
     )

@@ -12,9 +12,11 @@ class TopicsRepositoryInterface(ABC):
         pass
 
     @abstractmethod
-    async def method2(self) -> None:
+    async def process_topics_pipeline(
+        self, documents: List[BaseDocument]
+    ):
+        """
+        Ejecuta el pipeline completo: modelado, enriquecimiento y mapeo a DTO.
+        """
         pass
 
-    @abstractmethod
-    async def method3(self) -> None:
-        pass

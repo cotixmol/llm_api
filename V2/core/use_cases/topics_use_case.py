@@ -1,13 +1,14 @@
-from V2.api.dtos.topics_dto import TopicsResponse, TopicsRequest
-from V2.core.interfaces.repositories.topics_repository_interface import (
-    TopicsRepositoryInterface,
-)
+from datetime import datetime
+from V2.api.dtos.topics_dto import TopicsRequest, TopicsResponse
+from V2.core.interfaces.repositories.topics_repository_interface import TopicsRepositoryInterface
 
 
 class TopicsUseCase:
     """
-    Use case for handling topics requests.
-    This class is responsible for orchestrating the topics process,
+    Caso de uso para manejar requests de tópicos:
+    - Valida parámetros de fecha
+    - Obtiene documentos
+    - Ejecuta pipeline de tópicos
     """
 
     def __init__(self, topics_repository: TopicsRepositoryInterface):
@@ -15,12 +16,12 @@ class TopicsUseCase:
 
     async def execute(self, request: TopicsRequest) -> TopicsResponse:
 
+        # 1) Obtener documentos
         documents = await self.topics_repository.fetch_documents_for_topics(request)
 
-        topics = await self.topics_repository.get_topics_for_topics(documents)
+        # 2) Si no hay documentos, devolver respuesta vacía
+        if not documents:
+            return TopicsResponse(data=[], chart={}, n_docs=0)
 
-        enriched_topics = await self.topics_repository.enrich_topics(topics)
-
-        topics_response = self.topics_repository.build_topics_response(enriched_topics)
-
-        return TopicsResponse()
+        # 3) Ejecutar pipeline (modelado, enriquecimiento y mapeo)
+        return await self.topics_repository.process_topics_pipeline(documents)

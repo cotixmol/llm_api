@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import List, Dict, Any
+from typing import List, Dict, Any, NamedTuple
 from V2.api.dtos.classification_dto import ClassificationRequest
 from V2.api.dtos.common_dto import BaseDocument
 
@@ -23,3 +23,11 @@ class LLMServiceRepositoryInterface(ABC):
         Executes a generic prompt request and returns the response.
         """
         pass
+
+
+class EnrichedTopic(NamedTuple):
+    topic_id: int
+    name: str
+    summary: str
+    keywords: List[str]
+    docs: List[str]
