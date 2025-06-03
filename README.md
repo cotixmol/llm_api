@@ -1,266 +1,317 @@
-# GPU Reports
-Este es un microservicio dedicado a ejecutar reportes que requieren la utilización de GPU.
+# GPU Reports V2
 
+Este repositorio contiene una API desarrollada con FastAPI que expone diferentes endpoints para ejecutar modelos LLM utilizando la infraestructura de GPUs de "Reputación Digital".
 
-# Arquitectura
+## Introducción
 
-Se trata de un micro servicio tipo API utilizando la libreria FastAPI. Cada endpoint resuelve un caso de uso.
-La capa `services` contiene las conecciones a servicios de RD
-La capa `core` contiene la lógica de negocio
-La capa `api` expone los enpoints y coordina los servicios para la resolucion de los casos de uso.
-Este microservicio es de acceso privado. (solo LAN)
+Se trata de un microservicio tipo API basado en FastAPI. Cada endpoint resuelve un caso de uso distinto. Actualmente, existen **cuatro casos de uso** principales:
 
-![arquitecture](./docs/gpu_reports_arquitecture.png)
+- `classification`
+- `summary`
+- `prompt`
+- `topics`
 
-# Endpoints
+## Arquitectura del Proyecto
 
-## Topics
+La versión V2 de esta API implementa una arquitectura de Puertos y Adaptadores (también conocida como Arquitectura Hexagonal). En términos prácticos, esto significa que las capas externas no deben depender de detalles internos. Por ejemplo, una implementación de Elastic Search no debe exponer propiedades específicas de ese servicio en la capa de repositorio o caso de uso. En su lugar, se utiliza una estructura de datos agnóstica capaz de manejar cualquier servicio de indexación y búsqueda.
 
-Recibe informacion desde manager 
+A continuación, se muestra una introducción visual de la arquitectura para el caso de uso de clasificación:
 
+![hexagonal-architecture](./V2/docs/Architecture-V2.png)
 
-# Notas para la documentación
+## Infraestructura
 
-## Servicios de llm
-Un script de servicio por cada backend? En principio deberíamos elegir uno y continuar con ese. Por ahora vLLM.
+Los repositorios de los distintos workers acceden a las instancias correspondientes según el caso de uso. Dependiendo de cada caso, es necesario optimizar la instancia del modelo LLM utilizando variables de entorno y configuraciones específicas. De aquí surgen los términos `siso` (Small Input Small Output) y `liso` (Large Input Small Output).
 
-El método de generación general para un modelo instruct:
-- Recibe una lista de listas cada una estructura de roles y mensaje, por ejemplo:
-    ```python
-    [
-        {
-            "role": "system",
-            "content": prompt_template["system"],
-        },
-        {
-            "role": "user",
-            "content": prompt_template["user"].format(doc=content[idx])
-        }
-    ]
-    ```
-- Devuelve una diccionario con el siguiente formato (cada script de servicio deberá acomodar el formato):
-    ```python
-        {
-            outputs: [
-                {
-                    text: "generated_text_1"
-                    other_info: {}
-                },
-                {
-                    text: "generated_text_1"
-                    other_info: {}
-                },
-                etc...,
-            ],
-            general_info: {}
-        }
-    ```
-    La idea es poder devolver información acerca de cada generación e información general.
+Esta infraestructura es flexible y puede modificarse o redirigirse a nuevas instancias según los casos de uso y las necesidades futuras.
 
-## Modelos para descargar en Minio
+![arquitecture](./V2/docs/gpu_reports_arquitecture.png)
 
-- **llama3.2 3B instruct**: el que estamos usando actualmente.
-- **deepseek R1 distill qwen 1.5B**: requiere revisar el format del output antes de implementarse.
-- **qwen2.7 7B instruct 1M**: solo es posible utilizarlo en skynet.
-Probar:
-https://huggingface.co/tensorblock/Llama-3.2-8B-Instruct-GGUF/blob/main/Llama-3.2-8B-Instruct-Q3_K_M.gguf
-https://huggingface.co/QuantFactory/Llama-3.2-3B-GGUF
-https://huggingface.co/bartowski/Llama-3.3-70B-Instruct-GGUF
-https://huggingface.co/meta-llama/Llama-3.2-11B-Vision-Instruct/tree/main (en skynet - en proceso de descarga 27/02)
+## Servicios de LLM
 
-## Recursos útiles
-- vllm classes
-    - [RequestOutput](https://github.com/vllm-project/vllm/blob/main/vllm/outputs.py#L85)
-    - [RequestMetrics](https://github.com/vllm-project/vllm/blob/main/vllm/sequence.py#L98)
+Actualmente utilizamos el modelo `llama3.2 3B instruct`. Existe la intención de migrar a un modelo multipropósito de 11B parámetros. Para ello, es necesario considerar la cuantización, la disponibilidad de memoria en **Dev** y la capacidad de testeo sobre el modelo a implementar.
 
-    -----------
-    -----------
+Se propuso utilizar LMStudio de manera local en nuestras computadoras para ejecutar algunos modelos y realizar pruebas más rápidamente, aprovechando el servicio de API de LMStudio a través de un Jupyter Notebook local.
 
-# Documentación de Endpoints - Servicio `gpu_reports`
+También hay disponible una instancia de Jupyter Notebook en los servidores de **Dev**, que tiene acceso a la GPU de ese servidor.
 
-## Visión General
+## Endpoints
 
-`gpu_reports` es un servicio que expone múltiples endpoints para ejecutar tareas de inferencia sobre documentos usando LLMs. Las funcionalidades incluyen clasificación, generación de resúmenes, ejecución de prompts y análisis temáticos.
+A continuación se describen los endpoints principales expuestos por `gpu_reports` para ejecutar tareas de inferencia, generación y análisis sobre documentos utilizando LLMs.
 
 ---
 
-## 1. POST /llm/classification
+### 1. `POST /llm/classification`
 
-### Descripción
+**Descripción:**  
+Clasifica documentos según un prompt específico, devolviendo la cantidad total de documentos procesados y cuántos fueron clasificados exitosamente.
 
-Clasifica documentos según un prompt específico. Devuelve cantidad total de documentos procesados y cuántos fueron clasificados.
+**Parámetros del Payload:**
 
-### Parámetros del Payload
+| Parámetro      | Tipo      | Descripción                                                                 |
+| -------------- | --------- | --------------------------------------------------------------------------- |
+| index_pattern  | string    | Patrón de índice a consultar                                                |
+| since_date     | string    | Fecha de inicio del rango (ISO 8601)                                        |
+| to_date        | string    | Fecha de fin del rango (ISO 8601)                                           |
+| filters        | objeto    | Campos y filtros del documento a recuperar (ver detalles abajo)             |
+| prompt         | dict      | Prompt para el modelo (`system`, `user`)                                    |
+| update_field   | string    | Campo donde se guarda la clasificación                                      |
+| task_key       | string    | Campo de la predicción en el JSON                                           |
+| match_field    | string    | Campo sobre el cual hacer el match (opcional)                               |
+| valid_labels   | lista     | Lista de etiquetas válidas para la clasificación                            |
+| max_ndocs      | int       | Límite de documentos a procesar (opcional, por defecto 10000)               |
+| batch_size     | int       | Tamaño del lote de procesamiento (opcional, por defecto 50)                 |
+| query          | string    | Filtro adicional para la consulta (opcional)                                |
 
-- `index_pattern`: Índice o patrón de índices.
-- `since_date`, `to_date`: Rango de fechas.
-- `filters`: Campos del documento a recuperar.
-- `prompt`: Prompt dict (`system`, `user`).
-- `update_field`: Campo donde se guarda la clasificación.
-- `task_key`: Clave de la predicción en el JSON.
-- `valid_labels`: Lista de etiquetas válidas.
-- `max_ndocs`: Límite de documentos a procesar.
+**Detalles de `filters`:**
 
-### Ejemplo
+| Campo        | Tipo         | Descripción                                              |
+| ------------ | ------------ | -------------------------------------------------------- |
+| fields       | lista        | Lista de campos a recuperar (por defecto varios campos)  |
+| category     | lista        | Filtrar por categorías específicas (opcional)            |
+| lang         | lista        | Filtrar por idioma (opcional)                            |
+| words        | lista        | Palabras que deben estar presentes (opcional)            |
+| not_words    | lista        | Palabras que no deben estar presentes (opcional)         |
+| sentiment    | lista        | Filtrar por sentimiento (opcional)                       |
+| emotion      | lista        | Filtrar por emoción (opcional)                           |
 
-```python
-payload = {
-  "index_pattern": "in-marketing-honduras-2024",
-  "since_date": "2024-10-05T03:00:00.000Z",
-  "to_date": "2024-11-05T15:00:00.000Z",
-  "filters": {"fields": ["_id", "created_at", "content", "source"]},
-  "prompt": ipcva_prompt,
-  "update_field": "food_post_type",
-  "task_key": "type_of_posting",
-  "valid_labels": ["RECIPES", "NUTRITIONAL INFORMATION", "RECOMMENDATIONS", "OTHERS"],
-  "max_ndocs": 5
+**Ejemplo de cuerpo de solicitud:**
+```json
+{
+  "index_pattern": "in-ecuador*",
+  "since_date": "2025-02-01T15:00:31.974Z",
+  "to_date": "2025-04-17T15:00:31.974Z",
+  "filters": {
+    "fields": ["created_at", "content"]
+  },
+  "prompt": {
+    "system": "Eres un experto en clasificación de sentimientos. Según el texto de entrada, clasifica el sentimiento dirigido específicamente hacia Luisa González. No evalúes el sentimiento general de toda la publicación, sino enfócate en el sentimiento hacia ella. El sentimiento debe clasificarse en una de las siguientes categorías: POS, NEG, NEU. Responde solo con un objeto JSON en el formato: { \"sentiment\": \"POS\" }.",
+    "user": "Clasifica el sentimiento del siguiente comentario, específicamente respecto a Luisa González: {doc}"
+  },
+  "update_field": "targ_sent_luisa",
+  "task_key": "sentiment",
+  "valid_labels": ["POS", "NEU", "NEG"],
+  "max_ndocs": 2,
+  "batch_size": 200,
+  "query": "content: (luisa or gonzalez)"
 }
 ```
 
-### Respuesta
-
+**Respuesta:**
 ```json
 {"total_docs": 50, "updated_docs": 49}
 ```
 
 ---
 
-## 2. POST /llm/prompt
+### 2. `POST /llm/prompt`
 
-### Descripción
+**Descripción:**  
+Permite realizar una conversación multi-turno con el modelo, enviando una lista de mensajes con roles y contenido. Devuelve la lista de mensajes resultante, incluyendo la respuesta generada por el modelo.
 
-Ejecuta un prompt libre y devuelve el texto generado.
+**Parámetros del payload:**
 
-### Parámetro
+| Parámetro      | Tipo                         | Descripción                                                                 |
+| -------------- | --------------------------- | --------------------------------------------------------------------------- |
+| messages_list  | lista de objetos            | Lista de mensajes, cada uno con `role` y `content`                          |
+| temperature    | float (0.0–1.0, por defecto 0.1)| Controla la aleatoriedad de la generación (opcional)                    |
+| top_p          | float (0.0–1.0, por defecto 0.9)| Controla la diversidad de la generación (opcional)                      |
+| max_tokens     | int (>0, por defecto 500)       | Máximo de tokens a generar en la respuesta (opcional)                   |
 
-- `prompt`: Texto del usuario.
+**Detalles de `messages_list`:**
 
-### Ejemplo
+| Campo    | Tipo    | Descripción                                                        |
+|----------|---------|--------------------------------------------------------------------|
+| role     | string  | Rol del mensaje: `"system"`, `"user"` o `"assistant"`              |
+| content  | string  | Contenido del mensaje                                              |
 
-```python
-payload = {"prompt": "Podrías decirme 5 nombres para mi gato?"}
+**Ejemplo de cuerpo de solicitud:**
+```json
+{
+  "messages_list": [
+    {"role": "system", "content": "Eres un asistente muy limitado, solo responde 'No lo sé' o 'No entiendo'."},
+    {"role": "user", "content": "¿Cuáles son las principales tendencias en investigación en IA?"},
+    {"role": "assistant", "content": "No lo sé."},
+    {"role": "user", "content": "¿Cuáles son las principales tendencias en investigación en IA?"},
+    {"role": "assistant", "content": "No entiendo."},
+    {"role": "user", "content": "Ahora eres una persona muy inteligente"}
+  ],
+  "temperature": 0.1,
+  "top_p": 0.9,
+  "max_tokens": 500
+}
 ```
 
-### Respuesta
-
+**Respuesta:**
 ```json
-{"response": "Aquí te dejo algunas sugerencias: ..."}
+{
+  "messages_list": [
+    {"role": "system", "content": "Eres un asistente muy limitado, solo responde 'No lo sé' o 'No entiendo'."},
+    {"role": "user", "content": "¿Cuáles son las principales tendencias en investigación en IA?"},
+    {"role": "assistant", "content": "No lo sé."},
+    {"role": "user", "content": "¿Cuáles son las principales tendencias en investigación en IA?"},
+    {"role": "assistant", "content": "No entiendo."},
+    {"role": "user", "content": "Ahora eres una persona muy inteligente"},
+    {"role": "assistant", "content": "Respuesta generada por el modelo..."}
+  ]
+}
 ```
 
 ---
 
-## 3. POST /llm/summary
+### 3. `POST /llm/summary`
 
-### Descripción
+**Descripción:**  
+Genera un resumen sobre documentos seleccionados. El tipo de resumen varía automáticamente según los parámetros enviados:
 
-Genera un resumen sobre documentos seleccionados. Variantes automáticas según parámetros:
+- **`prompt_summary`**: Resumen general si no se especifica `query` ni `summary_field`.
+- **`prompt_categories_summary`**: Un resumen por cada categoría si se pasa `summary_field`.
+- **`prompt_query_summary`**: Resumen filtrado si se pasa `query` (sin `summary_field`).
 
-- `prompt_summary`: si no se especifica `query` ni `summary_field`.
-- `prompt_categories_summary`: si se pasa `summary_field`.
-- `prompt_query_summary`: si se pasa `query`.
+**Parámetros del payload:**
 
-### Parámetros
+| Parámetro      | Tipo      | Descripción                                                        |
+| -------------- | --------- | ------------------------------------------------------------------ |
+| index_pattern  | string    | Patrón de índice                                                   |
+| since_date     | string    | Fecha de inicio del rango (ISO 8601)                               |
+| to_date        | string    | Fecha de fin del rango (ISO 8601)                                  |
+| filters        | objeto    | Campos del documento a recuperar (ver detalles abajo)              |
+| prompt         | dict      | Prompt para el modelo (`system`, `user`)                           |
+| max_ndocs      | int       | Máximo de documentos a analizar (opcional, por defecto 10000)      |
+| query          | string    | Filtro adicional textual (opcional)                                |
+| summary_field  | string    | Campo de agrupación por categoría (opcional)                       |
+| batch_size     | int       | Tamaño del lote de procesamiento (opcional, por defecto 50)        |
 
-- `index_pattern`, `since_date`, `to_date`, `filters`
-- `prompt`: dict `system`, `user`
-- `summary_field`: campo de agrupación por categoría (opcional)
-- `query`: filtro adicional textual (opcional)
-- `max_ndocs`: máximo documentos a analizar
+**Detalles de `filters`:**
 
-### Ejemplo
+| Campo        | Tipo         | Descripción                                              |
+| ------------ | ------------ | -------------------------------------------------------- |
+| fields       | lista        | Lista de campos a recuperar (por defecto varios campos)  |
+| category     | lista        | Filtrar por categorías específicas (opcional)            |
+| lang         | lista        | Filtrar por idioma (opcional)                            |
+| words        | lista        | Palabras que deben estar presentes (opcional)            |
+| not_words    | lista        | Palabras que no deben estar presentes (opcional)         |
+| sentiment    | lista        | Filtrar por sentimiento (opcional)                       |
+| emotion      | lista        | Filtrar por emoción (opcional)                           |
 
-```python
-payload = {
-  "index_pattern": "in-*",
-  "since_date": "2024-11-04T05:00:00.000Z",
-  "to_date": "2024-11-04T06:00:00.000Z",
-  "filters": {"fields": ["_id", "content", "category"]},
-  "prompt": summary_prompt,
-  "summary_field": "sentiment_name",
-  "query": "content: presidenta",
+**Ejemplo de cuerpo de solicitud:**
+```json
+{
+  "index_pattern": "in-ecuador*",
+  "since_date": "2024-03-24T05:00:00.000Z",
+  "to_date": "2025-03-25T05:00:00.000Z",
+  "filters": {
+    "fields": [
+      "_id",
+      "created_at",
+      "category",
+      "content_type",
+      "author",
+      "content",
+      "source",
+      "@timestamp"
+    ]
+  },
+  "prompt": {
+    "system": "Eres un asistente de IA especializado en resumir grandes cantidades de texto en puntos clave concisos y estructurados.",
+    "user": "A continuación se presentan documentos de diversas plataformas sociales resultantes de la búsqueda para la siguiente consulta: {query}.\nCada documento contiene información relevante:\n\n{contents}\n\nCon base en estos documentos, genera un resumen con los puntos más relevantes en formato de viñetas, teniendo en cuenta el interés expresado en la consulta:\n- Punto 1\n- Punto 2\n- Punto 3\n- ...\n\nTu respuesta debe estar en español y debe consistir únicamente en la categoría como título, seguida de los puntos resumidos."
+  },
   "max_ndocs": 10
 }
 ```
 
-### Respuesta
+**Respuesta:**
 
-La estructura de la respuesta dependerá del tipo de variante ejecutada:
-
-- Si se utiliza `prompt_categories_summary` (especificando `summary_field`), el resultado será un diccionario donde cada clave corresponde a un valor distinto del campo `summary_field` (por ejemplo: `NEU`, `POS`, `NEG`, etc.).
-
-```json
-{
-  "response": {
-    "NEU": "Resumen correspondiente a NEU",
-    "POS": "Resumen correspondiente a POS"
+- **Con `summary_field` (`prompt_categories_summary`):**
+  ```json
+  {
+    "response": {
+      "Política": "- Punto 1\n- Punto 2\n- Punto 3",
+      "Economía": "- Punto 1\n- Punto 2"
+    }
   }
-}
-```
-
-- Si se utiliza `prompt_summary` o `prompt_query_summary` (sin `summary_field`), el resultado será un diccionario con una única clave `summary`.
-
-```json
-{
-  "response": {
-    "summary": "Resumen general del corpus o según query aplicada."
+  ```
+- **Sin `summary_field` (`prompt_summary` o `prompt_query_summary`):**
+  ```json
+  {
+    "response": {
+      "summary": "- Punto 1\n- Punto 2\n- Punto 3"
+    }
   }
-}
-```
+  ```
 
-### Comparación entre variantes de resumen
+**Comparativa de variantes de resumen:**
 
-| Variante                    | Cuándo se activa                           | Propósito                                                |
-|----------------------------|--------------------------------------------|----------------------------------------------------------|
-| `prompt_summary`           | Sin `query` ni `summary_field`             | Resumen general del corpus                               |
-| `prompt_categories_summary`| Cuando se incluye `summary_field`          | Un resumen por cada categoría distinta                   |
-| `prompt_query_summary`     | Cuando se incluye `query` (sin `summary_field`) | Resumen de documentos filtrados por una query específica |
-
-
+| Variante                    | Cuándo se activa                                   | Propósito                                                |
+|-----------------------------|----------------------------------------------------|----------------------------------------------------------|
+| `prompt_summary`            | Sin `query` ni `summary_field`                     | Resumen general de los documentos                        |
+| `prompt_categories_summary` | Cuando se incluye `summary_field`                  | Un resumen por cada categoría distinta                   |
+| `prompt_query_summary`      | Cuando se incluye `query` (sin `summary_field`)    | Resumen de documentos filtrados por una consulta específica |
 
 ---
 
-## 4. POST /topics
+### 4. `POST /topics`
 
-### Descripción
+**Descripción:**  
+Genera un análisis temático sobre los documentos recuperados, devolviendo una estructura completa para visualización (gráficos de torta, barras, nubes de palabras, documentos representativos y títulos/resúmenes por tópico).
 
-Genera análisis temático sobre los documentos recuperados. Devuelve estructura completa para visualización: pie chart, barplot, wordcloud, documentos representativos y títulos/summaries por tópico.
+**Parámetros del payload:**
 
-### Parámetros del Payload
+| Parámetro      | Tipo      | Descripción                                                        |
+| -------------- | --------- | ------------------------------------------------------------------ |
+| index_pattern  | string    | Patrón de índice                                                   |
+| since_date     | string    | Fecha de inicio del rango (ISO 8601)                               |
+| to_date        | string    | Fecha de fin del rango (ISO 8601)                                  |
+| filters        | objeto    | Campos y filtros a recuperar (ver detalles abajo)                  |
+| max_ndocs      | int       | Máximo de documentos a analizar (opcional, por defecto 10000)      |
 
-- `index_pattern`: patrón de índice
-- `since_date`, `to_date`: rango temporal
-- `filters`: campos a recuperar
-- `max_ndocs`: máximo de documentos
+**Detalles de `filters`:**
 
-### Ejemplo
+| Campo        | Tipo         | Descripción                                              |
+| ------------ | ------------ | -------------------------------------------------------- |
+| fields       | lista        | Lista de campos a recuperar (por defecto varios campos)  |
+| category     | lista        | Filtrar por categorías específicas (opcional)            |
+| lang         | lista        | Filtrar por idioma (opcional)                            |
+| words        | lista        | Palabras que deben estar presentes (opcional)            |
+| not_words    | lista        | Palabras que no deben estar presentes (opcional)         |
+| sentiment    | lista        | Filtrar por sentimiento (opcional)                       |
+| emotion      | lista        | Filtrar por emoción (opcional)                           |
 
-```python
-payload = {
-  "index_pattern": "in-rock_nacional-radios-2025",
-  "since_date": "2024-01-01T05:00:00.000Z",
-  "to_date": "2025-12-10T09:00:00.000Z",
-  "filters": {"fields": ["_id", "content", "embedding", "category"]},
-  "max_ndocs": 100
+**Ejemplo de cuerpo de solicitud:**
+```json
+{
+  "index_pattern": "in-ecuador*",
+  "since_date": "2024-03-24T05:00:00.000Z",
+  "to_date": "2025-03-25T05:00:00.000Z",
+  "filters": {
+    "fields": [
+      "_id",
+      "created_at",
+      "category",
+      "content_type",
+      "author",
+      "content",
+      "source",
+      "@timestamp"
+    ]
+  },
+  "max_ndocs": 10
 }
 ```
 
-### Respuesta
-
+**Respuesta:**
 ```json
 {
+  "data": {
+    // Estructura de datos temática, por ejemplo, agrupaciones de documentos por tópico
+  },
   "chart": {
     "PieChart": {"topics": [...]},
-    "Barplot": {"topic_0": [...], "topic_1": [...]},
+    "Barplot": {"topic_0": [...]},
     "Wordcloud": {...},
     "DocumentGroup": {...},
     "TopicInfo": {"topic_0": {"title": "Recital 2025", "summary": "..."}}
   },
-  "n_docs": 99
+  "n_docs": 10
 }
 ```
-
----
-
-
-
-

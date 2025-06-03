@@ -5,13 +5,14 @@ from V2.api.dtos.classification_dto import (
 from V2.core.interfaces.repositories.classification_repository_interface import (
     ClassificationRepositoryInterface,
 )
+from V2.api.dtos.common_dto import BaseDocument
 
 
 class ClassificationUseCase:
     """
     Use case for handling classification requests.
     This class is responsible for orchestrating the classification process,
-    including fetching documents and classifying them.
+    including fetching documents (when necessary) and classifying them.
     """
 
     def __init__(self, classification_repository: ClassificationRepositoryInterface):
@@ -19,11 +20,23 @@ class ClassificationUseCase:
 
     async def execute(self, request: ClassificationRequest) -> ClassificationResponse:
 
-        documents = (
-            await self.classification_repository.fetch_documents_for_classification(
-                request
+        #         documents = (
+        #     BaseDocument(request.documents)
+        #     if request.documents
+        #     else await self.classification_repository.fetch_documents_for_classification(request)
+        # )
+        if request.documents:
+            documents = [
+                d if isinstance(d, BaseDocument) else BaseDocument(**d)
+                for d in request.documents
+            ]
+        else:
+            documents = (
+                await self.classification_repository.fetch_documents_for_classification(
+                    request
+                )
             )
-        )
+
         classification_list = await self.classification_repository.classify_documents(
             request, documents
         )

@@ -44,7 +44,9 @@ async def lifespan(app: FastAPI):
     minio_client.update_model_folder(
         model_name=node_config["llm_model_name"], bucket=secrets.MINIO_BUCKET
     )
-    app.state.llm_instance = initialize_fake_llm_instance()
+    # When in debbuging mode, we use a fake LLM instance.
+    # Just change the function to the initialize_fake_llm_instance()
+    app.state.llm_instance = initialize_vllm_instance()
     yield
 
 

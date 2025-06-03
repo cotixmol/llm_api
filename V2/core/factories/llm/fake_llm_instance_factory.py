@@ -24,6 +24,13 @@ class FakeLLMLibrary:
     def __init__(self, *_, **__) -> None:
         pass
 
+    def _fake_classification_response(self) -> str:
+        payload = {
+            "targ_sent_luisa": "POS"
+        }
+        # ensure_ascii=False lets Faker’s accented words pass through unchanged
+        return json.dumps(payload, ensure_ascii=False)
+
     def _fake_sentence(self, max_tokens: int) -> str:
         chars = 150
         return faker.text(max_nb_chars=chars).replace("\n", " ")
@@ -71,7 +78,7 @@ class FakeLLMLibrary:
 
         for _ in requests:
             # For testing prompting endpoint
-            # fake_text = self._fake_sentence(sampling_params.max_tokens)
+            #fake_text = self._fake_sentence(sampling_params.max_tokens)
             # For testing summarization endpoint
             #fake_text = self._fake_summary_response()
             # For testing topics endpoint
