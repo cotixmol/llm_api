@@ -1,14 +1,13 @@
-from typing import List, Dict, Tuple, NamedTuple
+from typing import List, Dict, Tuple
 import re
 import numpy as np
 import pandas as pd
-from collections import namedtuple
 from umap import UMAP
 from hdbscan import HDBSCAN
 from bertopic import BERTopic
 from bertopic.vectorizers import ClassTfidfTransformer
 from bertopic.representation import MaximalMarginalRelevance
-from bertopic.dimensionality import BaseDimensionalityReduction
+#from bertopic.dimensionality import BaseDimensionalityReduction
 from V2.utils.logger import logger
 from sklearn.feature_extraction.text import CountVectorizer
 from V2.api.dtos.common_dto import BaseDocument
@@ -41,7 +40,8 @@ class BertopicServiceRepositoryV2(TopicsModellingServiceRepositoryInterface):
 
         try:
             self.model = BERTopic(
-                umap_model=BaseDimensionalityReduction(),
+                #umap_model=BaseDimensionalityReduction(),
+                umap_model=None,
                 hdbscan_model=self.hdbscan_model,
                 vectorizer_model=self.vectorizer_model,
                 representation_model=self.representation_model,
