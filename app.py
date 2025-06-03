@@ -32,6 +32,7 @@ from V2.api.config.secrets import secrets
 from V2.api.routers.classification_router import classification_router_V2
 from V2.api.routers.prompt_router import prompt_router_V2
 from V2.api.routers.summary_router import summary_router_V2
+from V2.api.routers.topics_router import topics_router_V2
 from V2.core.factories.llm.fake_llm_instance_factory import initialize_fake_llm_instance
 from V2.core.factories.llm.vllm_instance_factory import initialize_vllm_instance
 from factories.services.embedding_client_factory import initialize_embedding_client
@@ -59,9 +60,12 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-app.include_router(router=prompt_router_V2, prefix=("/V2/llm"), tags=["LLM"])
-app.include_router(router=classification_router_V2, prefix=("/V2/llm"), tags=["LLM"])
-app.include_router(router=summary_router_V2, prefix=("/V2/llm"), tags=["LLM"])
+app.include_router(router=prompt_router_V2, prefix=("/V2/llm"), tags=["PROMPT"])
+app.include_router(
+    router=classification_router_V2, prefix=("/V2/llm"), tags=["CLASSIFICATION"]
+)
+app.include_router(router=summary_router_V2, prefix=("/V2/llm"), tags=["SUMMARY"])
+app.include_router(router=topics_router_V2, prefix=("/V2/llm"), tags=["TOPICS"])
 
 FastAPIInstrumentor().instrument_app(app)
 

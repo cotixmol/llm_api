@@ -34,6 +34,23 @@ class FakeLLMLibrary:
     def _fake_sentence(self, max_tokens: int) -> str:
         chars = 150
         return faker.text(max_nb_chars=chars).replace("\n", " ")
+    
+    def _fake_topic_response(self) -> str:
+        """
+        Return a block that `_parse_summary_response` will always accept:
+        {"category": "...", "summary": "- …\n- …\n- …"}
+        """
+        fake_category = faker.word().title()
+
+        bullet_points = [
+            f"- {faker.sentence(nb_words=6).rstrip('.')}" for _ in range(3)
+        ]
+        payload = {
+            "name": fake_category,
+            "description": "\n".join(bullet_points),
+        }
+        # ensure_ascii=False lets Faker’s accented words pass through unchanged
+        return json.dumps(payload, ensure_ascii=False)
 
     def _fake_summary_response(self) -> str:
         """
@@ -64,8 +81,8 @@ class FakeLLMLibrary:
             #fake_text = self._fake_sentence(sampling_params.max_tokens)
             # For testing summarization endpoint
             #fake_text = self._fake_summary_response()
-            # For testing classification endpoint
-            fake_text = self._fake_classification_response()
+            # For testing topics endpoint
+            fake_text = self._fake_topic_response()
             gen = SimpleNamespace(outputs=[SimpleNamespace(text=fake_text)])
             generations.append(gen)
 
