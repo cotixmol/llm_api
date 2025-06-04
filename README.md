@@ -1,6 +1,6 @@
 # GPU Reports V2
 
-Este repositorio contiene una API desarrollada con FastAPI que expone diferentes endpoints para ejecutar modelos LLM utilizando la infraestructura de GPUs de "Reputación Digital".
+Este repositorio contiene una API desarrollada con FastAPI que expone diferentes endpoints para ejecutar modelos LLM utilizando una infraestructura de GPUs.
 
 ## Introducción
 
